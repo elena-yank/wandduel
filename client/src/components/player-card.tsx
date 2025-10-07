@@ -81,17 +81,17 @@ export default function PlayerCard({
               Last {player === 1 ? "Spell" : "Counter-Spell"} Cast
             </p>
             <div className="bg-background/50 rounded-lg p-3 border border-border/30 min-h-[60px]">
-              {roundsDisplay.some(r => r.spell) ? (
+              {roundsDisplay.some(r => r.spell || !r.successful) ? (
                 <div className="flex flex-wrap gap-1">
                   {roundsDisplay.map((round) => (
                     <div 
                       key={round.roundNumber}
                       className={cn(
                         "px-2 py-1 rounded text-xs border transition-opacity flex items-center gap-1",
-                        round.spell ? "opacity-100" : "opacity-30 border-dashed",
-                        round.spell && !round.successful ? "border-destructive/50" : (player === 1 ? "border-primary/30" : "border-accent/30")
+                        round.spell || !round.successful ? "opacity-100" : "opacity-30 border-dashed",
+                        !round.successful ? "border-destructive/50" : round.spell ? (player === 1 ? "border-primary/30" : "border-accent/30") : "border-border/30"
                       )}
-                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}` : `Раунд ${round.roundNumber}`}
+                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}` : !round.successful ? "Неверная защита" : `Раунд ${round.roundNumber}`}
                     >
                       {round.spell ? (
                         <>
@@ -105,6 +105,8 @@ export default function PlayerCard({
                             {round.spell.name}
                           </span>
                         </>
+                      ) : !round.successful ? (
+                        <span className="text-destructive text-lg">❌</span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -119,7 +121,7 @@ export default function PlayerCard({
                   {lastSpell}
                 </p>
               )}
-              {!roundsDisplay.some(r => r.spell) && (
+              {!roundsDisplay.some(r => r.spell || !r.successful) && (
                 <p className="text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-last-accuracy`}>
                   {lastAccuracy}
                 </p>
