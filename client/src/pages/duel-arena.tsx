@@ -78,8 +78,9 @@ export default function DuelArena() {
       if (result.recognized && result.successful) {
         if (roundPhase === "attack") {
           setAttackResult(result);
-          setRoundPhase("counter");
         }
+        // Invalidate session to get updated phase from server
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
       } else {
         toast({
           title: "Spell Recognition",
@@ -111,7 +112,6 @@ export default function DuelArena() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
-      setRoundPhase("attack");
       setAttackResult(null);
       setFeedbackResult(null);
       toast({
@@ -127,6 +127,13 @@ export default function DuelArena() {
       });
     },
   });
+
+  // Sync roundPhase with session.phase
+  useEffect(() => {
+    if (session?.phase) {
+      setRoundPhase(session.phase as "attack" | "counter" | "complete");
+    }
+  }, [session?.phase]);
 
   // Check for role and session on component mount
   useEffect(() => {
