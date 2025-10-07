@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type GameSession, type Spell, type Point, type SessionParticipant } from "@shared/schema";
 import GestureCanvas from "@/components/gesture-canvas";
@@ -24,6 +24,7 @@ type RecognitionResult = {
 
 export default function DuelArena() {
   const [, setLocation] = useLocation();
+  const [, params] = useRoute("/rooms/:roomId/arena");
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [feedbackResult, setFeedbackResult] = useState<RecognitionResult | null>(null);
@@ -32,6 +33,8 @@ export default function DuelArena() {
   const [roundPhase, setRoundPhase] = useState<"attack" | "counter" | "complete">("attack");
   const [attackResult, setAttackResult] = useState<RecognitionResult | null>(null);
   const { toast } = useToast();
+
+  const roomId = params?.roomId;
 
   // Fetch spells
   const { data: allSpells = [] } = useQuery<Spell[]>({
@@ -126,25 +129,42 @@ export default function DuelArena() {
 
   // Check for role and session on component mount
   useEffect(() => {
+    if (!roomId) {
+      setLocation("/");
+      return;
+    }
+
     const role = localStorage.getItem("userRole");
-    const sessionId = localStorage.getItem("currentSessionId");
-    
-    // If no role, redirect to role selection
     if (!role) {
-      setLocation("/role-selection");
+      // If no role selected, redirect to role selection for this room
+      setLocation(`/rooms/${roomId}/role-selection`);
       return;
     }
     
     setUserRole(role);
-    
-    // If no session, redirect to role selection
-    if (!sessionId) {
-      setLocation("/role-selection");
-      return;
-    }
-    
-    setCurrentSessionId(sessionId);
-  }, [setLocation]);
+
+    // Get session for this room
+    const fetchSession = async () => {
+      try {
+        const res = await fetch(`/api/rooms/${roomId}/session`);
+        if (!res.ok) {
+          throw new Error("Session not found");
+        }
+        const sessionData = await res.json();
+        setCurrentSessionId(sessionData.id);
+        localStorage.setItem("currentSessionId", sessionData.id);
+      } catch (error) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить сессию",
+          variant: "destructive",
+        });
+        setLocation("/");
+      }
+    };
+
+    fetchSession();
+  }, [roomId, setLocation, toast]);
 
   const handleGestureComplete = (gesture: Point[]) => {
     // Check if user is spectator
@@ -179,7 +199,9 @@ export default function DuelArena() {
     localStorage.removeItem("userRole");
     localStorage.removeItem("sessionId");
     localStorage.removeItem("playerNumber");
-    setLocation("/role-selection");
+    localStorage.removeItem("currentSessionId");
+    localStorage.removeItem("participantId");
+    setLocation("/");
   };
 
   const handleCompleteRound = () => {

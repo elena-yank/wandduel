@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Eye } from "lucide-react";
@@ -8,8 +8,11 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function RoleSelection() {
   const [, setLocation] = useLocation();
+  const [, params] = useRoute("/rooms/:roomId/role-selection");
   const { toast } = useToast();
   const [isJoining, setIsJoining] = useState(false);
+
+  const roomId = params?.roomId;
 
   // Generate or get user ID
   const getUserId = () => {
@@ -22,26 +25,28 @@ export default function RoleSelection() {
   };
 
   const handleJoin = async (role: "player" | "spectator") => {
+    if (!roomId) {
+      toast({
+        title: "Ошибка",
+        description: "ID комнаты не найден",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsJoining(true);
     try {
       const userId = getUserId();
       
-      // Get or create session ID
-      let sessionId = localStorage.getItem("currentSessionId");
-      
-      // If no session exists, create one
-      if (!sessionId) {
-        const sessionRes = await apiRequest("POST", "/api/sessions", {});
-        const sessionData = await sessionRes.json();
-        sessionId = sessionData.id as string;
-        localStorage.setItem("currentSessionId", sessionId);
+      // Get session for this room
+      const sessionRes = await fetch(`/api/rooms/${roomId}/session`);
+      if (!sessionRes.ok) {
+        throw new Error("Сессия комнаты не найдена");
       }
+      const session = await sessionRes.json();
+      const sessionId = session.id;
 
       // Join session with selected role
-      if (!sessionId) {
-        throw new Error("Session ID not found");
-      }
-      
       const joinRes = await apiRequest("POST", `/api/sessions/${sessionId}/join`, {
         userId,
         role
@@ -68,12 +73,13 @@ export default function RoleSelection() {
       // Save participant info
       localStorage.setItem("participantId", participant.id);
       localStorage.setItem("userRole", role);
+      localStorage.setItem("currentSessionId", sessionId);
       if (participant.playerNumber) {
         localStorage.setItem("playerNumber", participant.playerNumber.toString());
       }
 
-      // Redirect to arena
-      setLocation("/");
+      // Redirect to arena for this room
+      setLocation(`/rooms/${roomId}/arena`);
     } catch (error) {
       toast({
         title: "Ошибка",
