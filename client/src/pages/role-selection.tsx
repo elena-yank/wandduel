@@ -14,12 +14,13 @@ export default function RoleSelection() {
 
   const roomId = params?.roomId;
 
-  // Generate or get user ID
+  // Generate unique user ID for each window/tab
   const getUserId = () => {
-    let userId = localStorage.getItem("userId");
+    // Use sessionStorage for tab-specific ID + timestamp for uniqueness
+    let userId = sessionStorage.getItem("userId");
     if (!userId) {
-      userId = `user_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem("userId", userId);
+      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem("userId", userId);
     }
     return userId;
   };
