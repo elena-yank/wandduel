@@ -27,6 +27,7 @@ export default function DuelArena() {
   const [, params] = useRoute("/rooms/:roomId/arena");
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [playerNumber, setPlayerNumber] = useState<number | null>(null);
   const [feedbackResult, setFeedbackResult] = useState<RecognitionResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastGesture, setLastGesture] = useState<Point[]>([]);
@@ -151,6 +152,14 @@ export default function DuelArena() {
     
     setUserRole(role);
 
+    // Get player number if user is a player
+    if (role === "player") {
+      const playerNum = localStorage.getItem(`playerNumber:${roomId}`);
+      if (playerNum) {
+        setPlayerNumber(parseInt(playerNum));
+      }
+    }
+
     // Get session for this room
     const fetchSession = async () => {
       try {
@@ -184,6 +193,19 @@ export default function DuelArena() {
       return;
     }
 
+    // Check if it's this player's turn
+    if (playerNumber) {
+      const activePlayer = roundPhase === "attack" ? 1 : 2;
+      if (playerNumber !== activePlayer) {
+        toast({
+          title: "Не ваш ход",
+          description: `Сейчас ходит Player ${activePlayer}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setLastGesture(gesture);
     if (gesture.length < 1) {
       toast({
@@ -194,8 +216,9 @@ export default function DuelArena() {
       return;
     }
 
-    const currentPlayer = roundPhase === "attack" ? 1 : 2;
-    recognizeGestureMutation.mutate({ gesture, playerId: currentPlayer });
+    if (playerNumber) {
+      recognizeGestureMutation.mutate({ gesture, playerId: playerNumber });
+    }
   };
 
   const players = participants.filter(p => p.role === "player");
@@ -326,7 +349,7 @@ export default function DuelArena() {
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                   userRole === "player" ? "bg-primary/20 text-primary" : "bg-secondary/20 text-secondary"
                 }`} data-testid="text-user-role">
-                  {userRole === "player" ? "Игрок" : "Наблюдатель"}
+                  {userRole === "player" ? `Player ${playerNumber}` : "Наблюдатель"}
                 </span>
               </div>
             </div>
@@ -366,7 +389,7 @@ export default function DuelArena() {
               <div className="flex-1 flex items-center justify-center">
                 <GestureCanvas
                   onGestureComplete={handleGestureComplete}
-                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator"}
+                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (playerNumber !== null && playerNumber !== getCurrentPlayer())}
                   className="canvas-container"
                   data-testid="gesture-canvas"
                 />
@@ -379,10 +402,16 @@ export default function DuelArena() {
                 </div>
               )}
               
+              {userRole === "player" && playerNumber !== null && playerNumber !== getCurrentPlayer() && (
+                <div className="text-center text-sm text-muted-foreground mt-2">
+                  Сейчас ходит Player {getCurrentPlayer()}
+                </div>
+              )}
+              
               <div className="mt-4 flex gap-3">
                 <Button 
                   onClick={() => handleGestureComplete(lastGesture)}
-                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator"}
+                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator" || (playerNumber !== null && playerNumber !== getCurrentPlayer())}
                   className="flex-1 glow-primary"
                   data-testid="button-recognize-spell"
                 >
@@ -392,7 +421,7 @@ export default function DuelArena() {
                 <Button 
                   onClick={handleCompleteRound}
                   variant="secondary"
-                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending || userRole === "spectator"}
+                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending || userRole === "spectator" || playerNumber !== 2}
                   data-testid="button-complete-round"
                 >
                   <Trophy className="w-4 h-4 mr-2" />
