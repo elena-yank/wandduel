@@ -144,6 +144,19 @@ export default function DuelArena() {
     },
   });
 
+  const players = participants.filter(p => p.role === "player");
+  const spectators = participants.filter(p => p.role === "spectator");
+  
+  // Get player names
+  const player1 = players.find(p => p.playerNumber === 1);
+  const player2 = players.find(p => p.playerNumber === 2);
+  const player1Name = player1?.userName || "Player 1";
+  const player2Name = player2?.userName || "Player 2";
+
+  // Find current user's participant to get their actual player number
+  const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
+  const actualPlayerNumber = currentParticipant?.playerNumber || playerNumber;
+
   // Sync roundPhase with session.currentPhase
   useEffect(() => {
     if (session?.currentPhase) {
@@ -219,19 +232,6 @@ export default function DuelArena() {
 
     fetchSession();
   }, [roomId, setLocation, toast]);
-
-  const players = participants.filter(p => p.role === "player");
-  const spectators = participants.filter(p => p.role === "spectator");
-  
-  // Get player names
-  const player1 = players.find(p => p.playerNumber === 1);
-  const player2 = players.find(p => p.playerNumber === 2);
-  const player1Name = player1?.userName || "Player 1";
-  const player2Name = player2?.userName || "Player 2";
-
-  // Find current user's participant to get their actual player number
-  const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
-  const actualPlayerNumber = currentParticipant?.playerNumber || playerNumber;
 
   const handleGestureComplete = (gesture: Point[]) => {
     // Check if user is spectator

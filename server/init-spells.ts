@@ -50,15 +50,15 @@ export async function initializeSpells() {
     colorName: "Красный",
     description: "Щит",
     gesturePattern: [
-      { x: 50, y: 10 },  // Top center
-      { x: 20, y: 15 },  // Left top
-      { x: 15, y: 50 },  // Left middle
-      { x: 35, y: 85 },  // Left bottom
-      { x: 50, y: 95 },  // Bottom point (shield tip)
-      { x: 65, y: 85 },  // Right bottom
-      { x: 85, y: 50 },  // Right middle
-      { x: 80, y: 15 },  // Right top
-      { x: 50, y: 10 }   // Back to top (close the shield)
+      { x: 200, y: 120 },  // Top center
+      { x: 120, y: 130 },  // Left top curve
+      { x: 100, y: 200 },  // Left middle
+      { x: 130, y: 270 },  // Left bottom
+      { x: 200, y: 300 },  // Bottom point (shield tip)
+      { x: 270, y: 270 },  // Right bottom
+      { x: 300, y: 200 },  // Right middle
+      { x: 280, y: 130 },  // Right top curve
+      { x: 200, y: 120 }   // Back to top (close the shield)
     ],
     counters: [baubelliusSpell.id],
   };

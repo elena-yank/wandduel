@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Wand2, Shield, Info } from "lucide-react";
@@ -72,7 +72,7 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
   );
 
   // Render gesture pattern visualization
-  const renderGesturePattern = (pattern: Point[]) => {
+  const renderGesturePattern = (pattern: Point[]): ReactElement | null => {
     if (!pattern || pattern.length === 0) return null;
 
     // Find bounds of the pattern
@@ -83,12 +83,16 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
 
-    // Calculate size and scaling
+    // Calculate size and scaling with centered positioning
     const width = maxX - minX || 100;
     const height = maxY - minY || 100;
-    const scale = 300 / Math.max(width, height);
-    const offsetX = -minX * scale;
-    const offsetY = -minY * scale;
+    const scale = 250 / Math.max(width, height);
+    
+    // Center the pattern in the 300x300 viewBox
+    const scaledWidth = width * scale;
+    const scaledHeight = height * scale;
+    const offsetX = (300 - scaledWidth) / 2 - minX * scale;
+    const offsetY = (300 - scaledHeight) / 2 - minY * scale;
 
     // Create SVG path
     const pathData = pattern.map((point, index) => {
@@ -197,7 +201,7 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
           </DialogHeader>
           <div className="py-4">
             <div className="aspect-square w-full mb-4">
-              {selectedSpell?.gesturePattern && renderGesturePattern(selectedSpell.gesturePattern as Point[])}
+              {selectedSpell?.gesturePattern ? renderGesturePattern(selectedSpell.gesturePattern as Point[]) : null}
             </div>
             <div className="bg-muted/20 rounded-lg p-4 border border-border/20">
               <p className="text-sm text-muted-foreground mb-2">
