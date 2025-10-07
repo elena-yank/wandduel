@@ -136,10 +136,10 @@ export default function DuelArena() {
 
   const handleGestureComplete = (gesture: Point[]) => {
     setLastGesture(gesture);
-    if (gesture.length < 3) {
+    if (gesture.length < 1) {
       toast({
         title: "Invalid Gesture",
-        description: "Please draw a longer gesture to cast a spell",
+        description: "Please draw a gesture to cast a spell",
         variant: "destructive",
       });
       return;
