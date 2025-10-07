@@ -96,8 +96,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100); // Max diagonal distance
   const similarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
   
-  // Multiply by 30 to be extremely forgiving for human-drawn gestures, cap at 100%
-  return Math.min(100, Math.round(similarity * 3000));
+  // Multiply by 10 to be forgiving for human-drawn gestures, cap at 100%
+  return Math.min(100, Math.round(similarity * 1000));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -411,11 +411,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For counter spells, validate if it's the correct counter
       let isValidCounter = true;
+      let wrongDefenseUsed = false;
+      
       if (spellType === "counter" && session.lastAttackSpellId) {
         const counters = selectedSpell.counters as string[] | null;
         isValidCounter = counters !== null && 
           Array.isArray(counters) && 
           counters.includes(session.lastAttackSpellId);
+        
+        // If player used a counter spell but it's not the right one, mark as wrong defense
+        if (!isValidCounter && selectedSpell.type === "counter") {
+          wrongDefenseUsed = true;
+        }
       }
 
       // If it's a successful attack spell, update session phase and save the spell
@@ -432,6 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spell: selectedSpell,
         accuracy: selectedAccuracy,
         isValidCounter,
+        wrongDefenseUsed,
         successful: selectedAccuracy >= 35 && (spellType === "attack" || isValidCounter)
       });
 
