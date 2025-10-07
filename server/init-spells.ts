@@ -320,7 +320,7 @@ export async function initializeSpells() {
   const relaxioSpell = await storage.createSpell(relaxio);
   console.log("Created spell:", relaxioSpell.name);
 
-  // Create eighth attack spell: локомОтор мОртис (9 точек - L-форма с промежуточными точками)
+  // Create eighth attack spell: локомОтор мОртис (8 точек из SVG - ботинок)
   const locomotorMortis: InsertSpell = {
     name: "локомОтор мОртис",
     type: "attack",
@@ -328,16 +328,15 @@ export async function initializeSpells() {
     colorName: "Красный",
     description: "Ботинок",
     gesturePattern: [
-      // L-shape pattern with intermediate points for better recognition
-      { x: 200, y: 80 },    // Top of vertical line
-      { x: 200, y: 140 },   // Intermediate
-      { x: 200, y: 200 },   // Intermediate
-      { x: 200, y: 260 },   // Intermediate
-      { x: 200, y: 300 },   // Bottom (corner)
-      { x: 240, y: 300 },   // Intermediate horizontal
-      { x: 280, y: 300 },   // Intermediate horizontal
-      { x: 320, y: 300 },   // Intermediate horizontal
-      { x: 350, y: 300 }    // End of horizontal line
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 147.76, y: 40 },
+      { x: 163.84, y: 196.88 },
+      { x: 155.84, y: 213.44 },
+      { x: 61.52, y: 213.44 },
+      { x: 47.44, y: 226.88 },
+      { x: 47.44, y: 264.24 },
+      { x: 70.72, y: 280.24 },
+      { x: 273.52, y: 275.92 }
     ],
   };
 
