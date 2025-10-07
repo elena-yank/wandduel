@@ -8,7 +8,7 @@ export async function initializeSpells() {
     type: "attack",
     color: "#FFD700",
     colorName: "Золотой",
-    description: "Направить на оппонента",
+    description: "Точка в центре",
     gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
   };
 
@@ -21,8 +21,8 @@ export async function initializeSpells() {
     type: "attack",
     color: "#FFFACD",
     colorName: "Бело-жёлтый",
-    description: "Направить на оппонента",
-    gesturePattern: [{ x: 200, y: 200 }], // Same as алАрте аскЕндаре - point at opponent
+    description: "Точка в центре",
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas - point at center
   };
 
   const baubelliusSpell = await storage.createSpell(baubellius);
@@ -34,7 +34,7 @@ export async function initializeSpells() {
     type: "counter",
     color: "#E5E5E5",
     colorName: "Бесцветный",
-    description: "Направить на объект",
+    description: "Точка в центре",
     gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
     counters: [alarteSpell.id],
   };

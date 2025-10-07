@@ -360,10 +360,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate accuracy for all spells
-      const spellMatches = availableSpells.map(spell => ({
-        spell,
-        accuracy: calculateGestureAccuracy(gesture, spell.gesturePattern as Point[])
-      })).sort((a, b) => b.accuracy - a.accuracy);
+      const spellMatches = availableSpells.map(spell => {
+        const patternPoints = (spell.gesturePattern as Point[]).length;
+        const gesturePoints = gesture.length;
+        
+        // Check for gesture complexity mismatch
+        // If pattern has many points (>10) but gesture has few (<10), it's wrong
+        if (patternPoints > 10 && gesturePoints < 10) {
+          return { spell, accuracy: 0 };
+        }
+        // If pattern has few points (<10) but gesture has many (>10), it's wrong  
+        if (patternPoints < 10 && gesturePoints > 10) {
+          return { spell, accuracy: 0 };
+        }
+        
+        return {
+          spell,
+          accuracy: calculateGestureAccuracy(gesture, spell.gesturePattern as Point[])
+        };
+      }).sort((a, b) => b.accuracy - a.accuracy);
 
       // Log gesture recognition details
       console.log('\n=== GESTURE RECOGNITION DEBUG ===');
@@ -380,6 +395,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Require minimum 25% accuracy for recognition
       if (!bestMatch || bestMatch.accuracy < 25) {
+        // If in counter phase and no spell matched, it's wrong defense
+        if (spellType === "counter") {
+          return res.json({
+            recognized: false,
+            wrongDefenseUsed: true,
+            message: "Неверная защита! Вы использовали неправильное движение.",
+            accuracy: 0
+          });
+        }
+        
         return res.json({
           recognized: false,
           message: "Gesture not recognized. Try again with more precision.",
