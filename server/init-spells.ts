@@ -121,5 +121,66 @@ export async function initializeSpells() {
   const finiteSpell = await storage.createSpell(finiteIncantatem);
   console.log("Created spell:", finiteSpell.name);
 
+  // Create counter spell: репАро (triangle pattern)
+  const reparo: InsertSpell = {
+    name: "репАро",
+    type: "counter",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Треугольник",
+    gesturePattern: [
+      // Bottom left corner - starting point
+      { x: 83, y: 377 },
+      { x: 100, y: 360 },
+      // Left side going up
+      { x: 117, y: 343 },
+      { x: 125, y: 310 },
+      { x: 133, y: 277 },
+      { x: 142, y: 243 },
+      { x: 150, y: 210 },
+      // Top left corner
+      { x: 158, y: 177 },
+      { x: 167, y: 143 },
+      // Top horizontal line - left to right
+      { x: 200, y: 143 },
+      { x: 233, y: 143 },
+      { x: 267, y: 143 },
+      { x: 300, y: 143 },
+      { x: 333, y: 143 },
+      { x: 367, y: 143 },
+      { x: 400, y: 143 },
+      { x: 433, y: 143 },
+      { x: 467, y: 143 },
+      // Top right corner - turning down
+      { x: 483, y: 160 },
+      { x: 500, y: 177 },
+      // Right side going down
+      { x: 508, y: 210 },
+      { x: 517, y: 243 },
+      { x: 525, y: 277 },
+      // Bottom right corner - curve
+      { x: 517, y: 310 },
+      { x: 508, y: 343 },
+      { x: 492, y: 360 },
+      { x: 475, y: 377 },
+      // Bottom horizontal line - back to start
+      { x: 442, y: 377 },
+      { x: 408, y: 377 },
+      { x: 375, y: 377 },
+      { x: 342, y: 377 },
+      { x: 308, y: 377 },
+      { x: 275, y: 377 },
+      { x: 242, y: 377 },
+      { x: 208, y: 377 },
+      { x: 175, y: 377 },
+      { x: 142, y: 377 },
+      { x: 108, y: 377 }
+    ],
+    counters: [diffingoSpell.id],
+  };
+
+  const reparoSpell = await storage.createSpell(reparo);
+  console.log("Created spell:", reparoSpell.name);
+
   console.log("Spells initialized successfully!");
 }
