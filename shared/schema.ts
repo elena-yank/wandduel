@@ -15,9 +15,17 @@ export const spells = pgTable("spells", {
   counters: jsonb("counters"), // Array of spell IDs this spell counters (for counter spells)
 });
 
+// Game rooms table
+export const gameRooms = pgTable("game_rooms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostName: text("host_name").notNull(),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Game sessions table
 export const gameSessions = pgTable("game_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull().references(() => gameRooms.id),
   currentRound: integer("current_round").default(1),
   currentPlayer: integer("current_player").default(1),
   currentPhase: varchar("current_phase", { enum: ["attack", "counter"] }).default("attack"),
@@ -55,6 +63,11 @@ export const insertSpellSchema = createInsertSchema(spells).omit({
   id: true,
 });
 
+export const insertGameRoomSchema = createInsertSchema(gameRooms).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
   id: true,
   createdAt: true,
@@ -73,6 +86,8 @@ export const insertGestureAttemptSchema = createInsertSchema(gestureAttempts).om
 // Types
 export type Spell = typeof spells.$inferSelect;
 export type InsertSpell = z.infer<typeof insertSpellSchema>;
+export type GameRoom = typeof gameRooms.$inferSelect;
+export type InsertGameRoom = z.infer<typeof insertGameRoomSchema>;
 export type GameSession = typeof gameSessions.$inferSelect;
 export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 export type SessionParticipant = typeof sessionParticipants.$inferSelect;
