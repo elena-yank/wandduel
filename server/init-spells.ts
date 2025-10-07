@@ -36,23 +36,29 @@ export async function initializeSpells() {
     colorName: "Зелёный",
     description: "V с крючком",
     gesturePattern: [
-      // Left diagonal down (top-left to bottom-center)
-      { x: 100, y: 80 },
-      { x: 120, y: 120 },
-      { x: 140, y: 160 },
-      { x: 160, y: 200 },
-      { x: 180, y: 240 },
-      { x: 200, y: 280 },
-      // Right diagonal up (bottom-center to top-right)
-      { x: 220, y: 240 },
-      { x: 240, y: 200 },
-      { x: 260, y: 160 },
-      { x: 280, y: 120 },
-      { x: 300, y: 100 },
-      // Hook to the right
-      { x: 320, y: 110 },
-      { x: 340, y: 130 },
-      { x: 350, y: 140 }
+      // Left stroke of V - diagonal down from top-left
+      { x: 80, y: 60 },
+      { x: 100, y: 100 },
+      { x: 120, y: 140 },
+      { x: 140, y: 180 },
+      { x: 160, y: 220 },
+      { x: 180, y: 260 },
+      { x: 200, y: 300 },
+      // Bottom of V
+      { x: 210, y: 310 },
+      // Right stroke of V - diagonal up to top-right
+      { x: 220, y: 280 },
+      { x: 240, y: 240 },
+      { x: 260, y: 200 },
+      { x: 280, y: 160 },
+      { x: 300, y: 120 },
+      { x: 320, y: 80 },
+      // Hook curving to the right
+      { x: 330, y: 90 },
+      { x: 340, y: 110 },
+      { x: 345, y: 130 },
+      { x: 350, y: 150 },
+      { x: 352, y: 165 }
     ],
   };
 
