@@ -28,6 +28,19 @@ export async function initializeSpells() {
   const baubelliusSpell = await storage.createSpell(baubellius);
   console.log("Created spell:", baubelliusSpell.name);
 
+  // Create fifth attack spell: кАльворИо
+  const calvorio: InsertSpell = {
+    name: "кАльворИо",
+    type: "attack",
+    color: "#EF4444",
+    colorName: "Красный",
+    description: "Точка в центре",
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+  };
+
+  const calvorioSpell = await storage.createSpell(calvorio);
+  console.log("Created spell:", calvorioSpell.name);
+
   // Create third attack spell: диффИндо
   const diffindo: InsertSpell = {
     name: "диффИндо",
@@ -172,7 +185,7 @@ export async function initializeSpells() {
       { x: 80, y: 190 },
       { x: 80, y: 140 }
     ],
-    counters: [baubelliusSpell.id],
+    counters: [baubelliusSpell.id, calvorioSpell.id],
   };
 
   const finiteSpell = await storage.createSpell(finiteIncantatem);
