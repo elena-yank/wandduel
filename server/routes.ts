@@ -365,6 +365,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accuracy: calculateGestureAccuracy(gesture, spell.gesturePattern as Point[])
       })).sort((a, b) => b.accuracy - a.accuracy);
 
+      // Log gesture recognition details
+      console.log('\n=== GESTURE RECOGNITION DEBUG ===');
+      console.log('Player gesture points:', gesture.length);
+      console.log('Phase:', session.currentPhase);
+      console.log('Spell matches:');
+      spellMatches.forEach(match => {
+        console.log(`  - ${match.spell.name}: ${match.accuracy}% (pattern: ${(match.spell.gesturePattern as Point[]).length} points)`);
+      });
+      console.log('================================\n');
+
       // Get best match
       const bestMatch = spellMatches[0];
 
