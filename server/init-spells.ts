@@ -22,10 +22,7 @@ export async function initializeSpells() {
     color: "#FFFACD",
     colorName: "Бело-жёлтый",
     description: "Направить на оппонента",
-    gesturePattern: [
-      { x: 10, y: 50 },
-      { x: 90, y: 50 }
-    ], // Horizontal line pointing at opponent
+    gesturePattern: [{ x: 200, y: 200 }], // Same as алАрте аскЕндаре - point at opponent
   };
 
   const baubelliusSpell = await storage.createSpell(baubellius);

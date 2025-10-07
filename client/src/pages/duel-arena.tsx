@@ -10,6 +10,7 @@ import FeedbackModal from "@/components/feedback-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,6 +21,8 @@ type RecognitionResult = {
   isValidCounter?: boolean;
   successful: boolean;
   message?: string;
+  multipleMatches?: boolean;
+  matches?: Array<{ spell: Spell; accuracy: number }>;
 };
 
 export default function DuelArena() {
@@ -34,6 +37,8 @@ export default function DuelArena() {
   const [lastGesture, setLastGesture] = useState<Point[]>([]);
   const [roundPhase, setRoundPhase] = useState<"attack" | "counter" | "complete">("attack");
   const [attackResult, setAttackResult] = useState<RecognitionResult | null>(null);
+  const [spellChoices, setSpellChoices] = useState<Array<{ spell: Spell; accuracy: number }> | null>(null);
+  const [showSpellChoice, setShowSpellChoice] = useState(false);
   const { toast } = useToast();
 
   const roomId = params?.roomId;
@@ -74,6 +79,13 @@ export default function DuelArena() {
       return res.json();
     },
     onSuccess: (result: RecognitionResult) => {
+      // Handle multiple spell matches - show choice dialog
+      if (result.multipleMatches && result.matches) {
+        setSpellChoices(result.matches);
+        setShowSpellChoice(true);
+        return;
+      }
+
       setFeedbackResult(result);
       setShowFeedback(true);
       
@@ -307,6 +319,43 @@ export default function DuelArena() {
       player1Accuracy: attackResult.accuracy,
       player2Accuracy: feedbackResult.accuracy,
     });
+  };
+
+  const handleSpellChoice = async (choice: { spell: Spell; accuracy: number }) => {
+    // Close dialog
+    setShowSpellChoice(false);
+    setSpellChoices(null);
+
+    // Create result object with chosen spell
+    const result: RecognitionResult = {
+      recognized: true,
+      spell: choice.spell,
+      accuracy: choice.accuracy,
+      successful: true
+    };
+
+    // Process as normal recognition
+    setFeedbackResult(result);
+    setShowFeedback(true);
+    
+    if (roundPhase === "attack") {
+      setAttackResult(result);
+      
+      // Update session with selected attack spell
+      if (currentSessionId) {
+        try {
+          await apiRequest("PATCH", `/api/sessions/${currentSessionId}`, {
+            currentPhase: "counter",
+            lastAttackSpellId: choice.spell.id,
+            lastAttackAccuracy: choice.accuracy
+          });
+          // Invalidate session to get updated phase from server
+          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+        } catch (error) {
+          console.error("Failed to update session:", error);
+        }
+      }
+    }
   };
 
   const attackSpells = allSpells.filter(spell => spell.type === "attack");
@@ -603,6 +652,46 @@ export default function DuelArena() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Spell Choice Dialog */}
+      <Dialog open={showSpellChoice} onOpenChange={setShowSpellChoice}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-spell-choice">
+          <DialogHeader>
+            <DialogTitle className="font-decorative text-2xl decorative-text">
+              Выберите заклинание
+            </DialogTitle>
+            <DialogDescription>
+              Несколько заклинаний соответствуют вашему движению. Выберите нужное:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-4">
+            {spellChoices?.map((choice, index) => (
+              <Button
+                key={choice.spell.id}
+                onClick={() => handleSpellChoice(choice)}
+                variant="outline"
+                className="h-auto flex flex-col items-start p-4 text-left hover:bg-primary/10 transition-colors"
+                data-testid={`button-spell-choice-${index}`}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  <div 
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: choice.spell.color }}
+                  />
+                  <div className="flex-1">
+                    <p className="font-serif font-semibold text-foreground">
+                      {choice.spell.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {choice.spell.colorName} • {choice.accuracy.toFixed(0)}% точность
+                    </p>
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Feedback Modal */}
       <FeedbackModal

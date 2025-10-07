@@ -352,35 +352,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Find best matching spell
-      let bestMatch = null;
-      let bestAccuracy = 0;
+      // Calculate accuracy for all spells
+      const spellMatches = availableSpells.map(spell => ({
+        spell,
+        accuracy: calculateGestureAccuracy(gesture, spell.gesturePattern as Point[])
+      })).sort((a, b) => b.accuracy - a.accuracy);
 
-      for (const spell of availableSpells) {
-        const accuracy = calculateGestureAccuracy(gesture, spell.gesturePattern as Point[]);
-        if (accuracy > bestAccuracy) {
-          bestAccuracy = accuracy;
-          bestMatch = spell;
-        }
-      }
+      // Get best match
+      const bestMatch = spellMatches[0];
 
       // Require minimum 60% accuracy for recognition
-      if (!bestMatch || bestAccuracy < 60) {
+      if (!bestMatch || bestMatch.accuracy < 60) {
         return res.json({
           recognized: false,
           message: "Gesture not recognized. Try again with more precision.",
-          accuracy: bestAccuracy
+          accuracy: bestMatch?.accuracy || 0
         });
       }
+
+      // Find all successful matches (>= 70% accuracy) for attack spells
+      const successfulMatches = spellMatches.filter(m => m.accuracy >= 70);
+      
+      // If multiple successful attack spells match, return them all for user to choose
+      if (spellType === "attack" && successfulMatches.length > 1) {
+        return res.json({
+          recognized: true,
+          multipleMatches: true,
+          matches: successfulMatches.map(m => ({
+            spell: m.spell,
+            accuracy: m.accuracy
+          })),
+          message: "Multiple spells match this gesture. Please choose one."
+        });
+      }
+
+      // Single match or counter spell - proceed normally
+      const selectedSpell = bestMatch.spell;
+      const selectedAccuracy = bestMatch.accuracy;
 
       // Create gesture attempt record
       const attemptData = insertGestureAttemptSchema.parse({
         sessionId,
         playerId,
-        spellId: bestMatch.id,
+        spellId: selectedSpell.id,
         drawnGesture: gesture,
-        accuracy: bestAccuracy,
-        successful: bestAccuracy >= 70
+        accuracy: selectedAccuracy,
+        successful: selectedAccuracy >= 70
       });
 
       await storage.createGestureAttempt(attemptData);
@@ -388,27 +405,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For counter spells, validate if it's the correct counter
       let isValidCounter = true;
       if (spellType === "counter" && session.lastAttackSpellId) {
-        const counters = bestMatch.counters as string[] | null;
+        const counters = selectedSpell.counters as string[] | null;
         isValidCounter = counters !== null && 
           Array.isArray(counters) && 
           counters.includes(session.lastAttackSpellId);
       }
 
       // If it's a successful attack spell, update session phase and save the spell
-      if (spellType === "attack" && bestAccuracy >= 70) {
+      if (spellType === "attack" && selectedAccuracy >= 70) {
         await storage.updateGameSession(sessionId, {
           currentPhase: "counter",
-          lastAttackSpellId: bestMatch.id,
-          lastAttackAccuracy: bestAccuracy
+          lastAttackSpellId: selectedSpell.id,
+          lastAttackAccuracy: selectedAccuracy
         });
       }
 
       res.json({
         recognized: true,
-        spell: bestMatch,
-        accuracy: bestAccuracy,
+        spell: selectedSpell,
+        accuracy: selectedAccuracy,
         isValidCounter,
-        successful: bestAccuracy >= 70 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 70 && (spellType === "attack" || isValidCounter)
       });
 
     } catch (error) {
