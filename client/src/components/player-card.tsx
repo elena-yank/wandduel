@@ -130,7 +130,7 @@ export default function PlayerCard({
           </div>
           
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Gesture Accuracy</p>
+            <p className="text-xs text-muted-foreground mb-2">Точность движения палочкой</p>
             <div className="bg-background/50 rounded-full h-3 overflow-hidden">
               <div 
                 className="accuracy-bar h-full transition-all duration-500" 

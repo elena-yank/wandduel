@@ -83,7 +83,7 @@ export default function FeedbackModal({
               </div>
               
               <div className="bg-background/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-2">Gesture Accuracy</p>
+                <p className="text-sm text-muted-foreground mb-2">Точность движения палочкой</p>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-3xl font-bold text-foreground" data-testid="text-accuracy-percentage">
                     {result.accuracy}%
@@ -122,7 +122,7 @@ export default function FeedbackModal({
             onClick={onClose}
             data-testid="button-continue-duel"
           >
-            Continue Duel
+            Продолжить дуэль
           </Button>
         </div>
       </DialogContent>
