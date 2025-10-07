@@ -310,8 +310,8 @@ export async function initializeSpells() {
     colorName: "Жёлтый",
     description: "Вертикальная линия",
     gesturePattern: [
-      { x: 320, y: 422.5 },
-      { x: 320, y: 64.8 }
+      { x: 500, y: 422.5 },
+      { x: 500, y: 64.8 }
     ],
     counters: [colloshuSpell.id],
   };
