@@ -37,8 +37,10 @@ export default function DuelArena() {
   const [lastGesture, setLastGesture] = useState<Point[]>([]);
   const [roundPhase, setRoundPhase] = useState<"attack" | "counter" | "complete">("attack");
   const [attackResult, setAttackResult] = useState<RecognitionResult | null>(null);
+  const [counterResult, setCounterResult] = useState<RecognitionResult | null>(null);
   const [spellChoices, setSpellChoices] = useState<Array<{ spell: Spell; accuracy: number }> | null>(null);
   const [showSpellChoice, setShowSpellChoice] = useState(false);
+  const [showRoundComplete, setShowRoundComplete] = useState(false);
   const { toast } = useToast();
 
   const roomId = params?.roomId;
@@ -92,6 +94,8 @@ export default function DuelArena() {
       if (result.recognized && result.successful) {
         if (roundPhase === "attack") {
           setAttackResult(result);
+        } else if (roundPhase === "counter") {
+          setCounterResult(result);
         }
         // Invalidate session to get updated phase from server
         queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
@@ -127,11 +131,9 @@ export default function DuelArena() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
       setAttackResult(null);
+      setCounterResult(null);
       setFeedbackResult(null);
-      toast({
-        title: "Round Complete",
-        description: "Starting next round...",
-      });
+      setShowRoundComplete(false);
     },
     onError: () => {
       toast({
@@ -165,8 +167,9 @@ export default function DuelArena() {
           });
         }
       } else if (session?.currentPhase === "attack") {
-        // Clear attack result when new round starts
+        // Clear results when new round starts
         setAttackResult(null);
+        setCounterResult(null);
       }
     };
 
@@ -269,28 +272,22 @@ export default function DuelArena() {
     }
   };
 
-  // Auto-complete round after Player 2 counter spell
+  // Show round complete dialog after Player 2 counter spell
   useEffect(() => {
     if (
       roundPhase === "counter" && 
       attackResult && 
-      feedbackResult && 
-      feedbackResult.successful && 
-      actualPlayerNumber === 2
+      counterResult && 
+      !showRoundComplete
     ) {
-      // Wait a moment to show the result, then auto-complete round
+      // Wait a moment to show the result, then show round complete dialog
       const timer = setTimeout(() => {
-        completeRoundMutation.mutate({
-          attackSpellId: attackResult.spell?.id || null,
-          counterSuccess: feedbackResult.successful && (feedbackResult.isValidCounter ?? false),
-          player1Accuracy: attackResult.accuracy,
-          player2Accuracy: feedbackResult.accuracy,
-        });
+        setShowRoundComplete(true);
       }, 1500); // 1.5 second delay to show result
       
       return () => clearTimeout(timer);
     }
-  }, [roundPhase, attackResult, feedbackResult, actualPlayerNumber]);
+  }, [roundPhase, attackResult, counterResult, showRoundComplete]);
 
   const handleLeave = () => {
     if (roomId) {
@@ -593,11 +590,11 @@ export default function DuelArena() {
           player={2}
           playerName={player2Name}
           isActive={getCurrentPlayer() === 2}
-          lastSpell={roundPhase === "counter" && feedbackResult?.spell ? feedbackResult.spell.name : "-"}
-          lastAccuracy={roundPhase === "counter" && feedbackResult ? 
-            `${feedbackResult.accuracy}% accuracy${feedbackResult.isValidCounter ? " - Valid counter!" : ""}` : 
+          lastSpell={counterResult?.spell?.name || "-"}
+          lastAccuracy={counterResult ? 
+            `${counterResult.accuracy}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
             "Waiting..."}
-          accuracy={roundPhase === "counter" && feedbackResult ? feedbackResult.accuracy : 0}
+          accuracy={counterResult?.accuracy || 0}
           data-testid="player-card-2"
         />
       </div>
@@ -701,6 +698,64 @@ export default function DuelArena() {
         isCounterPhase={roundPhase === "counter"}
         data-testid="feedback-modal"
       />
+
+      {/* Round Complete Dialog */}
+      <Dialog open={showRoundComplete} onOpenChange={setShowRoundComplete}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-round-complete">
+          <DialogHeader>
+            <DialogTitle className="font-decorative text-2xl decorative-text">
+              Раунд завершен
+            </DialogTitle>
+            <DialogDescription>
+              Результаты раунда
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
+              <p className="text-sm text-muted-foreground mb-1">Атака Player 1</p>
+              <p className="text-lg font-semibold text-foreground">
+                {attackResult?.spell?.name}
+              </p>
+              <p className="text-sm text-primary">
+                Точность: {attackResult?.accuracy}%
+              </p>
+            </div>
+            
+            <div className={`rounded-lg p-4 border ${
+              counterResult?.isValidCounter 
+                ? 'bg-green-500/10 border-green-500/20' 
+                : 'bg-red-500/10 border-red-500/20'
+            }`}>
+              <p className="text-sm text-muted-foreground mb-1">Защита Player 2</p>
+              <p className="text-lg font-semibold text-foreground">
+                {counterResult?.spell?.name}
+              </p>
+              <p className={`text-sm ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                Точность: {counterResult?.accuracy}%
+              </p>
+              <p className={`text-sm font-semibold mt-2 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неправильная защита'}
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => {
+              if (attackResult && counterResult) {
+                completeRoundMutation.mutate({
+                  attackSpellId: attackResult.spell?.id || null,
+                  counterSuccess: counterResult.successful && (counterResult.isValidCounter ?? false),
+                  player1Accuracy: attackResult.accuracy,
+                  player2Accuracy: counterResult.accuracy,
+                });
+              }
+            }}
+            className="w-full glow-primary"
+            data-testid="button-continue-next-round"
+          >
+            Следующий раунд
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

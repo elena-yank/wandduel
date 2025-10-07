@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Wand2, Shield } from "lucide-react";
-import { type Spell } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { BookOpen, Wand2, Shield, Info } from "lucide-react";
+import { type Spell, type Point } from "@shared/schema";
 
 interface SpellDatabaseProps {
   attackSpells: Spell[];
@@ -8,6 +10,13 @@ interface SpellDatabaseProps {
 }
 
 export default function SpellDatabase({ attackSpells, counterSpells, ...props }: SpellDatabaseProps) {
+  const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
+  const [showGestureDialog, setShowGestureDialog] = useState(false);
+
+  const handleGestureClick = (spell: Spell) => {
+    setSelectedSpell(spell);
+    setShowGestureDialog(true);
+  };
   const renderSpellCard = (spell: Spell, isCounter: boolean = false) => (
     <div
       key={spell.id}
@@ -21,9 +30,14 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
           <h4 className="font-serif font-bold text-foreground text-lg" data-testid={`text-spell-name-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}>
             {spell.name}
           </h4>
-          <p className="text-sm text-muted-foreground mt-1" data-testid={`text-spell-description-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}>
+          <button
+            onClick={() => handleGestureClick(spell)}
+            className="text-sm text-muted-foreground mt-1 text-left hover:text-foreground transition-colors flex items-center gap-1 group"
+            data-testid={`text-spell-description-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
+          >
             {spell.description}
-          </p>
+            <Info className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
         </div>
         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
           isCounter ? "bg-accent/10" : "bg-destructive/10"
@@ -56,6 +70,74 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
       </div>
     </div>
   );
+
+  // Render gesture pattern visualization
+  const renderGesturePattern = (pattern: Point[]) => {
+    if (!pattern || pattern.length === 0) return null;
+
+    // Find bounds of the pattern
+    const xs = pattern.map(p => p.x);
+    const ys = pattern.map(p => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    // Calculate size and scaling
+    const width = maxX - minX || 100;
+    const height = maxY - minY || 100;
+    const scale = 300 / Math.max(width, height);
+    const offsetX = -minX * scale;
+    const offsetY = -minY * scale;
+
+    // Create SVG path
+    const pathData = pattern.map((point, index) => {
+      const x = point.x * scale + offsetX;
+      const y = point.y * scale + offsetY;
+      return index === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
+    }).join(' ');
+
+    return (
+      <svg 
+        viewBox="0 0 300 300" 
+        className="w-full h-full border-2 border-dashed border-border/30 rounded-lg bg-background/50"
+      >
+        {/* Draw path */}
+        <path
+          d={pathData}
+          stroke={selectedSpell?.color || "#888"}
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Draw points */}
+        {pattern.map((point, index) => {
+          const x = point.x * scale + offsetX;
+          const y = point.y * scale + offsetY;
+          return (
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r={index === 0 ? 6 : 4}
+              fill={index === 0 ? selectedSpell?.color || "#888" : "#666"}
+              opacity={index === 0 ? 1 : 0.6}
+            />
+          );
+        })}
+        {/* Start marker */}
+        <text
+          x={pattern[0].x * scale + offsetX}
+          y={pattern[0].y * scale + offsetY - 10}
+          textAnchor="middle"
+          className="text-xs fill-foreground font-bold"
+        >
+          START
+        </text>
+      </svg>
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto" {...props}>
@@ -101,6 +183,42 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
           </CardContent>
         </Card>
       </div>
+
+      {/* Gesture Pattern Dialog */}
+      <Dialog open={showGestureDialog} onOpenChange={setShowGestureDialog}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-gesture-pattern">
+          <DialogHeader>
+            <DialogTitle className="font-decorative text-2xl decorative-text">
+              {selectedSpell?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Паттерн жеста для 100% точности
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="aspect-square w-full mb-4">
+              {selectedSpell?.gesturePattern && renderGesturePattern(selectedSpell.gesturePattern as Point[])}
+            </div>
+            <div className="bg-muted/20 rounded-lg p-4 border border-border/20">
+              <p className="text-sm text-muted-foreground mb-2">
+                <span className="font-semibold text-foreground">Описание движения:</span>
+              </p>
+              <p className="text-sm text-foreground">
+                {selectedSpell?.description}
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <div 
+                  className="w-4 h-4 rounded-full" 
+                  style={{ backgroundColor: selectedSpell?.color }}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Цвет: {selectedSpell?.colorName}
+                </span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
