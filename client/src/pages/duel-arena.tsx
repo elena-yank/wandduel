@@ -45,6 +45,7 @@ export default function DuelArena() {
   const { data: session, isLoading: sessionLoading } = useQuery<GameSession>({
     queryKey: ["/api/sessions", currentSessionId],
     enabled: !!currentSessionId,
+    refetchInterval: 2000, // Refresh every 2 seconds to see updates from other players
   });
 
   // Fetch session participants
