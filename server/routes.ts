@@ -317,6 +317,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get spell history for session (with spell details)
+  app.get("/api/sessions/:sessionId/spell-history", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const attempts = await storage.getGestureAttemptsBySession(sessionId);
+      
+      // Get spell details for each attempt
+      const historyWithSpells = await Promise.all(
+        attempts.map(async (attempt) => {
+          const spell = attempt.spellId ? await storage.getSpellById(attempt.spellId) : null;
+          return {
+            roundNumber: attempt.roundNumber,
+            playerId: attempt.playerId,
+            spell: spell,
+            accuracy: attempt.accuracy,
+            successful: attempt.successful
+          };
+        })
+      );
+      
+      res.json(historyWithSpells);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch spell history" });
+    }
+  });
+
   // Update game session
   app.patch("/api/sessions/:id", async (req, res) => {
     try {
@@ -436,6 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const attemptData = insertGestureAttemptSchema.parse({
         sessionId,
         playerId,
+        roundNumber: session.currentRound,
         spellId: selectedSpell.id,
         drawnGesture: gesture,
         accuracy: selectedAccuracy,

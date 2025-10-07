@@ -71,6 +71,23 @@ export default function DuelArena() {
     refetchInterval: 3000, // Refresh every 3 seconds
   });
 
+  // Fetch spell history
+  const { data: spellHistory = [] } = useQuery<Array<{
+    roundNumber: number;
+    playerId: number;
+    spell: Spell | null;
+    accuracy: number;
+    successful: boolean;
+  }>>({
+    queryKey: ["/api/sessions", currentSessionId, "spell-history"],
+    queryFn: async () => {
+      if (!currentSessionId) return [];
+      const res = await fetch(`/api/sessions/${currentSessionId}/spell-history`);
+      return res.json();
+    },
+    enabled: !!currentSessionId,
+    refetchInterval: 3000, // Refresh every 3 seconds
+  });
 
   // Recognize gesture mutation
   const recognizeGestureMutation = useMutation({
@@ -161,6 +178,7 @@ export default function DuelArena() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
       setAttackResult(null);
       setCounterResult(null);
       setFeedbackResult(null);
@@ -559,6 +577,7 @@ export default function DuelArena() {
           lastSpell={attackResult?.spell?.name || "-"}
           lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
           accuracy={attackResult?.accuracy || 0}
+          spellHistory={spellHistory.filter(h => h.playerId === 1)}
           data-testid="player-card-1"
         />
 
@@ -628,6 +647,7 @@ export default function DuelArena() {
             `${counterResult.accuracy}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
             "Waiting..."}
           accuracy={counterResult?.accuracy || 0}
+          spellHistory={spellHistory.filter(h => h.playerId === 2)}
           data-testid="player-card-2"
         />
       </div>

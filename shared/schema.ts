@@ -53,6 +53,7 @@ export const gestureAttempts = pgTable("gesture_attempts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: varchar("session_id").references(() => gameSessions.id),
   playerId: integer("player_id").notNull(),
+  roundNumber: integer("round_number").notNull(), // 1-5
   spellId: varchar("spell_id").references(() => spells.id),
   drawnGesture: jsonb("drawn_gesture").notNull(), // Array of points drawn by user
   accuracy: integer("accuracy").notNull(), // Percentage 0-100

@@ -1,6 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { type Spell } from "@shared/schema";
+
+interface SpellHistoryItem {
+  roundNumber: number;
+  spell: Spell | null;
+  accuracy: number;
+  successful: boolean;
+}
 
 interface PlayerCardProps {
   player: 1 | 2;
@@ -9,6 +17,7 @@ interface PlayerCardProps {
   lastSpell: string;
   lastAccuracy: string;
   accuracy: number;
+  spellHistory?: SpellHistoryItem[];
 }
 
 export default function PlayerCard({
@@ -18,11 +27,23 @@ export default function PlayerCard({
   lastSpell,
   lastAccuracy,
   accuracy,
+  spellHistory = [],
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
   const playerRole = player === 1 ? "Атакующий" : "Защищающийся";
   const displayName = playerName || `Player ${player}`;
+
+  // Create array for all 5 rounds
+  const roundsDisplay = Array.from({ length: 5 }, (_, i) => {
+    const roundNum = i + 1;
+    const historyItem = spellHistory.find(h => h.roundNumber === roundNum);
+    return {
+      roundNumber: roundNum,
+      spell: historyItem?.spell || null,
+      accuracy: historyItem?.accuracy || 0
+    };
+  });
 
   return (
     <Card 
@@ -58,16 +79,45 @@ export default function PlayerCard({
             <p className="text-xs text-muted-foreground mb-2">
               Last {player === 1 ? "Spell" : "Counter-Spell"} Cast
             </p>
-            <div className="bg-background/50 rounded-lg p-3 border border-border/30">
-              <p className={cn(
-                "font-serif font-bold",
-                player === 1 ? "text-primary" : "text-accent"
-              )} data-testid={`text-player-${player}-last-spell`}>
-                {lastSpell}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-last-accuracy`}>
-                {lastAccuracy}
-              </p>
+            <div className="bg-background/50 rounded-lg p-3 border border-border/30 min-h-[60px]">
+              {roundsDisplay.some(r => r.spell) ? (
+                <div className="flex flex-wrap gap-1">
+                  {roundsDisplay.map((round) => (
+                    <div 
+                      key={round.roundNumber}
+                      className={cn(
+                        "px-2 py-1 rounded text-xs border transition-opacity",
+                        round.spell ? "opacity-100" : "opacity-30 border-dashed",
+                        player === 1 ? "border-primary/30" : "border-accent/30"
+                      )}
+                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)` : `Раунд ${round.roundNumber}`}
+                    >
+                      {round.spell ? (
+                        <span className={cn(
+                          "font-serif font-semibold",
+                          player === 1 ? "text-primary" : "text-accent"
+                        )}>
+                          {round.spell.name}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={cn(
+                  "font-serif font-bold",
+                  player === 1 ? "text-primary" : "text-accent"
+                )} data-testid={`text-player-${player}-last-spell`}>
+                  {lastSpell}
+                </p>
+              )}
+              {!roundsDisplay.some(r => r.spell) && (
+                <p className="text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-last-accuracy`}>
+                  {lastAccuracy}
+                </p>
+              )}
             </div>
           </div>
           
