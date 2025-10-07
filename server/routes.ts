@@ -1,0 +1,291 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { insertGameSessionSchema, insertGestureAttemptSchema, type Point } from "@shared/schema";
+import { z } from "zod";
+
+// Gesture recognition function
+function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[]): number {
+  if (drawnGesture.length < 3 || targetPattern.length < 3) {
+    return 0;
+  }
+
+  // Normalize both gestures to 0-100 coordinate space
+  const normalizeGesture = (gesture: Point[]) => {
+    const minX = Math.min(...gesture.map(p => p.x));
+    const maxX = Math.max(...gesture.map(p => p.x));
+    const minY = Math.min(...gesture.map(p => p.y));
+    const maxY = Math.max(...gesture.map(p => p.y));
+    
+    const width = maxX - minX || 1;
+    const height = maxY - minY || 1;
+    
+    return gesture.map(p => ({
+      x: ((p.x - minX) / width) * 100,
+      y: ((p.y - minY) / height) * 100
+    }));
+  };
+
+  const normalizedDrawn = normalizeGesture(drawnGesture);
+  const normalizedTarget = normalizeGesture(targetPattern);
+
+  // Resample both gestures to have the same number of points
+  const resampleGesture = (gesture: Point[], targetLength: number) => {
+    if (gesture.length === targetLength) return gesture;
+    
+    const resampled: Point[] = [];
+    const step = (gesture.length - 1) / (targetLength - 1);
+    
+    for (let i = 0; i < targetLength; i++) {
+      const index = i * step;
+      const lowerIndex = Math.floor(index);
+      const upperIndex = Math.ceil(index);
+      
+      if (lowerIndex === upperIndex) {
+        resampled.push(gesture[lowerIndex]);
+      } else {
+        const t = index - lowerIndex;
+        const p1 = gesture[lowerIndex];
+        const p2 = gesture[upperIndex];
+        
+        resampled.push({
+          x: p1.x + t * (p2.x - p1.x),
+          y: p1.y + t * (p2.y - p1.y)
+        });
+      }
+    }
+    
+    return resampled;
+  };
+
+  const sampleCount = Math.max(normalizedDrawn.length, normalizedTarget.length);
+  const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
+  const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
+
+  // Calculate similarity using euclidean distance
+  let totalDistance = 0;
+  for (let i = 0; i < sampleCount; i++) {
+    const dx = resampledDrawn[i].x - resampledTarget[i].x;
+    const dy = resampledDrawn[i].y - resampledTarget[i].y;
+    totalDistance += Math.sqrt(dx * dx + dy * dy);
+  }
+
+  const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100); // Max diagonal distance
+  const similarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
+  
+  return Math.round(similarity * 100);
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Get all spells
+  app.get("/api/spells", async (_req, res) => {
+    try {
+      const spells = await storage.getSpells();
+      res.json(spells);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch spells" });
+    }
+  });
+
+  // Get spells by type
+  app.get("/api/spells/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      if (type !== "attack" && type !== "counter") {
+        return res.status(400).json({ message: "Invalid spell type" });
+      }
+      const spells = await storage.getSpellsByType(type);
+      res.json(spells);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch spells by type" });
+    }
+  });
+
+  // Create new game session
+  app.post("/api/sessions", async (req, res) => {
+    try {
+      const sessionData = insertGameSessionSchema.parse(req.body || {});
+      const session = await storage.createGameSession(sessionData);
+      res.json(session);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid session data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create game session" });
+    }
+  });
+
+  // Get game session
+  app.get("/api/sessions/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const session = await storage.getGameSession(id);
+      if (!session) {
+        return res.status(404).json({ message: "Game session not found" });
+      }
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch game session" });
+    }
+  });
+
+  // Update game session
+  app.patch("/api/sessions/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const session = await storage.updateGameSession(id, updates);
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update game session" });
+    }
+  });
+
+  // Recognize gesture and find matching spell
+  app.post("/api/sessions/:sessionId/recognize-gesture", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { gesture, playerId } = req.body;
+      
+      if (!gesture || !Array.isArray(gesture) || gesture.length < 3) {
+        return res.status(400).json({ message: "Invalid gesture data" });
+      }
+
+      const session = await storage.getGameSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Game session not found" });
+      }
+
+      // Get appropriate spells based on current phase
+      const spellType = session.currentPhase === "attack" ? "attack" : "counter";
+      let availableSpells = await storage.getSpellsByType(spellType);
+
+      // If it's counter phase, filter by spells that can counter the last attack
+      if (spellType === "counter" && session.lastAttackSpellId) {
+        const lastAttackSpell = await storage.getSpellById(session.lastAttackSpellId);
+        if (lastAttackSpell) {
+          availableSpells = availableSpells.filter(spell => 
+            spell.counters && Array.isArray(spell.counters) && 
+            spell.counters.includes(lastAttackSpell.id)
+          );
+        }
+      }
+
+      // Find best matching spell
+      let bestMatch = null;
+      let bestAccuracy = 0;
+
+      for (const spell of availableSpells) {
+        const accuracy = calculateGestureAccuracy(gesture, spell.gesturePattern as Point[]);
+        if (accuracy > bestAccuracy) {
+          bestAccuracy = accuracy;
+          bestMatch = spell;
+        }
+      }
+
+      // Require minimum 60% accuracy for recognition
+      if (!bestMatch || bestAccuracy < 60) {
+        return res.json({
+          recognized: false,
+          message: "Gesture not recognized. Try again with more precision.",
+          accuracy: bestAccuracy
+        });
+      }
+
+      // Create gesture attempt record
+      const attemptData = insertGestureAttemptSchema.parse({
+        sessionId,
+        playerId,
+        spellId: bestMatch.id,
+        drawnGesture: gesture,
+        accuracy: bestAccuracy,
+        successful: bestAccuracy >= 70
+      });
+
+      await storage.createGestureAttempt(attemptData);
+
+      // For counter spells, validate if it's the correct counter
+      let isValidCounter = true;
+      if (spellType === "counter" && session.lastAttackSpellId) {
+        const counters = bestMatch.counters as string[] | null;
+        isValidCounter = counters !== null && 
+          Array.isArray(counters) && 
+          counters.includes(session.lastAttackSpellId);
+      }
+
+      res.json({
+        recognized: true,
+        spell: bestMatch,
+        accuracy: bestAccuracy,
+        isValidCounter,
+        successful: bestAccuracy >= 70 && (spellType === "attack" || isValidCounter)
+      });
+
+    } catch (error) {
+      console.error("Gesture recognition error:", error);
+      res.status(500).json({ message: "Failed to recognize gesture" });
+    }
+  });
+
+  // Complete round and update game state
+  app.post("/api/sessions/:sessionId/complete-round", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { attackSpellId, counterSuccess, player1Accuracy, player2Accuracy } = req.body;
+
+      const session = await storage.getGameSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Game session not found" });
+      }
+
+      // Award points based on performance
+      let player1ScoreIncrease = 0;
+      let player2ScoreIncrease = 0;
+
+      // Player 1 gets points for successful attack
+      if (player1Accuracy >= 70) {
+        player1ScoreIncrease = Math.floor(player1Accuracy / 20); // 3-5 points based on accuracy
+      }
+
+      // Player 2 gets points for successful counter
+      if (counterSuccess && player2Accuracy >= 70) {
+        player2ScoreIncrease = Math.floor(player2Accuracy / 15); // 4-6 points based on accuracy
+      }
+
+      // Update game session
+      const currentRound = session.currentRound ?? 1;
+      const currentPlayer = session.currentPlayer ?? 1;
+      const player1Score = session.player1Score ?? 0;
+      const player2Score = session.player2Score ?? 0;
+      
+      const updates = {
+        currentRound: currentRound + 1,
+        currentPlayer: currentPlayer === 1 ? 2 : 1,
+        currentPhase: "attack" as const,
+        player1Score: player1Score + player1ScoreIncrease,
+        player2Score: player2Score + player2ScoreIncrease,
+        lastAttackSpellId: null,
+        gameStatus: (player1Score + player1ScoreIncrease >= 10 || 
+                    player2Score + player2ScoreIncrease >= 10) ? 
+                    "completed" as const : session.gameStatus
+      };
+
+      const updatedSession = await storage.updateGameSession(sessionId, updates);
+      
+      res.json({
+        session: updatedSession,
+        pointsAwarded: {
+          player1: player1ScoreIncrease,
+          player2: player2ScoreIncrease
+        }
+      });
+
+    } catch (error) {
+      console.error("Complete round error:", error);
+      res.status(500).json({ message: "Failed to complete round" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
