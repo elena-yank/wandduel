@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { type Point } from "@shared/schema";
 
 interface GestureCanvasProps {
@@ -7,12 +7,12 @@ interface GestureCanvasProps {
   className?: string;
 }
 
-export default function GestureCanvas({ 
-  onGestureComplete, 
-  isDisabled = false, 
-  className = "",
-  ...props 
-}: GestureCanvasProps) {
+export interface GestureCanvasRef {
+  clearCanvas: () => void;
+}
+
+const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
+  ({ onGestureComplete, isDisabled = false, className = "", ...props }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [gesturePoints, setGesturePoints] = useState<Point[]>([]);
@@ -31,6 +31,11 @@ export default function GestureCanvas({
     gesturePointsRef.current = [];
     isDrawingRef.current = false;
   }, []);
+
+  // Expose clearCanvas method to parent
+  useImperativeHandle(ref, () => ({
+    clearCanvas,
+  }), [clearCanvas]);
 
   const getCanvasPoint = useCallback((e: { clientX: number; clientY: number }): Point => {
     const canvas = canvasRef.current;
@@ -171,4 +176,8 @@ export default function GestureCanvas({
       />
     </div>
   );
-}
+});
+
+GestureCanvas.displayName = "GestureCanvas";
+
+export default GestureCanvas;

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type GameSession, type Spell, type Point, type SessionParticipant } from "@shared/schema";
-import GestureCanvas from "@/components/gesture-canvas";
+import GestureCanvas, { type GestureCanvasRef } from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
 import SpellDatabase from "@/components/spell-database";
 import FeedbackModal from "@/components/feedback-modal";
@@ -42,6 +42,7 @@ export default function DuelArena() {
   const [showSpellChoice, setShowSpellChoice] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
   const { toast } = useToast();
+  const canvasRef = useRef<GestureCanvasRef>(null);
 
   const roomId = params?.roomId;
 
@@ -542,6 +543,7 @@ export default function DuelArena() {
                   size="sm" 
                   className="bg-muted/20 hover:bg-muted/40"
                   disabled={userRole === "spectator"}
+                  onClick={() => canvasRef.current?.clearCanvas()}
                   data-testid="button-clear-canvas"
                 >
                   Clear
@@ -550,6 +552,7 @@ export default function DuelArena() {
               
               <div className="flex-1 flex items-center justify-center">
                 <GestureCanvas
+                  ref={canvasRef}
                   onGestureComplete={handleGestureComplete}
                   isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer())}
                   className="canvas-container"
