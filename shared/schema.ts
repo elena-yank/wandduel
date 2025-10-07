@@ -28,6 +28,16 @@ export const gameSessions = pgTable("game_sessions", {
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Session participants table
+export const sessionParticipants = pgTable("session_participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull().references(() => gameSessions.id),
+  userId: varchar("user_id").notNull(),
+  role: varchar("role", { enum: ["player", "spectator"] }).notNull(),
+  playerNumber: integer("player_number"), // 1 or 2 for players, null for spectators
+  joinedAt: text("joined_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Gesture attempts table
 export const gestureAttempts = pgTable("gesture_attempts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -50,6 +60,11 @@ export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
   createdAt: true,
 });
 
+export const insertSessionParticipantSchema = createInsertSchema(sessionParticipants).omit({
+  id: true,
+  joinedAt: true,
+});
+
 export const insertGestureAttemptSchema = createInsertSchema(gestureAttempts).omit({
   id: true,
   createdAt: true,
@@ -60,6 +75,8 @@ export type Spell = typeof spells.$inferSelect;
 export type InsertSpell = z.infer<typeof insertSpellSchema>;
 export type GameSession = typeof gameSessions.$inferSelect;
 export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
+export type SessionParticipant = typeof sessionParticipants.$inferSelect;
+export type InsertSessionParticipant = z.infer<typeof insertSessionParticipantSchema>;
 export type GestureAttempt = typeof gestureAttempts.$inferSelect;
 export type InsertGestureAttempt = z.infer<typeof insertGestureAttemptSchema>;
 

@@ -3,12 +3,14 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import RoleSelection from "@/pages/role-selection";
 import DuelArena from "@/pages/duel-arena";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/role-selection" component={RoleSelection} />
       <Route path="/" component={DuelArena} />
       <Route component={NotFound} />
     </Switch>

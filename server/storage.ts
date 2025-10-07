@@ -1,4 +1,4 @@
-import { type Spell, type InsertSpell, type GameSession, type InsertGameSession, type GestureAttempt, type InsertGestureAttempt, type Point } from "@shared/schema";
+import { type Spell, type InsertSpell, type GameSession, type InsertGameSession, type GestureAttempt, type InsertGestureAttempt, type SessionParticipant, type InsertSessionParticipant, type Point } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -14,6 +14,12 @@ export interface IStorage {
   getGameSession(id: string): Promise<GameSession | undefined>;
   updateGameSession(id: string, updates: Partial<GameSession>): Promise<GameSession>;
 
+  // Session Participants
+  addParticipant(participant: InsertSessionParticipant): Promise<SessionParticipant>;
+  getSessionParticipants(sessionId: string): Promise<SessionParticipant[]>;
+  getParticipantsByRole(sessionId: string, role: "player" | "spectator"): Promise<SessionParticipant[]>;
+  removeParticipant(participantId: string): Promise<void>;
+
   // Gesture Attempts
   createGestureAttempt(attempt: InsertGestureAttempt): Promise<GestureAttempt>;
   getGestureAttemptsBySession(sessionId: string): Promise<GestureAttempt[]>;
@@ -22,6 +28,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private spells: Map<string, Spell> = new Map();
   private gameSessions: Map<string, GameSession> = new Map();
+  private sessionParticipants: Map<string, SessionParticipant> = new Map();
   private gestureAttempts: Map<string, GestureAttempt> = new Map();
 
   constructor() {
@@ -190,6 +197,34 @@ export class MemStorage implements IStorage {
     const updatedSession = { ...session, ...updates };
     this.gameSessions.set(id, updatedSession);
     return updatedSession;
+  }
+
+  async addParticipant(insertParticipant: InsertSessionParticipant): Promise<SessionParticipant> {
+    const id = randomUUID();
+    const participant: SessionParticipant = {
+      ...insertParticipant,
+      id,
+      playerNumber: insertParticipant.playerNumber ?? null,
+      joinedAt: new Date().toISOString()
+    };
+    this.sessionParticipants.set(id, participant);
+    return participant;
+  }
+
+  async getSessionParticipants(sessionId: string): Promise<SessionParticipant[]> {
+    return Array.from(this.sessionParticipants.values()).filter(
+      p => p.sessionId === sessionId
+    );
+  }
+
+  async getParticipantsByRole(sessionId: string, role: "player" | "spectator"): Promise<SessionParticipant[]> {
+    return Array.from(this.sessionParticipants.values()).filter(
+      p => p.sessionId === sessionId && p.role === role
+    );
+  }
+
+  async removeParticipant(participantId: string): Promise<void> {
+    this.sessionParticipants.delete(participantId);
   }
 
   async createGestureAttempt(insertAttempt: InsertGestureAttempt): Promise<GestureAttempt> {

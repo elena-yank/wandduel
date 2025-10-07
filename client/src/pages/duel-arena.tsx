@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { type GameSession, type Spell, type Point } from "@shared/schema";
+import { type GameSession, type Spell, type Point, type SessionParticipant } from "@shared/schema";
 import GestureCanvas from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
 import SpellDatabase from "@/components/spell-database";
@@ -9,7 +10,7 @@ import FeedbackModal from "@/components/feedback-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Sparkles, Trophy, Info } from "lucide-react";
+import { BookOpen, Sparkles, Trophy, Info, Users, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type RecognitionResult = {
@@ -22,7 +23,9 @@ type RecognitionResult = {
 };
 
 export default function DuelArena() {
+  const [, setLocation] = useLocation();
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [feedbackResult, setFeedbackResult] = useState<RecognitionResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastGesture, setLastGesture] = useState<Point[]>([]);
@@ -41,24 +44,18 @@ export default function DuelArena() {
     enabled: !!currentSessionId,
   });
 
-  // Create new session mutation
-  const createSessionMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/sessions", {});
+  // Fetch session participants
+  const { data: participants = [] } = useQuery<SessionParticipant[]>({
+    queryKey: ["/api/sessions", currentSessionId, "participants"],
+    queryFn: async () => {
+      if (!currentSessionId) return [];
+      const res = await fetch(`/api/sessions/${currentSessionId}/participants`);
       return res.json();
     },
-    onSuccess: (newSession: GameSession) => {
-      setCurrentSessionId(newSession.id);
-      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create new game session",
-        variant: "destructive",
-      });
-    },
+    enabled: !!currentSessionId,
+    refetchInterval: 3000, // Refresh every 3 seconds
   });
+
 
   // Recognize gesture mutation
   const recognizeGestureMutation = useMutation({
@@ -127,14 +124,39 @@ export default function DuelArena() {
     },
   });
 
-  // Initialize session on component mount
+  // Check for role and session on component mount
   useEffect(() => {
-    if (!currentSessionId) {
-      createSessionMutation.mutate();
+    const role = localStorage.getItem("userRole");
+    const sessionId = localStorage.getItem("currentSessionId");
+    
+    // If no role, redirect to role selection
+    if (!role) {
+      setLocation("/role-selection");
+      return;
     }
-  }, [currentSessionId]);
+    
+    setUserRole(role);
+    
+    // If no session, redirect to role selection
+    if (!sessionId) {
+      setLocation("/role-selection");
+      return;
+    }
+    
+    setCurrentSessionId(sessionId);
+  }, [setLocation]);
 
   const handleGestureComplete = (gesture: Point[]) => {
+    // Check if user is spectator
+    if (userRole === "spectator") {
+      toast({
+        title: "Наблюдатель",
+        description: "Наблюдатели не могут рисовать заклинания",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLastGesture(gesture);
     if (gesture.length < 1) {
       toast({
@@ -148,6 +170,9 @@ export default function DuelArena() {
     const currentPlayer = roundPhase === "attack" ? 1 : 2;
     recognizeGestureMutation.mutate({ gesture, playerId: currentPlayer });
   };
+
+  const players = participants.filter(p => p.role === "player");
+  const spectators = participants.filter(p => p.role === "spectator");
 
   const handleCompleteRound = () => {
     if (!attackResult || !feedbackResult) {
@@ -231,6 +256,36 @@ export default function DuelArena() {
         </Card>
       </div>
 
+      {/* Participants Bar */}
+      <div className="max-w-7xl mx-auto mb-8">
+        <Card className="spell-card border-border/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Игроки: {players.length}/2</span>
+                </div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Наблюдатели: {spectators.length}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Ваша роль:</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                  userRole === "player" ? "bg-primary/20 text-primary" : "bg-secondary/20 text-secondary"
+                }`} data-testid="text-user-role">
+                  {userRole === "player" ? "Игрок" : "Наблюдатель"}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Main Game Area */}
       <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6 mb-8">
         {/* Player 1 Info */}
@@ -253,6 +308,7 @@ export default function DuelArena() {
                   variant="outline" 
                   size="sm" 
                   className="bg-muted/20 hover:bg-muted/40"
+                  disabled={userRole === "spectator"}
                   data-testid="button-clear-canvas"
                 >
                   Clear
@@ -262,16 +318,23 @@ export default function DuelArena() {
               <div className="flex-1 flex items-center justify-center">
                 <GestureCanvas
                   onGestureComplete={handleGestureComplete}
-                  isDisabled={recognizeGestureMutation.isPending}
+                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator"}
                   className="canvas-container"
                   data-testid="gesture-canvas"
                 />
               </div>
               
+              {userRole === "spectator" && (
+                <div className="text-center text-sm text-muted-foreground mt-2">
+                  <Eye className="w-4 h-4 inline mr-1" />
+                  Вы наблюдаете за дуэлью
+                </div>
+              )}
+              
               <div className="mt-4 flex gap-3">
                 <Button 
                   onClick={() => handleGestureComplete(lastGesture)}
-                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending}
+                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator"}
                   className="flex-1 glow-primary"
                   data-testid="button-recognize-spell"
                 >
@@ -281,7 +344,7 @@ export default function DuelArena() {
                 <Button 
                   onClick={handleCompleteRound}
                   variant="secondary"
-                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending}
+                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending || userRole === "spectator"}
                   data-testid="button-complete-round"
                 >
                   <Trophy className="w-4 h-4 mr-2" />

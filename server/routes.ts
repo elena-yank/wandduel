@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, type Point } from "@shared/schema";
+import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, insertSessionParticipantSchema, type Point } from "@shared/schema";
 import { z } from "zod";
 
 // Gesture recognition function
@@ -153,6 +153,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid session data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create game session" });
+    }
+  });
+
+  // Join session as player or spectator
+  app.post("/api/sessions/:sessionId/join", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { userId, role } = req.body;
+
+      if (!userId || !role) {
+        return res.status(400).json({ message: "userId and role are required" });
+      }
+
+      // Check if session exists
+      const session = await storage.getGameSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      // If joining as player, check if there's room
+      if (role === "player") {
+        const players = await storage.getParticipantsByRole(sessionId, "player");
+        if (players.length >= 2) {
+          return res.status(400).json({ 
+            message: "Game is full. You can join as a spectator.",
+            canJoinAsSpectator: true
+          });
+        }
+
+        // Assign player number
+        const playerNumber = players.length === 0 ? 1 : 2;
+        const participantData = insertSessionParticipantSchema.parse({
+          sessionId,
+          userId,
+          role: "player",
+          playerNumber
+        });
+
+        const participant = await storage.addParticipant(participantData);
+        return res.json(participant);
+      }
+
+      // Join as spectator
+      const participantData = insertSessionParticipantSchema.parse({
+        sessionId,
+        userId,
+        role: "spectator",
+        playerNumber: null
+      });
+
+      const participant = await storage.addParticipant(participantData);
+      res.json(participant);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid participant data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to join session" });
+    }
+  });
+
+  // Get session participants
+  app.get("/api/sessions/:sessionId/participants", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const participants = await storage.getSessionParticipants(sessionId);
+      res.json(participants);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get participants" });
     }
   });
 
