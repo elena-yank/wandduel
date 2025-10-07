@@ -276,7 +276,7 @@ export async function initializeSpells() {
   const mimbleWimbleSpell = await storage.createSpell(mimbleWimble);
   console.log("Created spell:", mimbleWimbleSpell.name);
 
-  // Create seventh attack spell: кОллошу (11 точек из SVG - башмак)
+  // Create seventh attack spell: кОллошу (12 точек из SVG - башмак)
   const colloshu: InsertSpell = {
     name: "кОллошу",
     type: "attack",
@@ -284,18 +284,19 @@ export async function initializeSpells() {
     colorName: "Бесцветный",
     description: "Башмак",
     gesturePattern: [
-      { x: 75.5, y: 147 },
-      { x: 75.5, y: 272.6 },
-      { x: 101.6, y: 323.1 },
-      { x: 136, y: 353 },
-      { x: 377.3, y: 353 },
-      { x: 416.4, y: 335.4 },
-      { x: 439.3, y: 299.4 },
-      { x: 439.3, y: 264 },
-      { x: 407.2, y: 221.3 },
-      { x: 337.5, y: 223.6 },
-      { x: 270.1, y: 220.5 },
-      { x: 231.2, y: 209.8 }
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 60.4, y: 117.6 },
+      { x: 60.4, y: 218.08 },
+      { x: 81.28, y: 258.48 },
+      { x: 108.8, y: 282.4 },
+      { x: 301.84, y: 282.4 },
+      { x: 333.12, y: 268.32 },
+      { x: 351.44, y: 239.52 },
+      { x: 351.44, y: 211.2 },
+      { x: 325.76, y: 177.04 },
+      { x: 270, y: 178.88 },
+      { x: 216.08, y: 176.4 },
+      { x: 184.96, y: 167.84 }
     ],
   };
 
@@ -310,8 +311,8 @@ export async function initializeSpells() {
     colorName: "Жёлтый",
     description: "Вертикальная линия",
     gesturePattern: [
-      { x: 500, y: 422.5 },
-      { x: 500, y: 64.8 }
+      { x: 200, y: 338 },    // SVG 500x500 -> Canvas 400x400: (250, 422.5) -> (200, 338)
+      { x: 200, y: 51.84 }   // SVG 500x500 -> Canvas 400x400: (250, 64.8) -> (200, 51.84)
     ],
     counters: [colloshuSpell.id],
   };
