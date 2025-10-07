@@ -15,6 +15,22 @@ export async function initializeSpells() {
   const alarteSpell = await storage.createSpell(alarte);
   console.log("Created spell:", alarteSpell.name);
 
+  // Create second attack spell: баубИллиус
+  const baubellius: InsertSpell = {
+    name: "баубИллиус",
+    type: "attack",
+    color: "#FFFACD",
+    colorName: "Бело-жёлтый",
+    description: "Направить на оппонента",
+    gesturePattern: [
+      { x: 10, y: 50 },
+      { x: 90, y: 50 }
+    ], // Horizontal line pointing at opponent
+  };
+
+  const baubelliusSpell = await storage.createSpell(baubellius);
+  console.log("Created spell:", baubelliusSpell.name);
+
   // Create counter spell: протЕго
   const protego: InsertSpell = {
     name: "протЕго",
@@ -28,6 +44,30 @@ export async function initializeSpells() {
 
   const protegoSpell = await storage.createSpell(protego);
   console.log("Created spell:", protegoSpell.name);
+
+  // Create counter spell: финИте инкантАтем (shield pattern)
+  const finiteIncantatem: InsertSpell = {
+    name: "финИте инкантАтем",
+    type: "counter",
+    color: "#DC143C",
+    colorName: "Красный",
+    description: "Щит",
+    gesturePattern: [
+      { x: 50, y: 10 },  // Top center
+      { x: 20, y: 15 },  // Left top
+      { x: 15, y: 50 },  // Left middle
+      { x: 35, y: 85 },  // Left bottom
+      { x: 50, y: 95 },  // Bottom point (shield tip)
+      { x: 65, y: 85 },  // Right bottom
+      { x: 85, y: 50 },  // Right middle
+      { x: 80, y: 15 },  // Right top
+      { x: 50, y: 10 }   // Back to top (close the shield)
+    ],
+    counters: [baubelliusSpell.id],
+  };
+
+  const finiteSpell = await storage.createSpell(finiteIncantatem);
+  console.log("Created spell:", finiteSpell.name);
 
   console.log("Spells initialized successfully!");
 }
