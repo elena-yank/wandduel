@@ -419,8 +419,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get best match
       const bestMatch = spellMatches[0];
 
-      // Require minimum 40% accuracy for recognition
-      if (!bestMatch || bestMatch.accuracy < 40) {
+      // Require minimum 50% accuracy for recognition
+      if (!bestMatch || bestMatch.accuracy < 50) {
         // If in counter phase and no spell matched, it's wrong defense
         if (spellType === "counter") {
           // Save failed gesture attempt so it appears in history with red X
@@ -451,8 +451,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find all successful matches (>= 50% accuracy) for attack spells
-      const successfulMatches = spellMatches.filter(m => m.accuracy >= 50);
+      // Find all successful matches (>= 60% accuracy) for attack spells
+      const successfulMatches = spellMatches.filter(m => m.accuracy >= 60);
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
@@ -495,13 +495,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spellId: selectedSpell.id,
         drawnGesture: gesture,
         accuracy: selectedAccuracy,
-        successful: selectedAccuracy >= 50 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 60 && (spellType === "attack" || isValidCounter)
       });
 
       await storage.createGestureAttempt(attemptData);
 
       // If it's a successful attack spell, update session phase and save the spell
-      if (spellType === "attack" && selectedAccuracy >= 50) {
+      if (spellType === "attack" && selectedAccuracy >= 60) {
         await storage.updateGameSession(sessionId, {
           currentPhase: "counter",
           lastAttackSpellId: selectedSpell.id,
@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accuracy: selectedAccuracy,
         isValidCounter,
         wrongDefenseUsed,
-        successful: selectedAccuracy >= 50 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 60 && (spellType === "attack" || isValidCounter)
       });
 
     } catch (error) {
@@ -549,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spellId,
         drawnGesture: gesture,
         accuracy,
-        successful: accuracy >= 50
+        successful: accuracy >= 60
       });
 
       const savedAttempt = await storage.createGestureAttempt(attemptData);
@@ -578,13 +578,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let player2ScoreIncrease = 0;
 
       // Player 1 gets points for successful attack
-      if (player1Accuracy >= 50) {
-        player1ScoreIncrease = Math.floor(player1Accuracy / 15); // 3-6 points based on accuracy
+      if (player1Accuracy >= 60) {
+        player1ScoreIncrease = Math.floor(player1Accuracy / 15); // 4-6 points based on accuracy
       }
 
       // Player 2 gets points for successful counter
-      if (counterSuccess && player2Accuracy >= 50) {
-        player2ScoreIncrease = Math.floor(player2Accuracy / 12); // 4-8 points based on accuracy
+      if (counterSuccess && player2Accuracy >= 60) {
+        player2ScoreIncrease = Math.floor(player2Accuracy / 12); // 5-8 points based on accuracy
       }
 
       // Update game session

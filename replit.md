@@ -25,10 +25,10 @@ All 14 spells (8 attack + 6 counter) now stored permanently in database. Note: �
 
 **Gesture Recognition Requirements (Maximum Strictness)**: The system now demands very precise gesture drawing for successful spell casting:
 - No similarity multiplier - uses raw similarity percentage for maximum strictness
-- Minimum accuracy for recognition: 40%
-- Minimum accuracy for successful spell cast: 50%
+- Minimum accuracy for recognition: 50%
+- Minimum accuracy for successful spell cast: 60%
 - Updated финИте инкантАтем pattern to realistic shield shape with wavy top line (two waves) and curved bottom, matching human-drawn examples
-- Adjusted scoring system to reward accuracy from 50%+ threshold (Player 1: accuracy/15 points, Player 2: accuracy/12 points)
+- Adjusted scoring system to reward accuracy from 60%+ threshold (Player 1: accuracy/15 points, Player 2: accuracy/12 points)
 
 ## User Preferences
 
