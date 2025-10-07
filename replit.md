@@ -8,6 +8,8 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 **Role System**: Users can join sessions as either active players (maximum 2) or spectators (unlimited). Players can cast spells and participate in duels, while spectators can observe the game but cannot interact with spell-casting controls. Role selection happens before entering the arena, with automatic fallback to spectator if player slots are full. Users can leave the duel at any time via the "Выйти" button in the arena header to return to the main lobby.
 
+**Spell Choice System**: When multiple attack spells share identical gesture patterns and both achieve ≥70% accuracy, the system displays a spell selection dialog for the player to choose which spell they intended to cast. Currently, "алАрте аскЕндаре" (golden) and "баубИллиус" (white-yellow) both use the same gesture (point at opponent) and trigger this choice dialog. After selection, the game proceeds normally with the chosen spell.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
