@@ -50,15 +50,29 @@ export async function initializeSpells() {
     colorName: "Красный",
     description: "Щит",
     gesturePattern: [
-      { x: 200, y: 120 },  // Top center
-      { x: 120, y: 130 },  // Left top curve
-      { x: 100, y: 200 },  // Left middle
-      { x: 130, y: 270 },  // Left bottom
-      { x: 200, y: 300 },  // Bottom point (shield tip)
-      { x: 270, y: 270 },  // Right bottom
-      { x: 300, y: 200 },  // Right middle
-      { x: 280, y: 130 },  // Right top curve
-      { x: 200, y: 120 }   // Back to top (close the shield)
+      // Wavy top line (two waves)
+      { x: 90, y: 80 },    // Start left
+      { x: 120, y: 100 },  // First wave down
+      { x: 150, y: 80 },   // First peak up
+      { x: 180, y: 70 },   // Middle dip
+      { x: 220, y: 80 },   // Second wave up
+      { x: 250, y: 100 },  // Second wave down
+      { x: 310, y: 80 },   // End right
+      // Right side down
+      { x: 310, y: 120 },
+      { x: 310, y: 180 },
+      { x: 300, y: 240 },
+      // Bottom curve (shield point)
+      { x: 270, y: 290 },
+      { x: 230, y: 320 },
+      { x: 200, y: 330 },  // Bottom center point
+      { x: 170, y: 320 },
+      { x: 130, y: 290 },
+      // Left side up
+      { x: 100, y: 240 },
+      { x: 90, y: 180 },
+      { x: 90, y: 120 },
+      { x: 90, y: 80 }     // Back to start
     ],
     counters: [baubelliusSpell.id],
   };

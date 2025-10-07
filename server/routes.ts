@@ -361,8 +361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get best match
       const bestMatch = spellMatches[0];
 
-      // Require minimum 40% accuracy for recognition
-      if (!bestMatch || bestMatch.accuracy < 40) {
+      // Require minimum 25% accuracy for recognition
+      if (!bestMatch || bestMatch.accuracy < 25) {
         return res.json({
           recognized: false,
           message: "Gesture not recognized. Try again with more precision.",
@@ -370,8 +370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find all successful matches (>= 50% accuracy) for attack spells
-      const successfulMatches = spellMatches.filter(m => m.accuracy >= 50);
+      // Find all successful matches (>= 35% accuracy) for attack spells
+      const successfulMatches = spellMatches.filter(m => m.accuracy >= 35);
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
@@ -397,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spellId: selectedSpell.id,
         drawnGesture: gesture,
         accuracy: selectedAccuracy,
-        successful: selectedAccuracy >= 50
+        successful: selectedAccuracy >= 35
       });
 
       await storage.createGestureAttempt(attemptData);
@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If it's a successful attack spell, update session phase and save the spell
-      if (spellType === "attack" && selectedAccuracy >= 50) {
+      if (spellType === "attack" && selectedAccuracy >= 35) {
         await storage.updateGameSession(sessionId, {
           currentPhase: "counter",
           lastAttackSpellId: selectedSpell.id,
@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spell: selectedSpell,
         accuracy: selectedAccuracy,
         isValidCounter,
-        successful: selectedAccuracy >= 50 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 35 && (spellType === "attack" || isValidCounter)
       });
 
     } catch (error) {
@@ -450,13 +450,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let player2ScoreIncrease = 0;
 
       // Player 1 gets points for successful attack
-      if (player1Accuracy >= 50) {
-        player1ScoreIncrease = Math.floor(player1Accuracy / 20); // 2-5 points based on accuracy
+      if (player1Accuracy >= 35) {
+        player1ScoreIncrease = Math.floor(player1Accuracy / 15); // 2-6 points based on accuracy
       }
 
       // Player 2 gets points for successful counter
-      if (counterSuccess && player2Accuracy >= 50) {
-        player2ScoreIncrease = Math.floor(player2Accuracy / 15); // 3-6 points based on accuracy
+      if (counterSuccess && player2Accuracy >= 35) {
+        player2ScoreIncrease = Math.floor(player2Accuracy / 12); // 2-8 points based on accuracy
       }
 
       // Update game session
