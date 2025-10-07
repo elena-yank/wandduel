@@ -237,6 +237,7 @@ export class MemStorage implements IStorage {
     const participant: SessionParticipant = {
       ...insertParticipant,
       id,
+      userName: insertParticipant.userName || "Player",
       playerNumber: insertParticipant.playerNumber ?? null,
       joinedAt: new Date().toISOString()
     };

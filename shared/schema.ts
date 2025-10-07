@@ -41,6 +41,7 @@ export const sessionParticipants = pgTable("session_participants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: varchar("session_id").notNull().references(() => gameSessions.id),
   userId: varchar("user_id").notNull(),
+  userName: text("user_name").notNull(),
   role: varchar("role", { enum: ["player", "spectator"] }).notNull(),
   playerNumber: integer("player_number"), // 1 or 2 for players, null for spectators
   joinedAt: text("joined_at").default(sql`CURRENT_TIMESTAMP`),
