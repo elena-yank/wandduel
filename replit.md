@@ -18,8 +18,10 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 - мИмбл вІмбл (blue, knot pattern, 26 points from SVG) added as counter spell for кАнтис attack
 - кОллошу (colorless, shoe pattern, 12 points from SVG) added as attack spell
 - релАшио (yellow, vertical line, 2 points from SVG) added as counter spell for кОллошу attack
+- локомОтор мОртис (red, boot pattern, 8 points from SVG) added as attack spell
+- діффІндо (counter version - green, V with hook, same pattern as attack version) added as counter spell for локомОтор мОртис
 
-All 12 spells (7 attack + 5 counter) now stored permanently in database.
+All 14 spells (8 attack + 6 counter) now stored permanently in database. Note: діффІндо exists as both attack and counter spell with identical gesture patterns.
 
 **Gesture Recognition Requirements (Maximum Strictness)**: The system now demands very precise gesture drawing for successful spell casting:
 - No similarity multiplier - uses raw similarity percentage for maximum strictness
