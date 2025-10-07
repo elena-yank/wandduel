@@ -24,6 +24,7 @@ export interface IStorage {
   addParticipant(participant: InsertSessionParticipant): Promise<SessionParticipant>;
   getSessionParticipants(sessionId: string): Promise<SessionParticipant[]>;
   getParticipantsByRole(sessionId: string, role: "player" | "spectator"): Promise<SessionParticipant[]>;
+  getParticipantByUserId(sessionId: string, userId: string): Promise<SessionParticipant | undefined>;
   removeParticipant(participantId: string): Promise<void>;
 
   // Gesture Attempts
@@ -252,6 +253,12 @@ export class MemStorage implements IStorage {
   async getParticipantsByRole(sessionId: string, role: "player" | "spectator"): Promise<SessionParticipant[]> {
     return Array.from(this.sessionParticipants.values()).filter(
       p => p.sessionId === sessionId && p.role === role
+    );
+  }
+
+  async getParticipantByUserId(sessionId: string, userId: string): Promise<SessionParticipant | undefined> {
+    return Array.from(this.sessionParticipants.values()).find(
+      p => p.sessionId === sessionId && p.userId === userId
     );
   }
 

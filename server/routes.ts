@@ -235,6 +235,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Session not found" });
       }
 
+      // Check if user is already a participant in this session
+      const existingParticipant = await storage.getParticipantByUserId(sessionId, userId);
+      if (existingParticipant) {
+        // User already joined this session, return their existing participant record
+        return res.json(existingParticipant);
+      }
+
       // If joining as player, check if there's room
       if (role === "player") {
         const players = await storage.getParticipantsByRole(sessionId, "player");
