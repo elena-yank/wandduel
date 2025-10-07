@@ -101,6 +101,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all spells
+  app.delete("/api/spells", async (_req, res) => {
+    try {
+      await storage.deleteAllSpells();
+      res.json({ message: "All spells deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete spells" });
+    }
+  });
+
   // Create new game session
   app.post("/api/sessions", async (req, res) => {
     try {

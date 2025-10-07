@@ -7,6 +7,7 @@ export interface IStorage {
   getSpellById(id: string): Promise<Spell | undefined>;
   getSpellsByType(type: "attack" | "counter"): Promise<Spell[]>;
   createSpell(spell: InsertSpell): Promise<Spell>;
+  deleteAllSpells(): Promise<void>;
 
   // Game Sessions
   createGameSession(session: InsertGameSession): Promise<GameSession>;
@@ -24,7 +25,6 @@ export class MemStorage implements IStorage {
   private gestureAttempts: Map<string, GestureAttempt> = new Map();
 
   constructor() {
-    this.initializeSpells();
   }
 
   private initializeSpells() {
@@ -154,6 +154,10 @@ export class MemStorage implements IStorage {
 
   async createSpell(insertSpell: InsertSpell): Promise<Spell> {
     return this.createSpellSync(insertSpell);
+  }
+
+  async deleteAllSpells(): Promise<void> {
+    this.spells.clear();
   }
 
   async createGameSession(insertSession: InsertGameSession): Promise<GameSession> {
