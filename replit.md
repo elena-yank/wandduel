@@ -12,10 +12,10 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 ## Recent Changes (October 2025)
 
-**Gesture Recognition Requirements (Strict Mode)**: The system now demands precise gesture drawing for successful spell casting:
-- Similarity multiplier: 400 (down from 1000) - significantly reduces tolerance for inaccurate drawings
-- Minimum accuracy for recognition: 40% (up from 25%)
-- Minimum accuracy for successful spell cast: 50% (up from 35%)
+**Gesture Recognition Requirements (Maximum Strictness)**: The system now demands very precise gesture drawing for successful spell casting:
+- No similarity multiplier - uses raw similarity percentage for maximum strictness
+- Minimum accuracy for recognition: 40%
+- Minimum accuracy for successful spell cast: 50%
 - Updated финИте инкантАтем pattern to realistic shield shape with wavy top line (two waves) and curved bottom, matching human-drawn examples
 - Adjusted scoring system to reward accuracy from 50%+ threshold (Player 1: accuracy/15 points, Player 2: accuracy/12 points)
 

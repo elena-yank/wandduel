@@ -96,8 +96,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100); // Max diagonal distance
   const similarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
   
-  // Multiply by 400 for more demanding gesture recognition, cap at 100%
-  return Math.min(100, Math.round(similarity * 400));
+  // No multiplier - use raw similarity percentage for maximum strictness
+  return Math.min(100, Math.round(similarity * 100));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
