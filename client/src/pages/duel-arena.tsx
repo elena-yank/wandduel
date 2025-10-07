@@ -28,6 +28,7 @@ export default function DuelArena() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [playerNumber, setPlayerNumber] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [feedbackResult, setFeedbackResult] = useState<RecognitionResult | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastGesture, setLastGesture] = useState<Point[]>([]);
@@ -152,12 +153,10 @@ export default function DuelArena() {
     
     setUserRole(role);
 
-    // Get player number if user is a player
-    if (role === "player") {
-      const playerNum = localStorage.getItem(`playerNumber:${roomId}`);
-      if (playerNum) {
-        setPlayerNumber(parseInt(playerNum));
-      }
+    // Get userId from sessionStorage (unique per tab)
+    const currentUserId = sessionStorage.getItem("userId");
+    if (currentUserId) {
+      setUserId(currentUserId);
     }
 
     // Get session for this room
@@ -194,9 +193,9 @@ export default function DuelArena() {
     }
 
     // Check if it's this player's turn
-    if (playerNumber) {
+    if (actualPlayerNumber) {
       const activePlayer = roundPhase === "attack" ? 1 : 2;
-      if (playerNumber !== activePlayer) {
+      if (actualPlayerNumber !== activePlayer) {
         toast({
           title: "Не ваш ход",
           description: `Сейчас ходит Player ${activePlayer}`,
@@ -216,8 +215,8 @@ export default function DuelArena() {
       return;
     }
 
-    if (playerNumber) {
-      recognizeGestureMutation.mutate({ gesture, playerId: playerNumber });
+    if (actualPlayerNumber) {
+      recognizeGestureMutation.mutate({ gesture, playerId: actualPlayerNumber });
     }
   };
 
@@ -229,6 +228,10 @@ export default function DuelArena() {
   const player2 = players.find(p => p.playerNumber === 2);
   const player1Name = player1?.userName || "Player 1";
   const player2Name = player2?.userName || "Player 2";
+
+  // Find current user's participant to get their actual player number
+  const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
+  const actualPlayerNumber = currentParticipant?.playerNumber || playerNumber;
 
   const handleLeave = () => {
     if (roomId) {
@@ -355,7 +358,7 @@ export default function DuelArena() {
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                   userRole === "player" ? "bg-primary/20 text-primary" : "bg-secondary/20 text-secondary"
                 }`} data-testid="text-user-role">
-                  {userRole === "player" ? `Player ${playerNumber}` : "Наблюдатель"}
+                  {userRole === "player" ? `Player ${actualPlayerNumber}` : "Наблюдатель"}
                 </span>
               </div>
             </div>
@@ -396,7 +399,7 @@ export default function DuelArena() {
               <div className="flex-1 flex items-center justify-center">
                 <GestureCanvas
                   onGestureComplete={handleGestureComplete}
-                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (playerNumber !== null && playerNumber !== getCurrentPlayer())}
+                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer())}
                   className="canvas-container"
                   data-testid="gesture-canvas"
                 />
@@ -409,7 +412,7 @@ export default function DuelArena() {
                 </div>
               )}
               
-              {userRole === "player" && playerNumber !== null && playerNumber !== getCurrentPlayer() && (
+              {userRole === "player" && actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer() && (
                 <div className="text-center text-sm text-muted-foreground mt-2">
                   Сейчас ходит Player {getCurrentPlayer()}
                 </div>
@@ -418,7 +421,7 @@ export default function DuelArena() {
               <div className="mt-4 flex gap-3">
                 <Button 
                   onClick={() => handleGestureComplete(lastGesture)}
-                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator" || (playerNumber !== null && playerNumber !== getCurrentPlayer())}
+                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer())}
                   className="flex-1 glow-primary"
                   data-testid="button-recognize-spell"
                 >
@@ -428,7 +431,7 @@ export default function DuelArena() {
                 <Button 
                   onClick={handleCompleteRound}
                   variant="secondary"
-                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending || userRole === "spectator" || playerNumber !== 2}
+                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending || userRole === "spectator" || actualPlayerNumber !== 2}
                   data-testid="button-complete-round"
                 >
                   <Trophy className="w-4 h-4 mr-2" />
