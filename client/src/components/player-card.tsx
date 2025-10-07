@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { User } from "lucide-react";
+import { User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Spell } from "@shared/schema";
 
@@ -41,7 +41,8 @@ export default function PlayerCard({
     return {
       roundNumber: roundNum,
       spell: historyItem?.spell || null,
-      accuracy: historyItem?.accuracy || 0
+      accuracy: historyItem?.accuracy || 0,
+      successful: historyItem?.successful ?? true
     };
   });
 
@@ -86,19 +87,24 @@ export default function PlayerCard({
                     <div 
                       key={round.roundNumber}
                       className={cn(
-                        "px-2 py-1 rounded text-xs border transition-opacity",
+                        "px-2 py-1 rounded text-xs border transition-opacity flex items-center gap-1",
                         round.spell ? "opacity-100" : "opacity-30 border-dashed",
-                        player === 1 ? "border-primary/30" : "border-accent/30"
+                        round.spell && !round.successful ? "border-destructive/50" : (player === 1 ? "border-primary/30" : "border-accent/30")
                       )}
-                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)` : `Раунд ${round.roundNumber}`}
+                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}` : `Раунд ${round.roundNumber}`}
                     >
                       {round.spell ? (
-                        <span className={cn(
-                          "font-serif font-semibold",
-                          player === 1 ? "text-primary" : "text-accent"
-                        )}>
-                          {round.spell.name}
-                        </span>
+                        <>
+                          {!round.successful && (
+                            <X className="w-3 h-3 text-destructive" />
+                          )}
+                          <span className={cn(
+                            "font-serif font-semibold",
+                            round.successful ? (player === 1 ? "text-primary" : "text-accent") : "text-destructive"
+                          )}>
+                            {round.spell.name}
+                          </span>
+                        </>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
