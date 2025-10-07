@@ -205,6 +205,19 @@ export default function DuelArena() {
     fetchSession();
   }, [roomId, setLocation, toast]);
 
+  const players = participants.filter(p => p.role === "player");
+  const spectators = participants.filter(p => p.role === "spectator");
+  
+  // Get player names
+  const player1 = players.find(p => p.playerNumber === 1);
+  const player2 = players.find(p => p.playerNumber === 2);
+  const player1Name = player1?.userName || "Player 1";
+  const player2Name = player2?.userName || "Player 2";
+
+  // Find current user's participant to get their actual player number
+  const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
+  const actualPlayerNumber = currentParticipant?.playerNumber || playerNumber;
+
   const handleGestureComplete = (gesture: Point[]) => {
     // Check if user is spectator
     if (userRole === "spectator") {
@@ -244,18 +257,28 @@ export default function DuelArena() {
     }
   };
 
-  const players = participants.filter(p => p.role === "player");
-  const spectators = participants.filter(p => p.role === "spectator");
-  
-  // Get player names
-  const player1 = players.find(p => p.playerNumber === 1);
-  const player2 = players.find(p => p.playerNumber === 2);
-  const player1Name = player1?.userName || "Player 1";
-  const player2Name = player2?.userName || "Player 2";
-
-  // Find current user's participant to get their actual player number
-  const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
-  const actualPlayerNumber = currentParticipant?.playerNumber || playerNumber;
+  // Auto-complete round after Player 2 counter spell
+  useEffect(() => {
+    if (
+      roundPhase === "counter" && 
+      attackResult && 
+      feedbackResult && 
+      feedbackResult.successful && 
+      actualPlayerNumber === 2
+    ) {
+      // Wait a moment to show the result, then auto-complete round
+      const timer = setTimeout(() => {
+        completeRoundMutation.mutate({
+          attackSpellId: attackResult.spell?.id || null,
+          counterSuccess: feedbackResult.successful && (feedbackResult.isValidCounter ?? false),
+          player1Accuracy: attackResult.accuracy,
+          player2Accuracy: feedbackResult.accuracy,
+        });
+      }, 1500); // 1.5 second delay to show result
+      
+      return () => clearTimeout(timer);
+    }
+  }, [roundPhase, attackResult, feedbackResult, actualPlayerNumber]);
 
   const handleLeave = () => {
     if (roomId) {
@@ -301,6 +324,65 @@ export default function DuelArena() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Game completed - show results
+  if (session?.gameStatus === "completed") {
+    const winner = (session.player1Score ?? 0) > (session.player2Score ?? 0) ? 1 : 
+                   (session.player2Score ?? 0) > (session.player1Score ?? 0) ? 2 : 
+                   null;
+    const winnerName = winner === 1 ? player1Name : winner === 2 ? player2Name : null;
+
+    return (
+      <div className="relative z-10 min-h-screen p-4 md:p-8 flex items-center justify-center">
+        <Card className="spell-card border-border/20 max-w-2xl w-full">
+          <CardContent className="p-12 text-center">
+            <Trophy className="w-20 h-20 mx-auto mb-6 text-primary pulse-glow" />
+            <h1 className="text-4xl md:text-5xl font-decorative decorative-text mb-4">
+              Дуэль завершена!
+            </h1>
+            
+            {winner ? (
+              <>
+                <p className="text-2xl font-serif mb-8">
+                  Победитель: <span className="text-primary font-bold">{winnerName}</span>
+                </p>
+              </>
+            ) : (
+              <p className="text-2xl font-serif mb-8 text-muted-foreground">
+                Ничья!
+              </p>
+            )}
+
+            <div className="flex justify-center gap-12 mb-8">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">{player1Name}</p>
+                <p className="text-4xl font-bold text-primary">{session.player1Score ?? 0}</p>
+              </div>
+              <Separator orientation="vertical" className="h-16" />
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">{player2Name}</p>
+                <p className="text-4xl font-bold text-accent">{session.player2Score ?? 0}</p>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground mb-8">
+              Всего раундов: {(session.currentRound ?? 1) - 1} из 5
+            </p>
+
+            <Button 
+              onClick={handleLeave}
+              className="glow-primary"
+              size="lg"
+              data-testid="button-return-lobby"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Вернуться в лобби
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -442,24 +524,15 @@ export default function DuelArena() {
                 </div>
               )}
               
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4">
                 <Button 
                   onClick={() => handleGestureComplete(lastGesture)}
                   disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer())}
-                  className="flex-1 glow-primary"
+                  className="w-full glow-primary"
                   data-testid="button-recognize-spell"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   {recognizeGestureMutation.isPending ? "Recognizing..." : "Recognize Spell"}
-                </Button>
-                <Button 
-                  onClick={handleCompleteRound}
-                  variant="secondary"
-                  disabled={roundPhase !== "counter" || !feedbackResult?.successful || completeRoundMutation.isPending || userRole === "spectator" || actualPlayerNumber !== 2}
-                  data-testid="button-complete-round"
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Complete Round
                 </Button>
               </div>
             </CardContent>

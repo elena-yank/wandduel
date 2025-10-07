@@ -444,21 +444,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update game session
       const currentRound = session.currentRound ?? 1;
-      const currentPlayer = session.currentPlayer ?? 1;
       const player1Score = session.player1Score ?? 0;
       const player2Score = session.player2Score ?? 0;
       
+      // Game ends after 5 rounds or when a player reaches winning score
+      const nextRound = currentRound + 1;
+      const isGameComplete = nextRound > 5;
+      
       const updates = {
-        currentRound: currentRound + 1,
-        currentPlayer: currentPlayer === 1 ? 2 : 1,
+        currentRound: nextRound,
+        currentPlayer: 1, // Player 1 always attacks
         currentPhase: "attack" as const,
         player1Score: player1Score + player1ScoreIncrease,
         player2Score: player2Score + player2ScoreIncrease,
         lastAttackSpellId: null,
         lastAttackAccuracy: null,
-        gameStatus: (player1Score + player1ScoreIncrease >= 10 || 
-                    player2Score + player2ScoreIncrease >= 10) ? 
-                    "completed" as const : session.gameStatus
+        gameStatus: isGameComplete ? "completed" as const : session.gameStatus
       };
 
       const updatedSession = await storage.updateGameSession(sessionId, updates);

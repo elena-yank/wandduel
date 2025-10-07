@@ -2,7 +2,7 @@
 
 ## Overview
 
-A magical spell-casting duel game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, calculating accuracy scores to determine successful casts. Players alternate between attacking and countering phases, with specific counter spells able to block certain attack spells. 
+A magical spell-casting duel game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, calculating accuracy scores to determine successful casts. Player 1 always attacks, Player 2 always defends - roles are fixed throughout the game. Each duel consists of exactly 5 rounds, after which the game automatically ends and displays the final results. 
 
 **Multi-Room System**: The application now supports multiple concurrent game rooms, allowing different groups of players to play simultaneously. Players start at a lobby where they can create a new room or join an existing one by entering a room ID. Each room has its own isolated game session, participants, and game state.
 
@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 
 **Gesture Accuracy Algorithm**: Server-side pattern matching compares drawn gestures against target patterns using normalized coordinates, resampling, and euclidean distance calculations. Returns accuracy percentage (0-100) and validates counter spell relationships.
 
-**Game Flow Management**: Tracks game sessions with phases (attack/counter/complete), round numbers, player scores, and current turn state. Validates spell casting based on game phase and enforces counter spell logic. Manages participant joining with role validation - returns error when attempting to join as player if 2 slots are filled, automatically suggesting spectator role instead.
+**Game Flow Management**: Tracks game sessions with phases (attack/counter), round numbers (1-5), player scores, and current turn state. Player 1 always attacks, Player 2 always defends - roles are fixed. Validates spell casting based on game phase and enforces counter spell logic. After Player 2 successfully defends, the round automatically completes and advances to the next round after a 1.5-second delay. Game automatically ends after 5 rounds, displaying final results and winner. Manages participant joining with role validation - returns error when attempting to join as player if 2 slots are filled, automatically suggesting spectator role instead.
 
 **Room Management**: Each game room has a unique UUID and is associated with exactly one game session. When a room is created, a session is automatically created for it. Rooms can be joined by entering the room ID. The GET /api/rooms/:roomId/session endpoint retrieves the session for a specific room.
 
@@ -46,7 +46,7 @@ Preferred communication style: Simple, everyday language.
 
 **Spells Schema**: Defines spell properties including name, type (attack/counter), color coding, gesture patterns (array of x/y points), and counter relationships. Uses PostgreSQL JSONB for storing point arrays and counter spell references.
 
-**Game Sessions Schema**: Tracks active games with current round, player turn, phase state, scores, and last attack spell. Includes game status (active/completed/paused), creation timestamp, and roomId foreign key linking to the parent room. Sessions are room-scoped.
+**Game Sessions Schema**: Tracks active games with current round (1-5), player turn (always 1 since Player 1 always attacks), phase state (attack/counter), scores, last attack spell ID, and last attack accuracy. Includes game status (active/completed), creation timestamp, and roomId foreign key linking to the parent room. Sessions are room-scoped. Game automatically completes when round exceeds 5.
 
 **Gesture Attempts Schema**: Records each player's drawing attempt with session reference, player ID, spell ID, drawn gesture points, calculated accuracy score, and success status. Attempts are indirectly room-scoped through sessionId.
 
