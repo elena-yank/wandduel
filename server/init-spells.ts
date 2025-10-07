@@ -9,7 +9,7 @@ export async function initializeSpells() {
     color: "#FFD700",
     colorName: "Золотой",
     description: "Направить на оппонента",
-    gesturePattern: [{ x: 50, y: 50 }],
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
   };
 
   const alarteSpell = await storage.createSpell(alarte);
@@ -22,7 +22,7 @@ export async function initializeSpells() {
     color: "#E5E5E5",
     colorName: "Бесцветный",
     description: "Направить на объект",
-    gesturePattern: [{ x: 50, y: 50 }],
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
     counters: [alarteSpell.id],
   };
 
