@@ -112,9 +112,13 @@ export default function DuelArena() {
       
       // Handle wrong defense used - end round immediately
       if (result.wrongDefenseUsed) {
+        const description = result.spell?.name 
+          ? `Вы использовали ${result.spell.name}, но это не защищает от данной атаки. Раунд завершен.`
+          : "Вы использовали неправильное заклинание. Раунд завершен.";
+          
         toast({
           title: "Неправильная защита!",
-          description: `Вы использовали ${result.spell?.name}, но это не защищает от данной атаки. Раунд завершен.`,
+          description,
           variant: "destructive",
         });
         
@@ -136,6 +140,9 @@ export default function DuelArena() {
             player2Accuracy: result.accuracy || 0
           });
         }, 1500);
+        
+        // Invalidate spell history to show the failed attempt
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
         return;
       }
       

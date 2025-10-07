@@ -423,11 +423,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!bestMatch || bestMatch.accuracy < 25) {
         // If in counter phase and no spell matched, it's wrong defense
         if (spellType === "counter") {
+          // Save failed gesture attempt so it appears in history with red X
+          const attemptData = insertGestureAttemptSchema.parse({
+            sessionId,
+            playerId,
+            roundNumber: session.currentRound,
+            spellId: bestMatch?.spell.id || null,
+            drawnGesture: gesture,
+            accuracy: bestMatch?.accuracy || 0,
+            successful: false
+          });
+          await storage.createGestureAttempt(attemptData);
+          
           return res.json({
             recognized: false,
             wrongDefenseUsed: true,
+            spell: bestMatch?.spell || null,
             message: "Неверная защита! Вы использовали неправильное движение.",
-            accuracy: 0
+            accuracy: bestMatch?.accuracy || 0
           });
         }
         
