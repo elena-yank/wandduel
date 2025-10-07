@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, insertSessionParticipantSchema, type Point } from "@shared/schema";
+import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, insertSessionParticipantSchema, insertGameRoomSchema, type Point } from "@shared/schema";
 import { z } from "zod";
 
 // Gesture recognition function
@@ -139,6 +139,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid spell data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create spell" });
+    }
+  });
+
+  // Create new game room
+  app.post("/api/rooms", async (req, res) => {
+    try {
+      const { hostName } = req.body;
+      if (!hostName) {
+        return res.status(400).json({ message: "hostName is required" });
+      }
+
+      const roomData = insertGameRoomSchema.parse({ hostName });
+      const room = await storage.createGameRoom(roomData);
+      
+      // Create a session for this room
+      const sessionData = insertGameSessionSchema.parse({ roomId: room.id });
+      const session = await storage.createGameSession(sessionData);
+      
+      res.json({ room, session });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid room data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create room" });
+    }
+  });
+
+  // Get room by ID
+  app.get("/api/rooms/:roomId", async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      const room = await storage.getGameRoom(roomId);
+      
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
+      }
+      
+      res.json(room);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get room" });
+    }
+  });
+
+  // Get room session
+  app.get("/api/rooms/:roomId/session", async (req, res) => {
+    try {
+      const { roomId } = req.params;
+      
+      // Check if room exists
+      const room = await storage.getGameRoom(roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
+      }
+
+      // Get session for this room
+      const session = await storage.getGameSessionByRoomId(roomId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found for this room" });
+      }
+      
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get room session" });
     }
   });
 
