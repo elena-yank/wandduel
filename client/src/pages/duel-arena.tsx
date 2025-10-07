@@ -6,7 +6,6 @@ import { type GameSession, type Spell, type Point, type SessionParticipant } fro
 import GestureCanvas, { type GestureCanvasRef } from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
 import SpellDatabase from "@/components/spell-database";
-import FeedbackModal from "@/components/feedback-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -33,8 +32,6 @@ export default function DuelArena() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [playerNumber, setPlayerNumber] = useState<number | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [feedbackResult, setFeedbackResult] = useState<RecognitionResult | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
   const [lastGesture, setLastGesture] = useState<Point[]>([]);
   const [roundPhase, setRoundPhase] = useState<"attack" | "counter" | "complete">("attack");
   const [attackResult, setAttackResult] = useState<RecognitionResult | null>(null);
@@ -107,9 +104,6 @@ export default function DuelArena() {
         return;
       }
 
-      setFeedbackResult(result);
-      setShowFeedback(true);
-      
       // Handle wrong defense used - end round immediately
       if (result.wrongDefenseUsed) {
         const description = result.spell?.name 
@@ -188,7 +182,6 @@ export default function DuelArena() {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
       setAttackResult(null);
       setCounterResult(null);
-      setFeedbackResult(null);
       setShowRoundComplete(false);
     },
     onError: () => {
@@ -356,24 +349,6 @@ export default function DuelArena() {
     setLocation("/");
   };
 
-  const handleCompleteRound = () => {
-    if (!attackResult || !feedbackResult) {
-      toast({
-        title: "Round Incomplete",
-        description: "Both players must cast spells to complete the round",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    completeRoundMutation.mutate({
-      attackSpellId: attackResult.spell?.id || null,
-      counterSuccess: feedbackResult.successful && (feedbackResult.isValidCounter ?? false),
-      player1Accuracy: attackResult.accuracy,
-      player2Accuracy: feedbackResult.accuracy,
-    });
-  };
-
   const handleSpellChoice = async (choice: { spell: Spell; accuracy: number }) => {
     // Close dialog
     setShowSpellChoice(false);
@@ -388,9 +363,6 @@ export default function DuelArena() {
     };
 
     // Process as normal recognition
-    setFeedbackResult(result);
-    setShowFeedback(true);
-    
     if (roundPhase === "attack") {
       setAttackResult(result);
       
@@ -766,15 +738,6 @@ export default function DuelArena() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Feedback Modal */}
-      <FeedbackModal
-        isOpen={showFeedback}
-        onClose={() => setShowFeedback(false)}
-        result={feedbackResult}
-        isCounterPhase={roundPhase === "counter"}
-        data-testid="feedback-modal"
-      />
 
       {/* Round Complete Dialog */}
       <Dialog open={showRoundComplete} onOpenChange={setShowRoundComplete}>
