@@ -458,19 +458,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedSpell = bestMatch.spell;
       const selectedAccuracy = bestMatch.accuracy;
 
-      // Create gesture attempt record
-      const attemptData = insertGestureAttemptSchema.parse({
-        sessionId,
-        playerId,
-        roundNumber: session.currentRound,
-        spellId: selectedSpell.id,
-        drawnGesture: gesture,
-        accuracy: selectedAccuracy,
-        successful: selectedAccuracy >= 35
-      });
-
-      await storage.createGestureAttempt(attemptData);
-
       // For counter spells, validate if it's the correct counter
       let isValidCounter = true;
       let wrongDefenseUsed = false;
@@ -486,6 +473,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           wrongDefenseUsed = true;
         }
       }
+
+      // Create gesture attempt record with correct successful value
+      const attemptData = insertGestureAttemptSchema.parse({
+        sessionId,
+        playerId,
+        roundNumber: session.currentRound,
+        spellId: selectedSpell.id,
+        drawnGesture: gesture,
+        accuracy: selectedAccuracy,
+        successful: selectedAccuracy >= 35 && (spellType === "attack" || isValidCounter)
+      });
+
+      await storage.createGestureAttempt(attemptData);
 
       // If it's a successful attack spell, update session phase and save the spell
       if (spellType === "attack" && selectedAccuracy >= 35) {
