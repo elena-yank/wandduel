@@ -4,7 +4,7 @@
 
 A magical spell-casting duel game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, calculating accuracy scores to determine successful casts. Players alternate between attacking and countering phases, with specific counter spells able to block certain attack spells. 
 
-**Role System**: Users can join sessions as either active players (maximum 2) or spectators (unlimited). Players can cast spells and participate in duels, while spectators can observe the game but cannot interact with spell-casting controls. Role selection happens before entering the arena, with automatic fallback to spectator if player slots are full.
+**Role System**: Users can join sessions as either active players (maximum 2) or spectators (unlimited). Players can cast spells and participate in duels, while spectators can observe the game but cannot interact with spell-casting controls. Role selection happens before entering the arena, with automatic fallback to spectator if player slots are full. Users can leave the duel at any time via the "Выйти" button in the arena header to return to role selection.
 
 ## User Preferences
 

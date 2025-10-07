@@ -10,7 +10,7 @@ import FeedbackModal from "@/components/feedback-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { BookOpen, Sparkles, Trophy, Info, Users, Eye } from "lucide-react";
+import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type RecognitionResult = {
@@ -174,6 +174,14 @@ export default function DuelArena() {
   const players = participants.filter(p => p.role === "player");
   const spectators = participants.filter(p => p.role === "spectator");
 
+  const handleLeave = () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("sessionId");
+    localStorage.removeItem("playerNumber");
+    setLocation("/role-selection");
+  };
+
   const handleCompleteRound = () => {
     if (!attackResult || !feedbackResult) {
       toast({
@@ -214,13 +222,23 @@ export default function DuelArena() {
   return (
     <div className="relative z-10 min-h-screen p-4 md:p-8">
       {/* Header */}
-      <header className="text-center mb-8 md:mb-12">
+      <header className="text-center mb-8 md:mb-12 relative">
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-decorative decorative-text mb-4 tracking-wider">
           MAGICAL DUEL ARENA
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground font-serif">
           Cast your spells with precision and courage
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLeave}
+          className="absolute top-0 right-0 gap-2"
+          data-testid="button-leave-duel"
+        >
+          <LogOut className="w-4 h-4" />
+          Выйти
+        </Button>
       </header>
 
       {/* Game Status Bar */}
