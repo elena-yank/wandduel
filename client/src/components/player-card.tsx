@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface PlayerCardProps {
   player: 1 | 2;
+  playerName?: string;
   isActive: boolean;
   lastSpell: string;
   lastAccuracy: string;
@@ -12,6 +13,7 @@ interface PlayerCardProps {
 
 export default function PlayerCard({
   player,
+  playerName,
   isActive,
   lastSpell,
   lastAccuracy,
@@ -19,7 +21,8 @@ export default function PlayerCard({
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
-  const playerRole = player === 1 ? "Attacker" : "Defender";
+  const playerRole = player === 1 ? "Атакующий" : "Защищающийся";
+  const displayName = playerName || `Player ${player}`;
 
   return (
     <Card 
@@ -42,7 +45,7 @@ export default function PlayerCard({
           </div>
           <div>
             <h3 className="text-xl font-serif font-bold text-foreground" data-testid={`text-player-${player}-name`}>
-              Player {player}
+              {displayName}
             </h3>
             <p className="text-sm text-muted-foreground" data-testid={`text-player-${player}-role`}>
               {playerRole}
