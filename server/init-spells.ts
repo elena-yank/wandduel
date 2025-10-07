@@ -75,8 +75,7 @@ export async function initializeSpells() {
       // Left side straight up (SYMMETRICAL)
       { x: 80, y: 240 },
       { x: 80, y: 190 },
-      { x: 80, y: 140 },
-      { x: 80, y: 90 }     // Back to start
+      { x: 80, y: 140 }
     ],
     counters: [baubelliusSpell.id],
   };
