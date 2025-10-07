@@ -137,6 +137,30 @@ export default function DuelArena() {
     }
   }, [session?.currentPhase]);
 
+  // Load attack spell info when in counter phase
+  useEffect(() => {
+    const loadAttackSpell = async () => {
+      if (session?.currentPhase === "counter" && session.lastAttackSpellId) {
+        // Fetch the attack spell details
+        const spell = allSpells.find(s => s.id === session.lastAttackSpellId);
+        if (spell && !attackResult) {
+          // Set attack result from session data
+          setAttackResult({
+            recognized: true,
+            spell: spell,
+            accuracy: session.lastAttackAccuracy || 100,
+            successful: true
+          });
+        }
+      } else if (session?.currentPhase === "attack") {
+        // Clear attack result when new round starts
+        setAttackResult(null);
+      }
+    };
+
+    loadAttackSpell();
+  }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, allSpells]);
+
   // Check for role and session on component mount
   useEffect(() => {
     if (!roomId) {

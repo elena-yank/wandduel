@@ -203,6 +203,7 @@ export class MemStorage implements IStorage {
       player1Score: 0,
       player2Score: 0,
       lastAttackSpellId: null,
+      lastAttackAccuracy: null,
       gameStatus: "active",
       ...insertSession, 
       id, 

@@ -32,6 +32,7 @@ export const gameSessions = pgTable("game_sessions", {
   player1Score: integer("player1_score").default(0),
   player2Score: integer("player2_score").default(0),
   lastAttackSpellId: varchar("last_attack_spell_id"),
+  lastAttackAccuracy: integer("last_attack_accuracy"),
   gameStatus: varchar("game_status", { enum: ["active", "completed", "paused"] }).default("active"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });

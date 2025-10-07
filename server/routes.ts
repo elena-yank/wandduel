@@ -394,6 +394,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           counters.includes(session.lastAttackSpellId);
       }
 
+      // If it's a successful attack spell, update session phase and save the spell
+      if (spellType === "attack" && bestAccuracy >= 70) {
+        await storage.updateGameSession(sessionId, {
+          currentPhase: "counter",
+          lastAttackSpellId: bestMatch.id,
+          lastAttackAccuracy: bestAccuracy
+        });
+      }
+
       res.json({
         recognized: true,
         spell: bestMatch,
@@ -446,6 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         player1Score: player1Score + player1ScoreIncrease,
         player2Score: player2Score + player2ScoreIncrease,
         lastAttackSpellId: null,
+        lastAttackAccuracy: null,
         gameStatus: (player1Score + player1ScoreIncrease >= 10 || 
                     player2Score + player2ScoreIncrease >= 10) ? 
                     "completed" as const : session.gameStatus
