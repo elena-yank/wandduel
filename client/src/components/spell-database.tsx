@@ -170,6 +170,14 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
     );
   };
 
+  // Find counter spell for an attack spell
+  const findCounterSpell = (attackSpell: Spell): Spell | null => {
+    return counterSpells.find(counter => {
+      const counters = counter.counters as string[] | null;
+      return counters && Array.isArray(counters) && counters.includes(attackSpell.id);
+    }) || null;
+  };
+
   return (
     <div className="max-w-7xl mx-auto" {...props}>
       <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
@@ -177,42 +185,42 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
         Spell Grimoire
       </h2>
       
-      <div className="grid md:grid-cols-2 gap-6 mb-8">
-        {/* Attack Spells */}
-        <Card className="spell-card border-border/20">
-          <CardContent className="p-6">
-            <h3 className="text-xl font-serif font-bold text-destructive mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-destructive"></span>
-              Attack Spells
-            </h3>
-            
-            <div className="space-y-3" data-testid="attack-spells-list">
-              {attackSpells.length > 0 ? (
-                attackSpells.map(spell => renderSpellCard(spell, false))
-              ) : (
-                <p className="text-muted-foreground text-sm">No attack spells available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Counter Spells */}
-        <Card className="spell-card border-border/20">
-          <CardContent className="p-6">
-            <h3 className="text-xl font-serif font-bold text-accent mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent"></span>
-              Counter Spells
-            </h3>
-            
-            <div className="space-y-3" data-testid="counter-spells-list">
-              {counterSpells.length > 0 ? (
-                counterSpells.map(spell => renderSpellCard(spell, true))
-              ) : (
-                <p className="text-muted-foreground text-sm">No counter spells available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Attack-Counter Mappings */}
+      <div className="space-y-4 mb-8">
+        {attackSpells.map(attackSpell => {
+          const counterSpell = findCounterSpell(attackSpell);
+          return (
+            <Card key={attackSpell.id} className="spell-card border-border/20">
+              <CardContent className="p-6">
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Attack Spell */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-destructive mb-2 flex items-center gap-2">
+                      <Wand2 className="w-4 h-4" />
+                      Атакующее заклинание
+                    </h4>
+                    {renderSpellCard(attackSpell, false)}
+                  </div>
+                  
+                  {/* Counter Spell */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-accent mb-2 flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Контр-заклинание
+                    </h4>
+                    {counterSpell ? (
+                      renderSpellCard(counterSpell, true)
+                    ) : (
+                      <div className="bg-background/30 rounded-lg p-4 border border-muted/20 text-center">
+                        <p className="text-muted-foreground text-sm">Нет контр-заклинания</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Gesture Pattern Dialog */}
