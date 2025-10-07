@@ -41,6 +41,7 @@ export default function DuelArena() {
   const [showRoundComplete, setShowRoundComplete] = useState(false);
   const { toast } = useToast();
   const canvasRef = useRef<GestureCanvasRef>(null);
+  const roundCompleteShownForRound = useRef<number | null>(null);
 
   const roomId = params?.roomId;
 
@@ -333,20 +334,24 @@ export default function DuelArena() {
 
   // Show round complete dialog after Player 2 counter spell
   useEffect(() => {
+    const currentRound = session?.currentRound || 1;
+    
     if (
       roundPhase === "counter" && 
       attackResult && 
       counterResult && 
-      !showRoundComplete
+      !showRoundComplete &&
+      roundCompleteShownForRound.current !== currentRound
     ) {
       // Wait a moment to show the result, then show round complete dialog
       const timer = setTimeout(() => {
         setShowRoundComplete(true);
+        roundCompleteShownForRound.current = currentRound;
       }, 1500); // 1.5 second delay to show result
       
       return () => clearTimeout(timer);
     }
-  }, [roundPhase, attackResult, counterResult, showRoundComplete]);
+  }, [roundPhase, attackResult, counterResult, showRoundComplete, session?.currentRound]);
 
   const handleLeave = () => {
     if (roomId) {

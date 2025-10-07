@@ -171,6 +171,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
         style={{
           cursor: isDisabled ? "not-allowed" : "crosshair",
           opacity: isDisabled ? 0.5 : 1,
+          touchAction: "none",
         }}
         {...props}
       />
