@@ -42,7 +42,7 @@ export async function initializeSpells() {
   const protegoSpell = await storage.createSpell(protego);
   console.log("Created spell:", protegoSpell.name);
 
-  // Create counter spell: финИте инкантАтем (simplified shield pattern)
+  // Create counter spell: финИте инкантАтем (shield pattern - 24 points)
   const finiteIncantatem: InsertSpell = {
     name: "финИте инкантАтем",
     type: "counter",
@@ -50,18 +50,32 @@ export async function initializeSpells() {
     colorName: "Красный",
     description: "Щит",
     gesturePattern: [
-      // Simple rounded top
-      { x: 100, y: 100 },   // Top left
-      { x: 200, y: 80 },    // Top center (slightly up)
-      { x: 300, y: 100 },   // Top right
-      // Right side down
-      { x: 300, y: 200 },   
-      // Bottom rounded
-      { x: 250, y: 300 },   // Bottom right curve
-      { x: 200, y: 320 },   // Bottom center
-      { x: 150, y: 300 },   // Bottom left curve
-      // Left side up
-      { x: 100, y: 200 }
+      // Smooth wavy top line - left to right
+      { x: 80, y: 90 },    // Start left
+      { x: 110, y: 100 },  // First wave start
+      { x: 140, y: 110 },  // First dip
+      { x: 170, y: 100 },  // Between waves
+      { x: 200, y: 90 },   // Center peak
+      { x: 230, y: 100 },  // Between waves
+      { x: 260, y: 110 },  // Second dip
+      { x: 290, y: 100 },  // Second wave end
+      { x: 320, y: 90 },   // End right
+      // Right side straight down
+      { x: 320, y: 140 },
+      { x: 320, y: 190 },
+      { x: 320, y: 240 },
+      // Bottom curve - right to left (SYMMETRICAL)
+      { x: 300, y: 280 },
+      { x: 270, y: 310 },
+      { x: 235, y: 330 },
+      { x: 200, y: 340 },  // Bottom center
+      { x: 165, y: 330 },  // Mirror of right side
+      { x: 130, y: 310 },  // Mirror of right side
+      { x: 100, y: 280 },  // Mirror of right side
+      // Left side straight up (SYMMETRICAL)
+      { x: 80, y: 240 },
+      { x: 80, y: 190 },
+      { x: 80, y: 140 }
     ],
     counters: [baubelliusSpell.id],
   };
