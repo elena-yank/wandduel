@@ -524,6 +524,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Save spell attempt (for when user chooses from multiple matches)
+  app.post("/api/sessions/:sessionId/save-spell-attempt", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { spellId, playerId, accuracy, gesture } = req.body;
+
+      const session = await storage.getGameSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Game session not found" });
+      }
+
+      const attemptData = insertGestureAttemptSchema.parse({
+        sessionId,
+        playerId,
+        roundNumber: session.currentRound,
+        spellId,
+        drawnGesture: gesture,
+        accuracy,
+        successful: accuracy >= 35
+      });
+
+      await storage.createGestureAttempt(attemptData);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Save spell attempt error:", error);
+      res.status(500).json({ message: "Failed to save spell attempt" });
+    }
+  });
+
   // Complete round and update game state
   app.post("/api/sessions/:sessionId/complete-round", async (req, res) => {
     try {

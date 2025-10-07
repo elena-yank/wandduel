@@ -394,6 +394,23 @@ export default function DuelArena() {
     if (roundPhase === "attack") {
       setAttackResult(result);
       
+      // Save spell attempt to history
+      if (currentSessionId && actualPlayerNumber) {
+        try {
+          await apiRequest("POST", `/api/sessions/${currentSessionId}/save-spell-attempt`, {
+            spellId: choice.spell.id,
+            playerId: actualPlayerNumber,
+            accuracy: choice.accuracy,
+            gesture: lastGesture
+          });
+          
+          // Invalidate spell history to show the new attempt
+          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
+        } catch (error) {
+          console.error("Failed to save spell attempt:", error);
+        }
+      }
+      
       // Update session with selected attack spell
       if (currentSessionId) {
         try {
