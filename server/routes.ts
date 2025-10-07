@@ -81,7 +81,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return resampled;
   };
 
-  const sampleCount = Math.max(normalizedDrawn.length, normalizedTarget.length);
+  // Use fixed sample count for better matching between gestures with different point counts
+  const sampleCount = 64; // Fixed sample count for consistent comparison
   const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
   const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
 
@@ -387,19 +388,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate accuracy for all spells
       const spellMatches = availableSpells.map(spell => {
-        const patternPoints = (spell.gesturePattern as Point[]).length;
-        const gesturePoints = gesture.length;
-        
-        // Check for gesture complexity mismatch
-        // If pattern has many points (>10) but gesture has few (<10), it's wrong
-        if (patternPoints > 10 && gesturePoints < 10) {
-          return { spell, accuracy: 0 };
-        }
-        // If pattern has few points (<10) but gesture has many (>10), it's wrong  
-        if (patternPoints < 10 && gesturePoints > 10) {
-          return { spell, accuracy: 0 };
-        }
-        
         return {
           spell,
           accuracy: calculateGestureAccuracy(gesture, spell.gesturePattern as Point[])
