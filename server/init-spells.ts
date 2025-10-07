@@ -276,5 +276,48 @@ export async function initializeSpells() {
   const mimbleWimbleSpell = await storage.createSpell(mimbleWimble);
   console.log("Created spell:", mimbleWimbleSpell.name);
 
+  // Create seventh attack spell: кОллошу (11 точек из SVG - башмак)
+  const colloshu: InsertSpell = {
+    name: "кОллошу",
+    type: "attack",
+    color: "#E5E5E5",
+    colorName: "Бесцветный",
+    description: "Башмак",
+    gesturePattern: [
+      { x: 75.5, y: 147 },
+      { x: 75.5, y: 272.6 },
+      { x: 101.6, y: 323.1 },
+      { x: 136, y: 353 },
+      { x: 377.3, y: 353 },
+      { x: 416.4, y: 335.4 },
+      { x: 439.3, y: 299.4 },
+      { x: 439.3, y: 264 },
+      { x: 407.2, y: 221.3 },
+      { x: 337.5, y: 223.6 },
+      { x: 270.1, y: 220.5 },
+      { x: 231.2, y: 209.8 }
+    ],
+  };
+
+  const colloshuSpell = await storage.createSpell(colloshu);
+  console.log("Created spell:", colloshuSpell.name);
+
+  // Create counter spell: релАшио (2 точки из SVG - вертикальная линия)
+  const relaxio: InsertSpell = {
+    name: "релАшио",
+    type: "counter",
+    color: "#FBBF24",
+    colorName: "Жёлтый",
+    description: "Вертикальная линия",
+    gesturePattern: [
+      { x: 250, y: 422.5 },
+      { x: 250, y: 64.8 }
+    ],
+    counters: [colloshuSpell.id],
+  };
+
+  const relaxioSpell = await storage.createSpell(relaxio);
+  console.log("Created spell:", relaxioSpell.name);
+
   console.log("Spells initialized successfully!");
 }
