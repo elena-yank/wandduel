@@ -52,7 +52,7 @@ export default function FeedbackModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose} {...props}>
       <DialogContent className="modal-overlay border-0 bg-transparent shadow-none">
-        <div className="spell-card rounded-2xl p-8 max-w-lg w-full mx-4 border-glow-primary shadow-none">
+        <div className="spell-card rounded-2xl p-8 max-w-lg w-full mx-4 border-glow-primary !shadow-none">
           <DialogHeader className="text-center mb-6">
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
               <Lightbulb className="w-10 h-10 text-primary" />
@@ -61,15 +61,6 @@ export default function FeedbackModal({
 
           {result.recognized && result.spell && (
             <div className="space-y-4 mb-6">
-              <div className="bg-background/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-2">Spell Name</p>
-                <p className="text-2xl font-serif font-bold text-primary" data-testid="text-recognized-spell">
-                  {result.spell.name}
-                </p>
-              </div>
-              
-              <div className="bg-background/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-2">Spell Color</p>
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-8 h-8 rounded-full" 
