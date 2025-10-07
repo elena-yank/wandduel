@@ -134,7 +134,7 @@ export default function DuelArena() {
       return;
     }
 
-    const role = localStorage.getItem("userRole");
+    const role = localStorage.getItem(`userRole:${roomId}`);
     if (!role) {
       // If no role selected, redirect to role selection for this room
       setLocation(`/rooms/${roomId}/role-selection`);
@@ -152,7 +152,6 @@ export default function DuelArena() {
         }
         const sessionData = await res.json();
         setCurrentSessionId(sessionData.id);
-        localStorage.setItem("currentSessionId", sessionData.id);
       } catch (error) {
         toast({
           title: "Ошибка",
@@ -195,12 +194,13 @@ export default function DuelArena() {
   const spectators = participants.filter(p => p.role === "spectator");
 
   const handleLeave = () => {
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("sessionId");
-    localStorage.removeItem("playerNumber");
-    localStorage.removeItem("currentSessionId");
-    localStorage.removeItem("participantId");
+    if (roomId) {
+      // Clear room-scoped localStorage keys
+      localStorage.removeItem(`userRole:${roomId}`);
+      localStorage.removeItem(`currentSessionId:${roomId}`);
+      localStorage.removeItem(`participantId:${roomId}`);
+      localStorage.removeItem(`playerNumber:${roomId}`);
+    }
     setLocation("/");
   };
 
