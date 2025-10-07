@@ -42,7 +42,7 @@ export async function initializeSpells() {
   const protegoSpell = await storage.createSpell(protego);
   console.log("Created spell:", protegoSpell.name);
 
-  // Create counter spell: финИте инкантАтем (shield pattern - matches Shield icon from lucide-react)
+  // Create counter spell: финИте инкантАтем (shield pattern from user's image)
   const finiteIncantatem: InsertSpell = {
     name: "финИте инкантАтем",
     type: "counter",
@@ -50,16 +50,27 @@ export async function initializeSpells() {
     colorName: "Красный",
     description: "Щит",
     gesturePattern: [
-      { x: 100, y: 80 },   // Top left corner
-      { x: 300, y: 80 },   // Top right corner
-      { x: 300, y: 200 },  // Right side middle
-      { x: 280, y: 260 },  // Right side lower
-      { x: 240, y: 310 },  // Bottom right curve
-      { x: 200, y: 330 },  // Bottom center point
-      { x: 160, y: 310 },  // Bottom left curve
-      { x: 120, y: 260 },  // Left side lower
-      { x: 100, y: 200 },  // Left side middle
-      { x: 100, y: 80 }    // Back to top left
+      // Wavy top line - left to right
+      { x: 80, y: 90 },    // Start left
+      { x: 130, y: 110 },  // First dip
+      { x: 180, y: 90 },   // First peak
+      { x: 230, y: 110 },  // Second dip
+      { x: 280, y: 90 },   // End right
+      // Right side straight down
+      { x: 280, y: 140 },
+      { x: 280, y: 190 },
+      { x: 280, y: 240 },
+      // Bottom curve - right to left
+      { x: 260, y: 290 },
+      { x: 230, y: 320 },
+      { x: 200, y: 335 },  // Bottom center
+      { x: 170, y: 320 },
+      { x: 140, y: 290 },
+      // Left side straight up
+      { x: 80, y: 240 },
+      { x: 80, y: 190 },
+      { x: 80, y: 140 },
+      { x: 80, y: 90 }     // Back to start
     ],
     counters: [baubelliusSpell.id],
   };
