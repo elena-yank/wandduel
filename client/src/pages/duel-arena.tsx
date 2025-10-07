@@ -129,12 +129,12 @@ export default function DuelArena() {
     },
   });
 
-  // Sync roundPhase with session.phase
+  // Sync roundPhase with session.currentPhase
   useEffect(() => {
-    if (session?.phase) {
-      setRoundPhase(session.phase as "attack" | "counter" | "complete");
+    if (session?.currentPhase) {
+      setRoundPhase(session.currentPhase as "attack" | "counter" | "complete");
     }
-  }, [session?.phase]);
+  }, [session?.currentPhase]);
 
   // Check for role and session on component mount
   useEffect(() => {
