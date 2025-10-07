@@ -23,6 +23,7 @@ type RecognitionResult = {
   message?: string;
   multipleMatches?: boolean;
   matches?: Array<{ spell: Spell; accuracy: number }>;
+  wrongDefenseUsed?: boolean;
 };
 
 export default function DuelArena() {
@@ -91,6 +92,35 @@ export default function DuelArena() {
 
       setFeedbackResult(result);
       setShowFeedback(true);
+      
+      // Handle wrong defense used - end round immediately
+      if (result.wrongDefenseUsed) {
+        toast({
+          title: "Неправильная защита!",
+          description: `Вы использовали ${result.spell?.name}, но это не защищает от данной атаки. Раунд завершен.`,
+          variant: "destructive",
+        });
+        
+        // Set failed counter result
+        setCounterResult({
+          recognized: true,
+          spell: result.spell,
+          accuracy: result.accuracy,
+          isValidCounter: false,
+          successful: false
+        });
+        
+        // Complete round with failed defense
+        setTimeout(() => {
+          completeRoundMutation.mutate({
+            attackSpellId: attackResult?.spell?.id || null,
+            counterSuccess: false,
+            player1Accuracy: attackResult?.accuracy || 0,
+            player2Accuracy: result.accuracy || 0
+          });
+        }, 1500);
+        return;
+      }
       
       if (result.recognized && result.successful) {
         if (roundPhase === "attack") {

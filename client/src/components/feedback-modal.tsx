@@ -10,6 +10,7 @@ type RecognitionResult = {
   isValidCounter?: boolean;
   successful: boolean;
   message?: string;
+  wrongDefenseUsed?: boolean;
 };
 
 interface FeedbackModalProps {
