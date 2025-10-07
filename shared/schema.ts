@@ -77,6 +77,8 @@ export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
 export const insertSessionParticipantSchema = createInsertSchema(sessionParticipants).omit({
   id: true,
   joinedAt: true,
+}).extend({
+  userName: z.string().optional(),
 });
 
 export const insertGestureAttemptSchema = createInsertSchema(gestureAttempts).omit({
