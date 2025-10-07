@@ -66,6 +66,63 @@ export async function initializeSpells() {
   const diffingoSpell = await storage.createSpell(diffindo);
   console.log("Created spell:", diffingoSpell.name);
 
+  // Create fourth attack spell: иммОбулюс
+  const immobulus: InsertSpell = {
+    name: "иммОбулюс",
+    type: "attack",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Горы",
+    gesturePattern: [
+      // Верхняя линия - горы (зигзаг)
+      // Начало слева внизу
+      { x: 115, y: 290 },
+      // Подъем к первой вершине (маленькая гора)
+      { x: 135, y: 245 },
+      { x: 155, y: 200 },
+      { x: 170, y: 175 },
+      { x: 180, y: 165 },
+      // Спуск к впадине
+      { x: 190, y: 180 },
+      { x: 200, y: 195 },
+      { x: 210, y: 210 },
+      // Подъем к второй вершине (большая гора)
+      { x: 225, y: 175 },
+      { x: 240, y: 140 },
+      { x: 253, y: 115 },
+      { x: 265, y: 90 },
+      // Спуск вправо вниз
+      { x: 285, y: 130 },
+      { x: 305, y: 170 },
+      { x: 325, y: 210 },
+      { x: 345, y: 245 },
+      { x: 365, y: 270 },
+      { x: 385, y: 295 },
+      // Нижняя линия - волна ВЛЕВО от конца гор
+      { x: 400, y: 310 },
+      { x: 415, y: 325 },
+      // Спуск волны
+      { x: 390, y: 330 },
+      { x: 365, y: 333 },
+      { x: 340, y: 335 },
+      // Подъем волны
+      { x: 315, y: 330 },
+      { x: 290, y: 320 },
+      { x: 265, y: 313 },
+      { x: 240, y: 310 },
+      // Спуск волны
+      { x: 215, y: 315 },
+      { x: 190, y: 323 },
+      { x: 165, y: 328 },
+      // Конец влево
+      { x: 140, y: 330 },
+      { x: 100, y: 330 }
+    ],
+  };
+
+  const immobulusSpell = await storage.createSpell(immobulus);
+  console.log("Created spell:", immobulusSpell.name);
+
   // Create counter spell: протЕго
   const protego: InsertSpell = {
     name: "протЕго",
@@ -74,7 +131,7 @@ export async function initializeSpells() {
     colorName: "Бесцветный",
     description: "Точка в центре",
     gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
-    counters: [alarteSpell.id],
+    counters: [alarteSpell.id, immobulusSpell.id],
   };
 
   const protegoSpell = await storage.createSpell(protego);
@@ -180,63 +237,6 @@ export async function initializeSpells() {
 
   const reparoSpell = await storage.createSpell(reparo);
   console.log("Created spell:", reparoSpell.name);
-
-  // Create fourth attack spell: иммОбулюс
-  const immobulus: InsertSpell = {
-    name: "иммОбулюс",
-    type: "attack",
-    color: "#3B82F6",
-    colorName: "Голубой",
-    description: "Горы",
-    gesturePattern: [
-      // Верхняя линия - горы (зигзаг)
-      // Начало слева внизу
-      { x: 115, y: 290 },
-      // Подъем к первой вершине (маленькая гора)
-      { x: 135, y: 245 },
-      { x: 155, y: 200 },
-      { x: 170, y: 175 },
-      { x: 180, y: 165 },
-      // Спуск к впадине
-      { x: 190, y: 180 },
-      { x: 200, y: 195 },
-      { x: 210, y: 210 },
-      // Подъем к второй вершине (большая гора)
-      { x: 225, y: 175 },
-      { x: 240, y: 140 },
-      { x: 253, y: 115 },
-      { x: 265, y: 90 },
-      // Спуск вправо вниз
-      { x: 285, y: 130 },
-      { x: 305, y: 170 },
-      { x: 325, y: 210 },
-      { x: 345, y: 245 },
-      { x: 365, y: 270 },
-      { x: 385, y: 295 },
-      // Нижняя линия - волна ВЛЕВО от конца гор
-      { x: 400, y: 310 },
-      { x: 415, y: 325 },
-      // Спуск волны
-      { x: 390, y: 330 },
-      { x: 365, y: 333 },
-      { x: 340, y: 335 },
-      // Подъем волны
-      { x: 315, y: 330 },
-      { x: 290, y: 320 },
-      { x: 265, y: 313 },
-      { x: 240, y: 310 },
-      // Спуск волны
-      { x: 215, y: 315 },
-      { x: 190, y: 323 },
-      { x: 165, y: 328 },
-      // Конец влево
-      { x: 140, y: 330 },
-      { x: 100, y: 330 }
-    ],
-  };
-
-  const immobulusSpell = await storage.createSpell(immobulus);
-  console.log("Created spell:", immobulusSpell.name);
 
   console.log("Spells initialized successfully!");
 }
