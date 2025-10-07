@@ -20,7 +20,9 @@ Preferred communication style: Simple, everyday language.
 
 **UI Component System**: Implements shadcn/ui component library with Radix UI primitives and Tailwind CSS for styling. The design system uses a magical theme with custom CSS variables for colors, shadows with glowing effects, and specialized fonts (Cinzel for headings, Inter for body text). Components follow the "New York" style variant.
 
-**State Management**: Uses TanStack Query (React Query) for server state management with custom query client configuration. Local component state is managed with React hooks. The application disables automatic refetching and sets infinite stale time for cached data.
+**State Management**: Uses TanStack Query (React Query) for server state management with custom query client configuration. Local component state is managed with React hooks. Session data auto-refreshes every 2 seconds and participants every 3 seconds to enable real-time synchronization. The roundPhase state syncs with session.phase via useEffect to ensure all players see the same game state.
+
+**Multi-Tab User Identification**: Each browser tab gets a unique userId stored in sessionStorage (with timestamp for guaranteed uniqueness). This ensures multiple tabs/windows can join the same room as different players without ID conflicts. The userId format is `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`.
 
 **Gesture Recognition System**: Custom canvas-based drawing interface captures user input as point arrays. Client-side gesture normalization and resampling algorithms prepare drawings for comparison. The recognition logic normalizes gestures to a 0-100 coordinate space and resamples them to consistent point counts for accurate pattern matching.
 
