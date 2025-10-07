@@ -104,14 +104,14 @@ export default function DuelArena() {
         return;
       }
 
-      // Handle wrong defense used - end round immediately
+      // Handle wrong defense used - show toast and set counter result
       if (result.wrongDefenseUsed) {
         const description = result.spell?.name 
-          ? `Вы использовали ${result.spell.name}, но это не защищает от данной атаки. Раунд завершен.`
-          : "Вы использовали неправильное заклинание. Раунд завершен.";
+          ? `Вы использовали ${result.spell.name}, но это не защищает от данной атаки.`
+          : "Вы использовали неправильное заклинание.";
           
         toast({
-          title: "Неправильная защита!",
+          title: "Неверная защита!",
           description,
           variant: "destructive",
         });
@@ -124,16 +124,6 @@ export default function DuelArena() {
           isValidCounter: false,
           successful: false
         });
-        
-        // Complete round with failed defense
-        setTimeout(() => {
-          completeRoundMutation.mutate({
-            attackSpellId: attackResult?.spell?.id || null,
-            counterSuccess: false,
-            player1Accuracy: attackResult?.accuracy || 0,
-            player2Accuracy: result.accuracy || 0
-          });
-        }, 1500);
         
         // Invalidate spell history to show the failed attempt
         queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
@@ -237,6 +227,26 @@ export default function DuelArena() {
 
     loadAttackSpell();
   }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, allSpells]);
+
+  // Load counter spell info from spell history for all players
+  useEffect(() => {
+    if (session && spellHistory.length > 0) {
+      const currentRound = session.currentRound || 1;
+      const player2Attempt = spellHistory.find(
+        h => h.roundNumber === currentRound && h.playerId === 2
+      );
+      
+      if (player2Attempt && player2Attempt.spell && !counterResult) {
+        setCounterResult({
+          recognized: true,
+          spell: player2Attempt.spell,
+          accuracy: player2Attempt.accuracy,
+          isValidCounter: player2Attempt.successful,
+          successful: player2Attempt.successful
+        });
+      }
+    }
+  }, [session, spellHistory, counterResult]);
 
   // Check for role and session on component mount
   useEffect(() => {
@@ -701,31 +711,31 @@ export default function DuelArena() {
 
       {/* Spell Choice Dialog */}
       <Dialog open={showSpellChoice} onOpenChange={setShowSpellChoice}>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-spell-choice">
+        <DialogContent className="sm:max-w-sm" data-testid="dialog-spell-choice">
           <DialogHeader>
-            <DialogTitle className="font-decorative text-2xl decorative-text">
+            <DialogTitle className="font-decorative text-xl decorative-text">
               Выберите заклинание
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Несколько заклинаний соответствуют вашему движению. Выберите нужное:
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 py-4">
+          <div className="grid gap-2 py-3">
             {spellChoices?.map((choice, index) => (
               <Button
                 key={choice.spell.id}
                 onClick={() => handleSpellChoice(choice)}
                 variant="outline"
-                className="h-auto flex flex-col items-start p-4 text-left hover:bg-primary/10 transition-colors"
+                className="h-auto flex flex-col items-start p-3 text-left hover:bg-primary/10 transition-colors"
                 data-testid={`button-spell-choice-${index}`}
               >
-                <div className="flex items-center gap-3 w-full">
+                <div className="flex items-center gap-2 w-full">
                   <div 
-                    className="w-4 h-4 rounded-full"
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: choice.spell.color }}
                   />
                   <div className="flex-1">
-                    <p className="font-serif font-semibold text-foreground">
+                    <p className="font-serif font-semibold text-sm text-foreground">
                       {choice.spell.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -741,40 +751,40 @@ export default function DuelArena() {
 
       {/* Round Complete Dialog */}
       <Dialog open={showRoundComplete} onOpenChange={setShowRoundComplete}>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-round-complete">
+        <DialogContent className="sm:max-w-sm" data-testid="dialog-round-complete">
           <DialogHeader>
-            <DialogTitle className="font-decorative text-2xl decorative-text">
+            <DialogTitle className="font-decorative text-xl decorative-text">
               Раунд завершен
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Результаты раунда
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-1">Атака Player 1</p>
-              <p className="text-lg font-semibold text-foreground">
+          <div className="space-y-3 py-3">
+            <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+              <p className="text-xs text-muted-foreground mb-1">Атака Player 1</p>
+              <p className="text-base font-semibold text-foreground">
                 {attackResult?.spell?.name}
               </p>
-              <p className="text-sm text-primary">
+              <p className="text-xs text-primary">
                 Точность: {attackResult?.accuracy}%
               </p>
             </div>
             
-            <div className={`rounded-lg p-4 border ${
+            <div className={`rounded-lg p-3 border ${
               counterResult?.isValidCounter 
                 ? 'bg-green-500/10 border-green-500/20' 
                 : 'bg-red-500/10 border-red-500/20'
             }`}>
-              <p className="text-sm text-muted-foreground mb-1">Защита Player 2</p>
-              <p className="text-lg font-semibold text-foreground">
-                {counterResult?.spell?.name}
+              <p className="text-xs text-muted-foreground mb-1">Защита Player 2</p>
+              <p className="text-base font-semibold text-foreground">
+                {counterResult?.spell?.name || "Не выполнено"}
               </p>
-              <p className={`text-sm ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <p className={`text-xs ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 Точность: {counterResult?.accuracy}%
               </p>
-              <p className={`text-sm font-semibold mt-2 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неправильная защита'}
+              <p className={`text-xs font-semibold mt-1 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
               </p>
             </div>
           </div>
