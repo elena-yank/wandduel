@@ -251,5 +251,64 @@ export async function initializeSpells() {
   const reparoSpell = await storage.createSpell(reparo);
   console.log("Created spell:", reparoSpell.name);
 
+  // Create sixth attack spell: кАнтис
+  const cantis: InsertSpell = {
+    name: "кАнтис",
+    type: "attack",
+    color: "#EC4899",
+    colorName: "Розовый",
+    description: "Нота",
+    gesturePattern: [
+      // Круг (головка ноты) - начало слева внизу
+      { x: 33, y: 315 },
+      { x: 25, y: 285 },
+      { x: 28, y: 253 },
+      { x: 40, y: 228 },
+      { x: 60, y: 213 },
+      { x: 83, y: 208 },
+      { x: 108, y: 213 },
+      { x: 133, y: 228 },
+      { x: 150, y: 248 },
+      { x: 158, y: 273 },
+      { x: 158, y: 298 },
+      { x: 150, y: 323 },
+      { x: 133, y: 343 },
+      { x: 108, y: 358 },
+      { x: 83, y: 363 },
+      { x: 60, y: 358 },
+      { x: 40, y: 343 },
+      { x: 28, y: 323 },
+      // Переход к штилю (вертикальная линия)
+      { x: 150, y: 298 },
+      { x: 167, y: 273 },
+      { x: 192, y: 253 },
+      { x: 217, y: 238 },
+      { x: 242, y: 228 },
+      { x: 267, y: 223 },
+      // Вертикальный штиль вверх
+      { x: 267, y: 198 },
+      { x: 267, y: 173 },
+      { x: 267, y: 148 },
+      { x: 267, y: 123 },
+      // Флажок (волнообразный)
+      { x: 275, y: 115 },
+      { x: 283, y: 108 },
+      // Верхняя точка флажка
+      { x: 292, y: 80 },
+      // Волна флажка вниз-вправо
+      { x: 308, y: 123 },
+      { x: 333, y: 158 },
+      { x: 358, y: 183 },
+      { x: 383, y: 198 },
+      { x: 408, y: 208 },
+      { x: 433, y: 213 },
+      { x: 458, y: 218 },
+      { x: 483, y: 218 }
+    ],
+  };
+
+  const cantisSpell = await storage.createSpell(cantis);
+  console.log("Created spell:", cantisSpell.name);
+
   console.log("Spells initialized successfully!");
 }
