@@ -2,6 +2,15 @@ import { storage } from "./storage";
 import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
+  // Check if spells already exist in the database
+  const existingSpells = await storage.getSpells();
+  if (existingSpells.length > 0) {
+    console.log(`Spells already initialized (${existingSpells.length} spells found). Skipping initialization.`);
+    return;
+  }
+
+  console.log("Initializing spells in database...");
+  
   // Create first attack spell: алАрте аскЕндаре
   const alarte: InsertSpell = {
     name: "алАрте аскЕндаре",
@@ -79,7 +88,7 @@ export async function initializeSpells() {
   const diffingoSpell = await storage.createSpell(diffindo);
   console.log("Created spell:", diffingoSpell.name);
 
-  // Create fourth attack spell: иммОбулюс
+  // Create fourth attack spell: иммОбулюс (16 точек из SVG)
   const immobulus: InsertSpell = {
     name: "иммОбулюс",
     type: "attack",
@@ -87,49 +96,21 @@ export async function initializeSpells() {
     colorName: "Голубой",
     description: "Горы",
     gesturePattern: [
-      // Верхняя линия - горы (зигзаг)
-      // Начало слева внизу
-      { x: 115, y: 290 },
-      // Подъем к первой вершине (маленькая гора)
-      { x: 135, y: 245 },
-      { x: 155, y: 200 },
-      { x: 170, y: 175 },
-      { x: 180, y: 165 },
-      // Спуск к впадине
-      { x: 190, y: 180 },
-      { x: 200, y: 195 },
-      { x: 210, y: 210 },
-      // Подъем к второй вершине (большая гора)
-      { x: 225, y: 175 },
-      { x: 240, y: 140 },
-      { x: 253, y: 115 },
-      { x: 265, y: 90 },
-      // Спуск вправо вниз
-      { x: 285, y: 130 },
-      { x: 305, y: 170 },
-      { x: 325, y: 210 },
-      { x: 345, y: 245 },
-      { x: 365, y: 270 },
-      { x: 385, y: 295 },
-      // Нижняя линия - волна ВЛЕВО от конца гор
-      { x: 400, y: 310 },
-      { x: 415, y: 325 },
-      // Спуск волны
-      { x: 390, y: 330 },
-      { x: 365, y: 333 },
-      { x: 340, y: 335 },
-      // Подъем волны
-      { x: 315, y: 330 },
-      { x: 290, y: 320 },
-      { x: 265, y: 313 },
-      { x: 240, y: 310 },
-      // Спуск волны
-      { x: 215, y: 315 },
-      { x: 190, y: 323 },
-      { x: 165, y: 328 },
-      // Конец влево
-      { x: 140, y: 330 },
-      { x: 100, y: 330 }
+      { x: 115, y: 321 },
+      { x: 194, y: 180 },
+      { x: 223, y: 236 },
+      { x: 300, y: 82 },
+      { x: 417, y: 321 },
+      { x: 394, y: 357 },
+      { x: 352, y: 373 },
+      { x: 322, y: 382 },
+      { x: 276, y: 365 },
+      { x: 244, y: 357 },
+      { x: 207, y: 367 },
+      { x: 167, y: 382 },
+      { x: 121, y: 382 },
+      { x: 76, y: 366 },
+      { x: 49, y: 340 }
     ],
   };
 

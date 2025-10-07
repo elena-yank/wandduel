@@ -1,5 +1,9 @@
-import { type Spell, type InsertSpell, type GameRoom, type InsertGameRoom, type GameSession, type InsertGameSession, type GestureAttempt, type InsertGestureAttempt, type SessionParticipant, type InsertSessionParticipant, type Point } from "@shared/schema";
+import { type Spell, type InsertSpell, type GameRoom, type InsertGameRoom, type GameSession, type InsertGameSession, type GestureAttempt, type InsertGestureAttempt, type SessionParticipant, type InsertSessionParticipant, type Point, spells, gameRooms, gameSessions, sessionParticipants, gestureAttempts } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { eq, and } from "drizzle-orm";
+import pg from "pg";
+const { Pool } = pg;
 
 export interface IStorage {
   // Spells
@@ -289,4 +293,117 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class PostgresStorage implements IStorage {
+  private db;
+
+  constructor() {
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    this.db = drizzle(pool);
+  }
+
+  // Spells
+  async getSpells(): Promise<Spell[]> {
+    return await this.db.select().from(spells);
+  }
+
+  async getSpellById(id: string): Promise<Spell | undefined> {
+    const result = await this.db.select().from(spells).where(eq(spells.id, id));
+    return result[0];
+  }
+
+  async getSpellsByType(type: "attack" | "counter"): Promise<Spell[]> {
+    return await this.db.select().from(spells).where(eq(spells.type, type));
+  }
+
+  async createSpell(insertSpell: InsertSpell): Promise<Spell> {
+    const result = await this.db.insert(spells).values(insertSpell).returning();
+    return result[0];
+  }
+
+  async deleteAllSpells(): Promise<void> {
+    await this.db.delete(spells);
+  }
+
+  // Game Rooms
+  async createGameRoom(room: InsertGameRoom): Promise<GameRoom> {
+    const result = await this.db.insert(gameRooms).values(room).returning();
+    return result[0];
+  }
+
+  async getGameRoom(id: string): Promise<GameRoom | undefined> {
+    const result = await this.db.select().from(gameRooms).where(eq(gameRooms.id, id));
+    return result[0];
+  }
+
+  async getAllGameRooms(): Promise<GameRoom[]> {
+    return await this.db.select().from(gameRooms);
+  }
+
+  // Game Sessions
+  async createGameSession(session: InsertGameSession): Promise<GameSession> {
+    const result = await this.db.insert(gameSessions).values(session).returning();
+    return result[0];
+  }
+
+  async getGameSession(id: string): Promise<GameSession | undefined> {
+    const result = await this.db.select().from(gameSessions).where(eq(gameSessions.id, id));
+    return result[0];
+  }
+
+  async getGameSessionByRoomId(roomId: string): Promise<GameSession | undefined> {
+    const result = await this.db.select().from(gameSessions).where(eq(gameSessions.roomId, roomId));
+    return result[0];
+  }
+
+  async updateGameSession(id: string, updates: Partial<GameSession>): Promise<GameSession> {
+    const result = await this.db.update(gameSessions).set(updates).where(eq(gameSessions.id, id)).returning();
+    return result[0];
+  }
+
+  // Session Participants
+  async addParticipant(participant: InsertSessionParticipant): Promise<SessionParticipant> {
+    const participantWithName = {
+      ...participant,
+      userName: participant.userName || 'Anonymous'
+    };
+    const result = await this.db.insert(sessionParticipants).values(participantWithName).returning();
+    return result[0];
+  }
+
+  async getSessionParticipants(sessionId: string): Promise<SessionParticipant[]> {
+    return await this.db.select().from(sessionParticipants).where(eq(sessionParticipants.sessionId, sessionId));
+  }
+
+  async getParticipantsByRole(sessionId: string, role: "player" | "spectator"): Promise<SessionParticipant[]> {
+    return await this.db.select().from(sessionParticipants)
+      .where(and(
+        eq(sessionParticipants.sessionId, sessionId),
+        eq(sessionParticipants.role, role)
+      ));
+  }
+
+  async getParticipantByUserId(sessionId: string, userId: string): Promise<SessionParticipant | undefined> {
+    const result = await this.db.select().from(sessionParticipants)
+      .where(and(
+        eq(sessionParticipants.sessionId, sessionId),
+        eq(sessionParticipants.userId, userId)
+      ));
+    return result[0];
+  }
+
+  async removeParticipant(participantId: string): Promise<void> {
+    await this.db.delete(sessionParticipants).where(eq(sessionParticipants.id, participantId));
+  }
+
+  // Gesture Attempts
+  async createGestureAttempt(attempt: InsertGestureAttempt): Promise<GestureAttempt> {
+    const result = await this.db.insert(gestureAttempts).values(attempt).returning();
+    return result[0];
+  }
+
+  async getGestureAttemptsBySession(sessionId: string): Promise<GestureAttempt[]> {
+    return await this.db.select().from(gestureAttempts).where(eq(gestureAttempts.sessionId, sessionId));
+  }
+}
+
+export const storage = new PostgresStorage();
