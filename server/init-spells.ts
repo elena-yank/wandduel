@@ -28,6 +28,37 @@ export async function initializeSpells() {
   const baubelliusSpell = await storage.createSpell(baubellius);
   console.log("Created spell:", baubelliusSpell.name);
 
+  // Create third attack spell: диффИндо
+  const diffindo: InsertSpell = {
+    name: "диффИндо",
+    type: "attack",
+    color: "#22C55E",
+    colorName: "Зелёный",
+    description: "V с крючком",
+    gesturePattern: [
+      // Left diagonal down (top-left to bottom-center)
+      { x: 100, y: 80 },
+      { x: 120, y: 120 },
+      { x: 140, y: 160 },
+      { x: 160, y: 200 },
+      { x: 180, y: 240 },
+      { x: 200, y: 280 },
+      // Right diagonal up (bottom-center to top-right)
+      { x: 220, y: 240 },
+      { x: 240, y: 200 },
+      { x: 260, y: 160 },
+      { x: 280, y: 120 },
+      { x: 300, y: 100 },
+      // Hook to the right
+      { x: 320, y: 110 },
+      { x: 340, y: 130 },
+      { x: 350, y: 140 }
+    ],
+  };
+
+  const diffingoSpell = await storage.createSpell(diffindo);
+  console.log("Created spell:", diffingoSpell.name);
+
   // Create counter spell: протЕго
   const protego: InsertSpell = {
     name: "протЕго",
