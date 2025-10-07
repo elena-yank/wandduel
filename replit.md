@@ -14,7 +14,12 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 **Database Migration Completed (October 7, 2025)**: Successfully migrated from in-memory storage to PostgreSQL for permanent data persistence. All spell patterns now stored in database. Changed from Neon serverless driver to node-postgres (pg) driver due to WebSocket compatibility issues in development environment.
 
-**New Counter Spell Added**: мИмбл вІмбл (blue, knot pattern, 26 points from SVG) added as counter spell for кАнтис attack. All 10 spells (6 attack + 4 counter) now stored permanently in database.
+**New Spells Added**: 
+- мИмбл вІмбл (blue, knot pattern, 26 points from SVG) added as counter spell for кАнтис attack
+- кОллошу (colorless, shoe pattern, 12 points from SVG) added as attack spell
+- релАшио (yellow, vertical line, 2 points from SVG) added as counter spell for кОллошу attack
+
+All 12 spells (7 attack + 5 counter) now stored permanently in database.
 
 **Gesture Recognition Requirements (Maximum Strictness)**: The system now demands very precise gesture drawing for successful spell casting:
 - No similarity multiplier - uses raw similarity percentage for maximum strictness
