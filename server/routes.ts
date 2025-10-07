@@ -27,6 +27,12 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return Math.round(similarity * 100);
   }
 
+  // If one gesture is a single point and the other is multi-point, they can't match
+  if ((drawnGesture.length === 1 && targetPattern.length > 1) || 
+      (drawnGesture.length > 1 && targetPattern.length === 1)) {
+    return 0;
+  }
+
   // Normalize both gestures to 0-100 coordinate space
   const normalizeGesture = (gesture: Point[]) => {
     const minX = Math.min(...gesture.map(p => p.x));
