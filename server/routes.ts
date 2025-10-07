@@ -1,13 +1,30 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertGameSessionSchema, insertGestureAttemptSchema, type Point } from "@shared/schema";
+import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, type Point } from "@shared/schema";
 import { z } from "zod";
 
 // Gesture recognition function
 function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[]): number {
-  if (drawnGesture.length < 3 || targetPattern.length < 3) {
+  if (drawnGesture.length < 1 || targetPattern.length < 1) {
     return 0;
+  }
+
+  // Special case: both gestures are single points
+  if (drawnGesture.length === 1 && targetPattern.length === 1) {
+    const drawn = drawnGesture[0];
+    const target = targetPattern[0];
+    
+    // Calculate distance between the two points
+    const dx = drawn.x - target.x;
+    const dy = drawn.y - target.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Normalize distance to canvas size (assuming 400x400 canvas)
+    const maxDistance = Math.sqrt(400 * 400 + 400 * 400);
+    const similarity = Math.max(0, 1 - (distance / maxDistance));
+    
+    return Math.round(similarity * 100);
   }
 
   // Normalize both gestures to 0-100 coordinate space
@@ -111,6 +128,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new spell
+  app.post("/api/spells", async (req, res) => {
+    try {
+      const spellData = insertSpellSchema.parse(req.body);
+      const spell = await storage.createSpell(spellData);
+      res.json(spell);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid spell data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create spell" });
+    }
+  });
+
   // Create new game session
   app.post("/api/sessions", async (req, res) => {
     try {
@@ -157,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { sessionId } = req.params;
       const { gesture, playerId } = req.body;
       
-      if (!gesture || !Array.isArray(gesture) || gesture.length < 3) {
+      if (!gesture || !Array.isArray(gesture) || gesture.length < 1) {
         return res.status(400).json({ message: "Invalid gesture data" });
       }
 

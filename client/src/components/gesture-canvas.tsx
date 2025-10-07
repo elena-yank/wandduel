@@ -16,6 +16,8 @@ export default function GestureCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [gesturePoints, setGesturePoints] = useState<Point[]>([]);
+  const gesturePointsRef = useRef<Point[]>([]);
+  const isDrawingRef = useRef(false);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -26,6 +28,8 @@ export default function GestureCanvas({
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setGesturePoints([]);
+    gesturePointsRef.current = [];
+    isDrawingRef.current = false;
   }, []);
 
   const getCanvasPoint = useCallback((e: { clientX: number; clientY: number }): Point => {
@@ -46,7 +50,9 @@ export default function GestureCanvas({
     if (isDisabled) return;
     
     setIsDrawing(true);
+    isDrawingRef.current = true;
     setGesturePoints([point]);
+    gesturePointsRef.current = [point];
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -57,9 +63,11 @@ export default function GestureCanvas({
   }, [isDisabled]);
 
   const draw = useCallback((point: Point) => {
-    if (!isDrawing || isDisabled) return;
+    if (!isDrawingRef.current || isDisabled) return;
     
-    setGesturePoints(prev => [...prev, point]);
+    const newPoints = [...gesturePointsRef.current, point];
+    setGesturePoints(newPoints);
+    gesturePointsRef.current = newPoints;
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -74,18 +82,22 @@ export default function GestureCanvas({
     
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
-  }, [isDrawing, isDisabled]);
+  }, [isDisabled]);
 
   const stopDrawing = useCallback(() => {
-    if (!isDrawing || isDisabled) return;
+    if (!isDrawingRef.current || isDisabled) return;
     
     setIsDrawing(false);
+    isDrawingRef.current = false;
     
-    // Only trigger gesture complete if we have enough points
-    if (gesturePoints.length >= 3) {
-      onGestureComplete(gesturePoints);
+    // Use ref to get the latest points
+    const currentPoints = gesturePointsRef.current;
+    
+    // Trigger gesture complete if we have at least one point
+    if (currentPoints.length >= 1) {
+      onGestureComplete(currentPoints);
     }
-  }, [isDrawing, isDisabled, gesturePoints, onGestureComplete]);
+  }, [isDisabled, onGestureComplete]);
 
   // Mouse event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
