@@ -530,6 +530,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { sessionId } = req.params;
       const { spellId, playerId, accuracy, gesture } = req.body;
 
+      console.log("=== SAVE SPELL ATTEMPT ===");
+      console.log("Session ID:", sessionId);
+      console.log("Player ID:", playerId);
+      console.log("Spell ID:", spellId);
+      console.log("Accuracy:", accuracy);
+      console.log("==========================");
+
       const session = await storage.getGameSession(sessionId);
       if (!session) {
         return res.status(404).json({ message: "Game session not found" });
@@ -545,7 +552,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         successful: accuracy >= 35
       });
 
-      await storage.createGestureAttempt(attemptData);
+      const savedAttempt = await storage.createGestureAttempt(attemptData);
+      console.log("Saved attempt:", savedAttempt);
       
       res.json({ success: true });
     } catch (error) {
