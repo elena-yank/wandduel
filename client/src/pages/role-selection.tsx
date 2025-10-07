@@ -70,12 +70,12 @@ export default function RoleSelection() {
 
       const participant = await joinRes.json();
       
-      // Save participant info
-      localStorage.setItem("participantId", participant.id);
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("currentSessionId", sessionId);
+      // Save participant info with room-scoped keys
+      localStorage.setItem(`participantId:${roomId}`, participant.id);
+      localStorage.setItem(`userRole:${roomId}`, role);
+      localStorage.setItem(`currentSessionId:${roomId}`, sessionId);
       if (participant.playerNumber) {
-        localStorage.setItem("playerNumber", participant.playerNumber.toString());
+        localStorage.setItem(`playerNumber:${roomId}`, participant.playerNumber.toString());
       }
 
       // Redirect to arena for this room
