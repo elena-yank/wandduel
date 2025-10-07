@@ -57,9 +57,6 @@ export default function FeedbackModal({
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
               <Lightbulb className="w-10 h-10 text-primary" />
             </div>
-            <DialogTitle className="text-2xl font-serif font-bold text-foreground mb-2" data-testid="text-modal-title">
-              {result.recognized ? "Spell Recognized!" : "Spell Not Recognized"}
-            </DialogTitle>
           </DialogHeader>
 
           {result.recognized && result.spell && (
@@ -103,29 +100,6 @@ export default function FeedbackModal({
                   />
                 </div>
               </div>
-              
-              {isCounterPhase && (
-                <div className="bg-background/50 rounded-lg p-4" data-testid="counter-validation">
-                  <p className="text-sm text-muted-foreground mb-2">Counter Spell Status</p>
-                  <div className="flex items-center gap-2">
-                    {result.isValidCounter ? (
-                      <>
-                        <CheckCircle className="w-6 h-6 text-green-500" />
-                        <span className="text-lg font-semibold text-green-500" data-testid="text-counter-status">
-                          Correct Counter!
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-6 h-6 text-destructive" />
-                        <span className="text-lg font-semibold text-destructive" data-testid="text-counter-status">
-                          Wrong Counter
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
