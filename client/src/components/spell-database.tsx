@@ -75,6 +75,33 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
   const renderGesturePattern = (pattern: Point[]): ReactElement | null => {
     if (!pattern || pattern.length === 0) return null;
 
+    // Special case: single point pattern - show in center
+    if (pattern.length === 1) {
+      return (
+        <svg 
+          viewBox="0 0 300 300" 
+          className="w-full h-full border-2 border-dashed border-border/30 rounded-lg bg-background/50"
+        >
+          {/* Draw single point in center */}
+          <circle
+            cx={150}
+            cy={150}
+            r={8}
+            fill={selectedSpell?.color || "#888"}
+            opacity={1}
+          />
+          {/* Glow effect */}
+          <circle
+            cx={150}
+            cy={150}
+            r={12}
+            fill={selectedSpell?.color || "#888"}
+            opacity={0.3}
+          />
+        </svg>
+      );
+    }
+
     // Find bounds of the pattern
     const xs = pattern.map(p => p.x);
     const ys = pattern.map(p => p.y);
