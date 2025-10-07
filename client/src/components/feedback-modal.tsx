@@ -61,6 +61,15 @@ export default function FeedbackModal({
 
           {result.recognized && result.spell && (
             <div className="space-y-4 mb-6">
+              <div className="bg-background/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground mb-2">Использованное заклинание</p>
+                <p className="text-2xl font-serif font-bold text-primary" data-testid="text-recognized-spell">
+                  {result.spell.name}
+                </p>
+              </div>
+              
+              <div className="bg-background/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground mb-2">Цвет заклинания</p>
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-8 h-8 rounded-full" 
@@ -80,7 +89,7 @@ export default function FeedbackModal({
                     {result.accuracy}%
                   </span>
                   <span className={`px-3 py-1 rounded-full bg-secondary/20 text-sm font-semibold ${getRatingColor(rating)}`} data-testid="text-accuracy-rating">
-                    {rating}
+                    {rating === "Perfect" ? "Идеально" : rating}
                   </span>
                 </div>
                 <div className="bg-background/50 rounded-full h-3 overflow-hidden">
