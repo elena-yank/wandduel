@@ -251,7 +251,7 @@ export async function initializeSpells() {
   const reparoSpell = await storage.createSpell(reparo);
   console.log("Created spell:", reparoSpell.name);
 
-  // Create sixth attack spell: кАнтис (19 точек)
+  // Create sixth attack spell: кАнтис (21 точка из SVG)
   const cantis: InsertSpell = {
     name: "кАнтис",
     type: "attack",
@@ -259,28 +259,27 @@ export async function initializeSpells() {
     colorName: "Розовый",
     description: "Нота",
     gesturePattern: [
-      // Старт справа (разрыв круга), идем вниз по кругу
-      { x: 230, y: 365 },
-      { x: 240, y: 395 },
-      { x: 220, y: 420 },
-      { x: 180, y: 435 },
-      { x: 145, y: 430 },
-      { x: 115, y: 405 },
-      { x: 90, y: 375 },
-      { x: 75, y: 340 },
-      { x: 70, y: 300 },
-      { x: 80, y: 265 },
-      { x: 105, y: 235 },
-      { x: 140, y: 220 },
-      { x: 180, y: 225 },
-      // Плавная вертикальная линия вверх (штиль ноты)
-      { x: 215, y: 245 },
-      { x: 280, y: 280 },
-      { x: 325, y: 220 },
-      { x: 345, y: 130 },
-      // Флажок (две точки)
-      { x: 385, y: 115 },
-      { x: 465, y: 250 }
+      { x: 185, y: 306 },
+      { x: 172, y: 262 },
+      { x: 133, y: 240 },
+      { x: 88, y: 245 },
+      { x: 61, y: 278 },
+      { x: 56, y: 330 },
+      { x: 78, y: 370 },
+      { x: 121, y: 390 },
+      { x: 167, y: 390 },
+      { x: 205, y: 373 },
+      { x: 233, y: 340 },
+      { x: 250, y: 304 },
+      { x: 265, y: 261 },
+      { x: 275, y: 208 },
+      { x: 275, y: 155 },
+      { x: 275, y: 107 },
+      { x: 295, y: 161 },
+      { x: 327, y: 194 },
+      { x: 361, y: 214 },
+      { x: 398, y: 226 },
+      { x: 445, y: 231 }
     ],
   };
 
