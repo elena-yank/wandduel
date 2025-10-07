@@ -223,6 +223,12 @@ export default function DuelArena() {
 
   const players = participants.filter(p => p.role === "player");
   const spectators = participants.filter(p => p.role === "spectator");
+  
+  // Get player names
+  const player1 = players.find(p => p.playerNumber === 1);
+  const player2 = players.find(p => p.playerNumber === 2);
+  const player1Name = player1?.userName || "Player 1";
+  const player2Name = player2?.userName || "Player 2";
 
   const handleLeave = () => {
     if (roomId) {
@@ -362,6 +368,7 @@ export default function DuelArena() {
         {/* Player 1 Info */}
         <PlayerCard
           player={1}
+          playerName={player1Name}
           isActive={getCurrentPlayer() === 1}
           lastSpell={attackResult?.spell?.name || "-"}
           lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
@@ -435,6 +442,7 @@ export default function DuelArena() {
         {/* Player 2 Info */}
         <PlayerCard
           player={2}
+          playerName={player2Name}
           isActive={getCurrentPlayer() === 2}
           lastSpell={roundPhase === "counter" && feedbackResult?.spell ? feedbackResult.spell.name : "-"}
           lastAccuracy={roundPhase === "counter" && feedbackResult ? 
