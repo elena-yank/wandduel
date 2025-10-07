@@ -2,11 +2,20 @@ import { storage } from "./storage";
 import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
+  // Expected number of spells in the system
+  const EXPECTED_SPELL_COUNT = 14;
+  
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
-  if (existingSpells.length > 0) {
+  if (existingSpells.length >= EXPECTED_SPELL_COUNT) {
     console.log(`Spells already initialized (${existingSpells.length} spells found). Skipping initialization.`);
     return;
+  }
+
+  // If we have some spells but not all, clear and reinitialize
+  if (existingSpells.length > 0) {
+    console.log(`Found ${existingSpells.length} spells, but expected ${EXPECTED_SPELL_COUNT}. Clearing and reinitializing...`);
+    await storage.deleteAllSpells();
   }
 
   console.log("Initializing spells in database...");
