@@ -1,4 +1,4 @@
-import { type Spell, type InsertSpell, type GameSession, type InsertGameSession, type GestureAttempt, type InsertGestureAttempt, type SessionParticipant, type InsertSessionParticipant, type Point } from "@shared/schema";
+import { type Spell, type InsertSpell, type GameRoom, type InsertGameRoom, type GameSession, type InsertGameSession, type GestureAttempt, type InsertGestureAttempt, type SessionParticipant, type InsertSessionParticipant, type Point } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -9,9 +9,15 @@ export interface IStorage {
   createSpell(spell: InsertSpell): Promise<Spell>;
   deleteAllSpells(): Promise<void>;
 
+  // Game Rooms
+  createGameRoom(room: InsertGameRoom): Promise<GameRoom>;
+  getGameRoom(id: string): Promise<GameRoom | undefined>;
+  getAllGameRooms(): Promise<GameRoom[]>;
+
   // Game Sessions
   createGameSession(session: InsertGameSession): Promise<GameSession>;
   getGameSession(id: string): Promise<GameSession | undefined>;
+  getGameSessionByRoomId(roomId: string): Promise<GameSession | undefined>;
   updateGameSession(id: string, updates: Partial<GameSession>): Promise<GameSession>;
 
   // Session Participants
@@ -27,6 +33,7 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private spells: Map<string, Spell> = new Map();
+  private gameRooms: Map<string, GameRoom> = new Map();
   private gameSessions: Map<string, GameSession> = new Map();
   private sessionParticipants: Map<string, SessionParticipant> = new Map();
   private gestureAttempts: Map<string, GestureAttempt> = new Map();
@@ -167,6 +174,25 @@ export class MemStorage implements IStorage {
     this.spells.clear();
   }
 
+  async createGameRoom(insertRoom: InsertGameRoom): Promise<GameRoom> {
+    const id = randomUUID();
+    const room: GameRoom = {
+      ...insertRoom,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    this.gameRooms.set(id, room);
+    return room;
+  }
+
+  async getGameRoom(id: string): Promise<GameRoom | undefined> {
+    return this.gameRooms.get(id);
+  }
+
+  async getAllGameRooms(): Promise<GameRoom[]> {
+    return Array.from(this.gameRooms.values());
+  }
+
   async createGameSession(insertSession: InsertGameSession): Promise<GameSession> {
     const id = randomUUID();
     const session: GameSession = { 
@@ -187,6 +213,12 @@ export class MemStorage implements IStorage {
 
   async getGameSession(id: string): Promise<GameSession | undefined> {
     return this.gameSessions.get(id);
+  }
+
+  async getGameSessionByRoomId(roomId: string): Promise<GameSession | undefined> {
+    return Array.from(this.gameSessions.values()).find(
+      session => session.roomId === roomId
+    );
   }
 
   async updateGameSession(id: string, updates: Partial<GameSession>): Promise<GameSession> {
