@@ -1,4 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Papyrus';
+  src: url('@assets/Papyrus_0_1759833643028.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -36,7 +44,7 @@
   
   /* Fonts */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Cinzel', serif;
+  --font-serif: 'Papyrus', 'Cinzel', serif;
   --font-decorative: 'Cinzel Decorative', serif;
   --font-mono: 'JetBrains Mono', monospace;
   
