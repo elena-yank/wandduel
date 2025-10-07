@@ -15,7 +15,14 @@ export async function initializeSpells() {
   // If we have some spells but not all, clear and reinitialize
   if (existingSpells.length > 0) {
     console.log(`Found ${existingSpells.length} spells, but expected ${EXPECTED_SPELL_COUNT}. Clearing and reinitializing...`);
+    
+    // Delete gesture attempts first to avoid foreign key constraint violations
+    await storage.deleteAllGestureAttempts();
+    console.log('Cleared all gesture attempts');
+    
+    // Now safe to delete spells
     await storage.deleteAllSpells();
+    console.log('Cleared all spells');
   }
 
   console.log("Initializing spells in database...");

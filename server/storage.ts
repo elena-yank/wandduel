@@ -34,6 +34,7 @@ export interface IStorage {
   // Gesture Attempts
   createGestureAttempt(attempt: InsertGestureAttempt): Promise<GestureAttempt>;
   getGestureAttemptsBySession(sessionId: string): Promise<GestureAttempt[]>;
+  deleteAllGestureAttempts(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -291,6 +292,10 @@ export class MemStorage implements IStorage {
       attempt => attempt.sessionId === sessionId
     );
   }
+
+  async deleteAllGestureAttempts(): Promise<void> {
+    this.gestureAttempts.clear();
+  }
 }
 
 export class PostgresStorage implements IStorage {
@@ -403,6 +408,10 @@ export class PostgresStorage implements IStorage {
 
   async getGestureAttemptsBySession(sessionId: string): Promise<GestureAttempt[]> {
     return await this.db.select().from(gestureAttempts).where(eq(gestureAttempts.sessionId, sessionId));
+  }
+
+  async deleteAllGestureAttempts(): Promise<void> {
+    await this.db.delete(gestureAttempts);
   }
 }
 
