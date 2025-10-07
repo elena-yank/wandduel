@@ -320,5 +320,65 @@ export async function initializeSpells() {
   const relaxioSpell = await storage.createSpell(relaxio);
   console.log("Created spell:", relaxioSpell.name);
 
+  // Create eighth attack spell: локомОтор мОртис (8 точек из SVG - ботинок)
+  const locomotorMortis: InsertSpell = {
+    name: "локомОтор мОртис",
+    type: "attack",
+    color: "#EF4444",
+    colorName: "Красный",
+    description: "Ботинок",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 190.16, y: 65.92 },
+      { x: 206.24, y: 222.8 },
+      { x: 198.24, y: 239.36 },
+      { x: 103.92, y: 239.36 },
+      { x: 89.84, y: 252.8 },
+      { x: 89.84, y: 290.16 },
+      { x: 113.12, y: 306.16 },
+      { x: 315.92, y: 301.84 }
+    ],
+  };
+
+  const locomotorMortisSpell = await storage.createSpell(locomotorMortis);
+  console.log("Created spell:", locomotorMortisSpell.name);
+
+  // Create counter spell: диффИндо (counter version - same pattern as attack)
+  const diffingoCounter: InsertSpell = {
+    name: "диффИндо",
+    type: "counter",
+    color: "#22C55E",
+    colorName: "Зелёный",
+    description: "V с крючком",
+    gesturePattern: [
+      // Same pattern as attack диффИндо
+      { x: 83, y: 97 },
+      { x: 100, y: 153 },
+      { x: 117, y: 210 },
+      { x: 142, y: 277 },
+      { x: 167, y: 343 },
+      { x: 183, y: 277 },
+      { x: 200, y: 210 },
+      { x: 211, y: 145 },
+      { x: 223, y: 80 },
+      { x: 233, y: 108 },
+      { x: 243, y: 137 },
+      { x: 253, y: 165 },
+      { x: 263, y: 193 },
+      { x: 273, y: 215 },
+      { x: 283, y: 237 },
+      { x: 297, y: 244 },
+      { x: 310, y: 250 },
+      { x: 327, y: 247 },
+      { x: 343, y: 243 },
+      { x: 365, y: 235 },
+      { x: 387, y: 227 }
+    ],
+    counters: [locomotorMortisSpell.id],
+  };
+
+  const diffingoCounterSpell = await storage.createSpell(diffingoCounter);
+  console.log("Created spell:", diffingoCounterSpell.name);
+
   console.log("Spells initialized successfully!");
 }
