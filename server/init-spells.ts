@@ -235,5 +235,46 @@ export async function initializeSpells() {
   const cantisSpell = await storage.createSpell(cantis);
   console.log("Created spell:", cantisSpell.name);
 
+  // Create counter spell: мИмбл вИмбл (26 точек из SVG - узел)
+  const mimbleWimble: InsertSpell = {
+    name: "мИмбл вИмбл",
+    type: "counter",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Узел",
+    gesturePattern: [
+      { x: 39.5, y: 295.3 },
+      { x: 90.8, y: 240.2 },
+      { x: 143.7, y: 201.1 },
+      { x: 210.3, y: 190.4 },
+      { x: 280, y: 190.4 },
+      { x: 339.8, y: 212.6 },
+      { x: 382.7, y: 250 },
+      { x: 397.2, y: 295.3 },
+      { x: 397.2, y: 343.6 },
+      { x: 362.7, y: 378.1 },
+      { x: 321.4, y: 388.8 },
+      { x: 274.7, y: 372.7 },
+      { x: 231, y: 339.8 },
+      { x: 190.4, y: 289.6 },
+      { x: 176.6, y: 235.6 },
+      { x: 198.1, y: 169 },
+      { x: 240.2, y: 123 },
+      { x: 285.4, y: 103.1 },
+      { x: 341.3, y: 112.3 },
+      { x: 381.9, y: 141.4 },
+      { x: 409.5, y: 186.6 },
+      { x: 409.5, y: 236.4 },
+      { x: 381.1, y: 294.6 },
+      { x: 333.6, y: 331.3 },
+      { x: 270.1, y: 352.8 },
+      { x: 105.4, y: 382.7 }
+    ],
+    counters: [cantisSpell.id],
+  };
+
+  const mimbleWimbleSpell = await storage.createSpell(mimbleWimble);
+  console.log("Created spell:", mimbleWimbleSpell.name);
+
   console.log("Spells initialized successfully!");
 }
