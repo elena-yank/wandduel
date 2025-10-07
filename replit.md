@@ -8,7 +8,14 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 **Role System**: Users can join sessions as either active players (maximum 2) or spectators (unlimited). Players can cast spells and participate in duels, while spectators can observe the game but cannot interact with spell-casting controls. Role selection happens before entering the arena, with automatic fallback to spectator if player slots are full. Users can leave the duel at any time via the "Выйти" button in the arena header to return to the main lobby.
 
-**Spell Choice System**: When multiple attack spells share identical gesture patterns and both achieve ≥70% accuracy, the system displays a spell selection dialog for the player to choose which spell they intended to cast. Currently, "алАрте аскЕндаре" (golden) and "баубИллиус" (white-yellow) both use the same gesture (point at opponent) and trigger this choice dialog. After selection, the game proceeds normally with the chosen spell.
+**Spell Choice System**: When multiple attack spells share identical gesture patterns and both achieve ≥35% accuracy, the system displays a spell selection dialog for the player to choose which spell they intended to cast. Currently, "алАрте аскЕндаре" (golden) and "баубИллиус" (white-yellow) both use the same gesture (point at opponent) and trigger this choice dialog. After selection, the game proceeds normally with the chosen spell.
+
+## Recent Changes (October 2025)
+
+**Gesture Recognition Improvements**: The system has been optimized for human input (mouse/touchpad drawing) rather than perfect vectors:
+- Reduced accuracy thresholds: 25% minimum for recognition (down from 40%), 35% minimum for successful spell cast (down from 50%)
+- Updated финИте инкантАтем pattern to realistic shield shape with wavy top line (two waves) and curved bottom, matching human-drawn examples
+- Adjusted scoring system to reward accuracy from 35%+ threshold (Player 1: accuracy/15 points, Player 2: accuracy/12 points)
 
 ## User Preferences
 
