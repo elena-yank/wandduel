@@ -30,14 +30,26 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
           <h4 className="font-serif font-bold text-foreground text-lg" data-testid={`text-spell-name-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}>
             {spell.name}
           </h4>
-          <button
-            onClick={() => handleGestureClick(spell)}
-            className="text-sm text-muted-foreground mt-1 text-left hover:text-foreground transition-colors flex items-center gap-1 group"
-            data-testid={`text-spell-description-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
-          >
-            {spell.description}
-            <Info className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+          <div className="flex items-center gap-2 mt-1">
+            <button
+              onClick={() => handleGestureClick(spell)}
+              className="text-sm text-muted-foreground text-left hover:text-foreground transition-colors flex items-center gap-1 underline decoration-muted-foreground/50"
+              data-testid={`text-spell-description-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              {spell.description}
+              <Info className="w-3 h-3" />
+            </button>
+            <div className="flex items-center gap-1.5">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: spell.color }}
+                data-testid={`color-indicator-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
+              />
+              <span className="text-xs text-muted-foreground" data-testid={`text-color-name-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}>
+                {spell.colorName}
+              </span>
+            </div>
+          </div>
         </div>
         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
           isCounter ? "bg-accent/10" : "bg-destructive/10"
@@ -46,25 +58,6 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
             <Shield className={`w-6 h-6 ${isCounter ? "text-accent" : "text-destructive"}`} />
           ) : (
             <Wand2 className={`w-6 h-6 ${isCounter ? "text-accent" : "text-destructive"}`} />
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-4 mt-3">
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-4 h-4 rounded-full" 
-            style={{ backgroundColor: spell.color }}
-            data-testid={`color-indicator-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
-          />
-          <span className="text-xs text-muted-foreground" data-testid={`text-color-name-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}>
-            {spell.colorName}
-          </span>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {isCounter ? (
-            <span>Counter spell</span>
-          ) : (
-            <span>Attack spell</span>
           )}
         </div>
       </div>
