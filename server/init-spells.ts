@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 22;
+  const EXPECTED_SPELL_COUNT = 24;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -576,6 +576,74 @@ export async function initializeSpells() {
 
   const vomitareViridisSpell = await storage.createSpell(vomitareViridis);
   console.log("Created spell:", vomitareViridisSpell.name);
+
+  // Create fourteenth attack spell: фУмос (18 точек из SVG - спираль)
+  const fumos: InsertSpell = {
+    name: "фУмос",
+    type: "attack",
+    color: "#FFFF00",
+    colorName: "Жёлтый",
+    description: "Спираль",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 200.85, y: 152.04 },
+      { x: 229.46, y: 173.23 },
+      { x: 247.48, y: 199.20 },
+      { x: 244.30, y: 231.52 },
+      { x: 206.68, y: 254.30 },
+      { x: 158.46, y: 253.77 },
+      { x: 119.24, y: 225.16 },
+      { x: 104.94, y: 187.54 },
+      { x: 111.30, y: 141.44 },
+      { x: 140.44, y: 105.41 },
+      { x: 185.48, y: 86.86 },
+      { x: 232.11, y: 91.63 },
+      { x: 277.68, y: 119.71 },
+      { x: 310.00, y: 166.34 },
+      { x: 309.47, y: 240.53 },
+      { x: 284.04, y: 291.92 },
+      { x: 232.11, y: 321.60 },
+      { x: 175.94, y: 331.67 }
+    ],
+  };
+
+  const fumosSpell = await storage.createSpell(fumos);
+  console.log("Created spell:", fumosSpell.name);
+
+  // Create counter spell: вЕнтус (19 точек из SVG - вращение)
+  const ventus: InsertSpell = {
+    name: "вЕнтус",
+    type: "counter",
+    color: "#808080",
+    colorName: "Серый",
+    description: "Вращение",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 346.01, y: 166.91 },
+      { x: 304.15, y: 103.13 },
+      { x: 222.53, y: 73.98 },
+      { x: 148.35, y: 86.64 },
+      { x: 83.17, y: 162.94 },
+      { x: 70.98, y: 239.77 },
+      { x: 113.90, y: 310.24 },
+      { x: 198.16, y: 341.49 },
+      { x: 289.82, y: 327.22 },
+      { x: 333.80, y: 247.74 },
+      { x: 308.37, y: 192.12 },
+      { x: 258.03, y: 143.35 },
+      { x: 181.73, y: 142.82 },
+      { x: 139.34, y: 191.59 },
+      { x: 146.23, y: 246.68 },
+      { x: 198.16, y: 278.46 },
+      { x: 248.49, y: 271.57 },
+      { x: 264.92, y: 232.88 },
+      { x: 224.12, y: 203.73 }
+    ],
+    counters: [fumosSpell.id],
+  };
+
+  const ventusSpell = await storage.createSpell(ventus);
+  console.log("Created spell:", ventusSpell.name);
 
   console.log("Spells initialized successfully!");
 }
