@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 14;
+  const EXPECTED_SPELL_COUNT = 16;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -395,6 +395,45 @@ export async function initializeSpells() {
 
   const diffingoCounterSpell = await storage.createSpell(diffingoCounter);
   console.log("Created spell:", diffingoCounterSpell.name);
+
+  // Create ninth attack spell: мУкус ад нОзем (10 точек из SVG - капля)
+  const mucusAdNosem: InsertSpell = {
+    name: "мУкус ад нОзем",
+    type: "attack",
+    color: "#22C55E",
+    colorName: "Зелёный",
+    description: "Капля",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 202.95, y: 59.88 },
+      { x: 161.61, y: 143.6 },
+      { x: 117.63, y: 208.77 },
+      { x: 126.64, y: 280.31 },
+      { x: 186.52, y: 331.71 },
+      { x: 243.22, y: 333.3 },
+      { x: 290.38, y: 277.13 },
+      { x: 285.08, y: 213.01 },
+      { x: 245.34, y: 143.6 },
+      { x: 237.39, y: 123.46 }
+    ],
+  };
+
+  const mucusAdNosemSpell = await storage.createSpell(mucusAdNosem);
+  console.log("Created spell:", mucusAdNosemSpell.name);
+
+  // Create counter spell: финИте (точка в центре)
+  const finiteCounter: InsertSpell = {
+    name: "финИте",
+    type: "counter",
+    color: "#D1D5DB",
+    colorName: "Бесцветный",
+    description: "Точка в центре",
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    counters: [mucusAdNosemSpell.id],
+  };
+
+  const finiteCounterSpell = await storage.createSpell(finiteCounter);
+  console.log("Created spell:", finiteCounterSpell.name);
 
   console.log("Spells initialized successfully!");
 }
