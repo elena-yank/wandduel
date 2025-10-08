@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 17;
+  const EXPECTED_SPELL_COUNT = 19;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -459,6 +459,41 @@ export async function initializeSpells() {
 
   const finiteCounterSpell = await storage.createSpell(finiteCounter);
   console.log("Created spell:", finiteCounterSpell.name);
+
+  // Create eleventh attack spell: серпенсОртиа (5 точек из SVG - взмах палочкой)
+  const serpensortia: InsertSpell = {
+    name: "серпенсОртиа",
+    type: "attack",
+    color: "#FFFFFF",
+    colorName: "Белый",
+    description: "Взмах палочкой",
+    gesturePattern: [
+      // SVG path: m 262.95472,421.91979 v -78.15782 l -0.66235,-82.79431 -1.32471,-72.19664 -0.66236,-72.85899
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 210.36, y: 337.54 },  // m 262.95472,421.91979
+      { x: 210.36, y: 275.01 },  // v -78.15782
+      { x: 209.83, y: 208.78 },  // l -0.66235,-82.79431
+      { x: 208.78, y: 151.02 },  // -1.32471,-72.19664
+      { x: 208.25, y: 92.73 }    // -0.66236,-72.85899
+    ],
+  };
+
+  const serpensortiaSpell = await storage.createSpell(serpensortia);
+  console.log("Created spell:", serpensortiaSpell.name);
+
+  // Create counter spell: випЕра эванЕско (точка в центре)
+  const viperaEvanesco: InsertSpell = {
+    name: "випЕра эванЕско",
+    type: "counter",
+    color: "#FF4500",
+    colorName: "Пламенный шар",
+    description: "Точка в центре",
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    counters: [serpensortiaSpell.id],
+  };
+
+  const viperaEvanescoSpell = await storage.createSpell(viperaEvanesco);
+  console.log("Created spell:", viperaEvanescoSpell.name);
 
   console.log("Spells initialized successfully!");
 }
