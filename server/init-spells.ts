@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 16;
+  const EXPECTED_SPELL_COUNT = 17;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -147,6 +147,31 @@ export async function initializeSpells() {
   const protegoSpell = await storage.createSpell(protego);
   console.log("Created spell:", protegoSpell.name);
 
+  // Create tenth attack spell: риктусЕмпра (10 точек из SVG - листок)
+  const rictusempra: InsertSpell = {
+    name: "риктусЕмпра",
+    type: "attack",
+    color: "#C0C0C0",
+    colorName: "Серебряный",
+    description: "Листок",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 69.94, y: 279.23 },
+      { x: 128.23, y: 225.71 },
+      { x: 180.16, y: 176.43 },
+      { x: 264.41, y: 165.83 },
+      { x: 353.43, y: 170.6 },
+      { x: 271.3, y: 195.51 },
+      { x: 209.83, y: 252.2 },
+      { x: 144.66, y: 260.15 },
+      { x: 184.93, y: 216.7 },
+      { x: 219.9, y: 200.81 }
+    ],
+  };
+
+  const rictusempraSpell = await storage.createSpell(rictusempra);
+  console.log("Created spell:", rictusempraSpell.name);
+
   // Create counter spell: финИте инкантАтем (shield pattern - 24 points)
   const finiteIncantatem: InsertSpell = {
     name: "финИте инкантАтем",
@@ -182,7 +207,7 @@ export async function initializeSpells() {
       { x: 80, y: 190 },
       { x: 80, y: 140 }
     ],
-    counters: [baubelliusSpell.id, calvorioSpell.id],
+    counters: [baubelliusSpell.id, calvorioSpell.id, rictusempraSpell.id],
   };
 
   const finiteSpell = await storage.createSpell(finiteIncantatem);
