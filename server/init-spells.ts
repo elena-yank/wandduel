@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 25;
+  const EXPECTED_SPELL_COUNT = 27;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -671,6 +671,52 @@ export async function initializeSpells() {
 
   const ventusSpell = await storage.createSpell(ventus);
   console.log("Created spell:", ventusSpell.name);
+
+  // Create sixteenth attack spell: энгОргио (17 точек из SVG - круги)
+  const engorgio: InsertSpell = {
+    name: "энгОргио",
+    type: "attack",
+    color: "#40E0D0",
+    colorName: "Бирюзовый",
+    description: "Круги",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 179.63, y: 66.24 },
+      { x: 176.45, y: 112.87 },
+      { x: 133.53, y: 139.91 },
+      { x: 100.68, y: 175.41 },
+      { x: 94.85, y: 221.00 },
+      { x: 96.44, y: 268.69 },
+      { x: 126.33, y: 306.84 },
+      { x: 171.29, y: 336.52 },
+      { x: 246.52, y: 337.05 },
+      { x: 289.97, y: 307.89 },
+      { x: 325.98, y: 261.73 },
+      { x: 327.57, y: 208.20 },
+      { x: 308.90, y: 216.20 },
+      { x: 270.22, y: 180.17 },
+      { x: 240.55, y: 159.02 },
+      { x: 239.49, y: 118.22 },
+      { x: 238.43, y: 77.42 }
+    ],
+  };
+
+  const engorgioSpell = await storage.createSpell(engorgio);
+  console.log("Created spell:", engorgioSpell.name);
+
+  // Create counter spell: редУцио (точка в центре)
+  const reducio: InsertSpell = {
+    name: "редУцио",
+    type: "counter",
+    color: "#8B00FF",
+    colorName: "Фиолетовый",
+    description: "Точка в центре",
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    counters: [engorgioSpell.id],
+  };
+
+  const reducioSpell = await storage.createSpell(reducio);
+  console.log("Created spell:", reducioSpell.name);
 
   console.log("Spells initialized successfully!");
 }
