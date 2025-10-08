@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 21;
+  const EXPECTED_SPELL_COUNT = 22;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -133,6 +133,39 @@ export async function initializeSpells() {
   const immobulusSpell = await storage.createSpell(immobulus);
   console.log("Created spell:", immobulusSpell.name);
 
+  // Create thirteenth attack spell: флиппЕндо (17 точек из SVG - V с крючком)
+  const flippendo: InsertSpell = {
+    name: "флиппЕндо",
+    type: "attack",
+    color: "#FFA500",
+    colorName: "Оранжевый",
+    description: "V с крючком",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 55.64, y: 190.23 },
+      { x: 85.31, y: 208.24 },
+      { x: 112.34, y: 234.20 },
+      { x: 134.59, y: 270.77 },
+      { x: 147.85, y: 296.20 },
+      { x: 160.57, y: 255.40 },
+      { x: 185.47, y: 192.87 },
+      { x: 216.20, y: 144.12 },
+      { x: 232.63, y: 125.06 },
+      { x: 249.05, y: 117.64 },
+      { x: 268.66, y: 124.53 },
+      { x: 273.96, y: 143.10 },
+      { x: 278.73, y: 162.18 },
+      { x: 291.99, y: 178.60 },
+      { x: 312.66, y: 178.60 },
+      { x: 333.85, y: 158.08 },
+      { x: 339.15, y: 135.30 },
+      { x: 337.00, y: 119.83 }
+    ],
+  };
+
+  const flippendoSpell = await storage.createSpell(flippendo);
+  console.log("Created spell:", flippendoSpell.name);
+
   // Create counter spell: протЕго
   const protego: InsertSpell = {
     name: "протЕго",
@@ -141,7 +174,7 @@ export async function initializeSpells() {
     colorName: "Бесцветный",
     description: "Точка в центре",
     gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
-    counters: [alarteSpell.id, immobulusSpell.id],
+    counters: [alarteSpell.id, immobulusSpell.id, flippendoSpell.id],
   };
 
   const protegoSpell = await storage.createSpell(protego);
