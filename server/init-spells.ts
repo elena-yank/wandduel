@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 24;
+  const EXPECTED_SPELL_COUNT = 25;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -205,6 +205,33 @@ export async function initializeSpells() {
   const rictusempraSpell = await storage.createSpell(rictusempra);
   console.log("Created spell:", rictusempraSpell.name);
 
+  // Create fifteenth attack spell: фурУнкулюс (12 точек из SVG - нарыв)
+  const furunculus: InsertSpell = {
+    name: "фурУнкулюс",
+    type: "attack",
+    color: "#FFD700",
+    colorName: "Золотой",
+    description: "Нарыв",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 193.94, y: 44.51 },
+      { x: 192.88, y: 94.32 },
+      { x: 201.36, y: 128.76 },
+      { x: 232.62, y: 147.31 },
+      { x: 275.01, y: 149.96 },
+      { x: 295.15, y: 171.68 },
+      { x: 296.73, y: 214.07 },
+      { x: 279.25, y: 243.75 },
+      { x: 240.57, y: 260.17 },
+      { x: 205.59, y: 269.71 },
+      { x: 192.35, y: 309.45 },
+      { x: 192.35, y: 361.91 }
+    ],
+  };
+
+  const furunculusSpell = await storage.createSpell(furunculus);
+  console.log("Created spell:", furunculusSpell.name);
+
   // Create counter spell: финИте инкантАтем (shield pattern - 24 points)
   const finiteIncantatem: InsertSpell = {
     name: "финИте инкантАтем",
@@ -240,7 +267,7 @@ export async function initializeSpells() {
       { x: 80, y: 190 },
       { x: 80, y: 140 }
     ],
-    counters: [baubelliusSpell.id, calvorioSpell.id, rictusempraSpell.id],
+    counters: [baubelliusSpell.id, calvorioSpell.id, rictusempraSpell.id, furunculusSpell.id],
   };
 
   const finiteSpell = await storage.createSpell(finiteIncantatem);
