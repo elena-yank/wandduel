@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut } from "lucide-react";
+import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type RecognitionResult = {
@@ -39,8 +39,10 @@ export default function DuelArena() {
   const [spellChoices, setSpellChoices] = useState<Array<{ spell: Spell; accuracy: number }> | null>(null);
   const [showSpellChoice, setShowSpellChoice] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
+  const [showScrollToCanvas, setShowScrollToCanvas] = useState(false);
   const { toast } = useToast();
   const canvasRef = useRef<GestureCanvasRef>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const roundCompleteShownForRound = useRef<number | null>(null);
 
   const roomId = params?.roomId;
@@ -302,6 +304,37 @@ export default function DuelArena() {
 
     fetchSession();
   }, [roomId, setLocation, toast]);
+
+  // Track scroll position to show/hide scroll-to-canvas button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      setShowScrollToCanvas(scrollTop > 100);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Check initial position
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Scroll to canvas function
+  const scrollToCanvas = () => {
+    if (canvasContainerRef.current) {
+      const canvasRect = canvasContainerRef.current.getBoundingClientRect();
+      const absoluteTop = canvasRect.top + window.scrollY;
+      const canvasHeight = canvasRect.height;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate position to center the canvas
+      const scrollTo = absoluteTop - (viewportHeight / 2) + (canvasHeight / 2);
+      
+      window.scrollTo({
+        top: scrollTo,
+        behavior: "smooth"
+      });
+    }
+  };
 
   const handleGestureComplete = (gesture: Point[]) => {
     // Check if user is spectator
@@ -606,7 +639,7 @@ export default function DuelArena() {
         />
 
         {/* Drawing Canvas */}
-        <div className="lg:col-span-1 flex flex-col">
+        <div className="lg:col-span-1 flex flex-col" ref={canvasContainerRef}>
           <Card className="spell-card border-border/20 flex-1 flex flex-col">
             <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex justify-between items-center mb-4">
@@ -824,6 +857,19 @@ export default function DuelArena() {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {/* Scroll to Canvas Button */}
+      {showScrollToCanvas && (
+        <Button
+          onClick={scrollToCanvas}
+          className="fixed bottom-6 right-6 rounded-full w-12 h-12 p-0 shadow-lg glow-primary z-50"
+          variant="default"
+          size="icon"
+          data-testid="button-scroll-to-canvas"
+        >
+          <Wand2 className="w-5 h-5" />
+        </Button>
+      )}
     </div>
   );
 }
