@@ -33,8 +33,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return 0;
   }
 
-  // Normalize both gestures to 0-100 coordinate space
-  const normalizeGesture = (gesture: Point[]) => {
+  // Normalize both gestures to 0-100 coordinate space WHILE PRESERVING ASPECT RATIO
+  const normalizeGestureWithAspectRatio = (gesture: Point[]) => {
     const minX = Math.min(...gesture.map(p => p.x));
     const maxX = Math.max(...gesture.map(p => p.x));
     const minY = Math.min(...gesture.map(p => p.y));
@@ -43,14 +43,37 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     const width = maxX - minX || 1;
     const height = maxY - minY || 1;
     
+    // Use the larger dimension to scale, preserving aspect ratio
+    const scale = Math.max(width, height);
+    
+    // Center the gesture in 100x100 space
+    const offsetX = (100 - (width / scale * 100)) / 2;
+    const offsetY = (100 - (height / scale * 100)) / 2;
+    
     return gesture.map(p => ({
-      x: ((p.x - minX) / width) * 100,
-      y: ((p.y - minY) / height) * 100
+      x: ((p.x - minX) / scale) * 100 + offsetX,
+      y: ((p.y - minY) / scale) * 100 + offsetY
     }));
   };
 
-  const normalizedDrawn = normalizeGesture(drawnGesture);
-  const normalizedTarget = normalizeGesture(targetPattern);
+  const normalizedDrawn = normalizeGestureWithAspectRatio(drawnGesture);
+  const normalizedTarget = normalizeGestureWithAspectRatio(targetPattern);
+  
+  // Calculate aspect ratio difference as additional penalty
+  const getAspectRatio = (gesture: Point[]) => {
+    const minX = Math.min(...gesture.map(p => p.x));
+    const maxX = Math.max(...gesture.map(p => p.x));
+    const minY = Math.min(...gesture.map(p => p.y));
+    const maxY = Math.max(...gesture.map(p => p.y));
+    const width = maxX - minX || 1;
+    const height = maxY - minY || 1;
+    return width / height;
+  };
+  
+  const drawnAspectRatio = getAspectRatio(drawnGesture);
+  const targetAspectRatio = getAspectRatio(targetPattern);
+  const aspectRatioDiff = Math.abs(drawnAspectRatio - targetAspectRatio) / Math.max(drawnAspectRatio, targetAspectRatio);
+  const aspectRatioPenalty = aspectRatioDiff * 0.3; // Up to 30% penalty for different aspect ratios
 
   // Resample both gestures to have the same number of points
   const resampleGesture = (gesture: Point[], targetLength: number) => {
@@ -95,10 +118,12 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   }
 
   const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100); // Max diagonal distance
-  const similarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
+  const baseSimilarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
   
-  // No multiplier - use raw similarity percentage for maximum strictness
-  return Math.min(100, Math.round(similarity * 100));
+  // Apply aspect ratio penalty - gestures with different proportions get lower scores
+  const finalSimilarity = Math.max(0, baseSimilarity - aspectRatioPenalty);
+  
+  return Math.min(100, Math.round(finalSimilarity * 100));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -407,8 +432,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get best match
       const bestMatch = spellMatches[0];
 
-      // Require minimum 50% accuracy for recognition
-      if (!bestMatch || bestMatch.accuracy < 50) {
+      // Require minimum 65% accuracy for recognition (increased from 50% for better precision)
+      if (!bestMatch || bestMatch.accuracy < 65) {
         // If in counter phase and no spell matched, it's wrong defense
         if (spellType === "counter") {
           // Save failed gesture attempt so it appears in history with red X
@@ -439,8 +464,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find all successful matches (>= 60% accuracy) for attack spells
-      const successfulMatches = spellMatches.filter(m => m.accuracy >= 60);
+      // Find all successful matches (>= 70% accuracy) for attack spells (increased from 60%)
+      const successfulMatches = spellMatches.filter(m => m.accuracy >= 70);
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
@@ -537,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spellId,
         drawnGesture: gesture,
         accuracy,
-        successful: accuracy >= 60
+        successful: accuracy >= 70
       });
 
       const savedAttempt = await storage.createGestureAttempt(attemptData);
