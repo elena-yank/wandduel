@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells() {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 19;
+  const EXPECTED_SPELL_COUNT = 21;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -494,6 +494,55 @@ export async function initializeSpells() {
 
   const viperaEvanescoSpell = await storage.createSpell(viperaEvanesco);
   console.log("Created spell:", viperaEvanescoSpell.name);
+
+  // Create twelfth attack spell: слагУлус эрУкто (20 точек из SVG - ромб)
+  const slagulusEructo: InsertSpell = {
+    name: "слагУлус эрУкто",
+    type: "attack",
+    color: "#22C55E",
+    colorName: "Зелёный",
+    description: "Ромб",
+    gesturePattern: [
+      // SVG 500x500 -> Canvas 400x400 (умножаем на 0.8)
+      { x: 309.45, y: 48.75 },
+      { x: 262.29, y: 73.65 },
+      { x: 220.43, y: 93.79 },
+      { x: 171.15, y: 119.22 },
+      { x: 134.59, y: 136.18 },
+      { x: 107.04, y: 149.96 },
+      { x: 108.63, y: 190.76 },
+      { x: 111.28, y: 247.99 },
+      { x: 113.92, y: 294.62 },
+      { x: 115.51, y: 333.83 },
+      { x: 117.10, y: 361.38 },
+      { x: 158.44, y: 340.19 },
+      { x: 198.71, y: 321.64 },
+      { x: 238.45, y: 304.15 },
+      { x: 271.83, y: 289.32 },
+      { x: 297.26, y: 276.60 },
+      { x: 296.73, y: 236.33 },
+      { x: 297.26, y: 204.01 },
+      { x: 297.26, y: 161.08 },
+      { x: 297.26, y: 125.58 }
+    ],
+  };
+
+  const slagulusEructoSpell = await storage.createSpell(slagulusEructo);
+  console.log("Created spell:", slagulusEructoSpell.name);
+
+  // Create counter spell: вомитАре вИридис (точка в центре)
+  const vomitareViridis: InsertSpell = {
+    name: "вомитАре вИридис",
+    type: "counter",
+    color: "#22C55E",
+    colorName: "Зелёный",
+    description: "Точка в центре",
+    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    counters: [slagulusEructoSpell.id],
+  };
+
+  const vomitareViridisSpell = await storage.createSpell(vomitareViridis);
+  console.log("Created spell:", vomitareViridisSpell.name);
 
   console.log("Spells initialized successfully!");
 }
