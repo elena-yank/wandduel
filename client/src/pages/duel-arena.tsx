@@ -102,6 +102,7 @@ export default function DuelArena() {
       if (result.multipleMatches && result.matches) {
         setSpellChoices(result.matches);
         setShowSpellChoice(true);
+        // Don't clear canvas yet - user needs to see their drawing while choosing
         return;
       }
 
@@ -128,6 +129,9 @@ export default function DuelArena() {
         
         // Invalidate spell history to show the failed attempt
         queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
+        
+        // Clear canvas after wrong defense
+        canvasRef.current?.clearCanvas();
         return;
       }
       
@@ -139,12 +143,18 @@ export default function DuelArena() {
         }
         // Invalidate session to get updated phase from server
         queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+        
+        // Clear canvas after successful recognition
+        canvasRef.current?.clearCanvas();
       } else {
         toast({
           title: "Spell Recognition",
           description: result.message || "Try drawing the gesture more precisely",
           variant: "destructive",
         });
+        
+        // Clear canvas after failed recognition
+        canvasRef.current?.clearCanvas();
       }
     },
     onError: () => {
@@ -413,6 +423,9 @@ export default function DuelArena() {
         }
       }
     }
+    
+    // Clear canvas after spell choice
+    canvasRef.current?.clearCanvas();
   };
 
   const attackSpells = allSpells.filter(spell => spell.type === "attack");

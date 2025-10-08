@@ -104,6 +104,14 @@ export default function PlayerCard({
                           )}>
                             {round.spell.name}
                           </span>
+                          <span className={cn(
+                            "text-xs font-medium ml-1",
+                            round.accuracy <= 55 ? "text-red-500" : 
+                            round.accuracy <= 75 ? "text-yellow-500" : 
+                            "text-green-500"
+                          )}>
+                            {round.accuracy}%
+                          </span>
                         </>
                       ) : !round.successful ? (
                         <span className="text-destructive text-lg">❌</span>

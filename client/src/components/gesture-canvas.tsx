@@ -79,7 +79,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     if (!ctx) return;
     
     ctx.strokeStyle = "hsl(259, 74%, 56%)";
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 2.67; // Reduced from 4 to 4/1.5 ≈ 2.67
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.shadowBlur = 10;
@@ -160,7 +160,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
         ref={canvasRef}
         width={400}
         height={400}
-        className="max-w-full h-auto rounded-lg"
+        className="max-w-full h-auto rounded-lg md:max-w-full max-w-[85vw]"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
