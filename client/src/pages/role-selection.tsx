@@ -106,30 +106,30 @@ export default function RoleSelection() {
           </p>
         </header>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6">
           {/* Player Card */}
           <Card 
             className="spell-card border-border/20 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20"
             data-testid="card-role-player"
           >
             <CardHeader>
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 mx-auto">
-                <Users className="w-8 h-8 text-primary" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4 mx-auto">
+                <Users className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
               </div>
-              <CardTitle className="text-center text-2xl">Игрок</CardTitle>
-              <CardDescription className="text-center">
+              <CardTitle className="text-center text-xl sm:text-2xl">Игрок</CardTitle>
+              <CardDescription className="text-center text-sm">
                 Участвуйте в магическом поединке
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2 mb-6 text-sm text-muted-foreground">
+              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 text-sm text-muted-foreground">
                 <li>✨ Рисуйте заклинания</li>
                 <li>⚔️ Атакуйте противника</li>
                 <li>🛡️ Защищайтесь контрзаклинаниями</li>
                 <li>🏆 Набирайте очки для победы</li>
               </ul>
               <Button 
-                className="w-full" 
+                className="w-full text-sm h-11" 
                 onClick={() => handleJoin("player")}
                 disabled={isJoining}
                 data-testid="button-join-player"
@@ -148,16 +148,16 @@ export default function RoleSelection() {
             data-testid="card-role-spectator"
           >
             <CardHeader>
-              <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4 mx-auto">
-                <Eye className="w-8 h-8 text-secondary" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-3 sm:mb-4 mx-auto">
+                <Eye className="w-7 h-7 sm:w-8 sm:h-8 text-secondary" />
               </div>
-              <CardTitle className="text-center text-2xl">Наблюдатель</CardTitle>
-              <CardDescription className="text-center">
+              <CardTitle className="text-center text-xl sm:text-2xl">Наблюдатель</CardTitle>
+              <CardDescription className="text-center text-sm">
                 Следите за ходом битвы
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2 mb-6 text-sm text-muted-foreground">
+              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 text-sm text-muted-foreground">
                 <li>👁️ Наблюдайте за дуэлью</li>
                 <li>📊 Видите все заклинания</li>
                 <li>🎯 Следите за счетом</li>
@@ -165,7 +165,7 @@ export default function RoleSelection() {
               </ul>
               <Button 
                 variant="secondary"
-                className="w-full" 
+                className="w-full text-sm h-11" 
                 onClick={() => handleJoin("spectator")}
                 disabled={isJoining}
                 data-testid="button-join-spectator"

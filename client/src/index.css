@@ -306,3 +306,26 @@
     max-width: 250px !important;
   }
 }
+
+/* Mobile: Compact role selection cards to fit side by side */
+@media only screen and (max-width: 640px) {
+  /* Reduce card padding on mobile */
+  [data-testid="card-role-player"] .p-6,
+  [data-testid="card-role-spectator"] .p-6 {
+    padding: 0.75rem !important;
+  }
+  
+  /* Reduce header padding */
+  [data-testid="card-role-player"] > div:first-child,
+  [data-testid="card-role-spectator"] > div:first-child {
+    padding: 0.75rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  
+  /* Reduce content padding */
+  [data-testid="card-role-player"] > div:last-child,
+  [data-testid="card-role-spectator"] > div:last-child {
+    padding: 0.75rem !important;
+    padding-top: 0.5rem !important;
+  }
+}
