@@ -220,43 +220,54 @@ export default function DuelArena() {
   useEffect(() => {
     const loadAttackSpell = async () => {
       if (session?.currentPhase === "counter" && session.lastAttackSpellId) {
-        // Fetch the attack spell details
-        const spell = allSpells.find(s => s.id === session.lastAttackSpellId);
-        if (spell && !attackResult) {
-          // Set attack result from session data
-          setAttackResult({
-            recognized: true,
-            spell: spell,
-            accuracy: session.lastAttackAccuracy || 100,
-            successful: true
-          });
+        const currentRound = session.currentRound || 1;
+        // Only load if we haven't shown the dialog for this round yet
+        if (roundCompleteShownForRound.current !== currentRound) {
+          // Fetch the attack spell details
+          const spell = allSpells.find(s => s.id === session.lastAttackSpellId);
+          if (spell && !attackResult) {
+            // Set attack result from session data
+            setAttackResult({
+              recognized: true,
+              spell: spell,
+              accuracy: session.lastAttackAccuracy || 100,
+              successful: true
+            });
+          }
         }
       } else if (session?.currentPhase === "attack") {
         // Clear results when new round starts
         setAttackResult(null);
         setCounterResult(null);
+        // Reset the shown round tracker when new round starts
+        if (session?.currentRound && roundCompleteShownForRound.current && roundCompleteShownForRound.current < session.currentRound) {
+          roundCompleteShownForRound.current = null;
+        }
       }
     };
 
     loadAttackSpell();
-  }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, allSpells]);
+  }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, session?.currentRound, allSpells]);
 
   // Load counter spell info from spell history for all players
   useEffect(() => {
     if (session && spellHistory.length > 0) {
       const currentRound = session.currentRound || 1;
-      const player2Attempt = spellHistory.find(
-        h => h.roundNumber === currentRound && h.playerId === 2
-      );
-      
-      if (player2Attempt && player2Attempt.spell && !counterResult) {
-        setCounterResult({
-          recognized: true,
-          spell: player2Attempt.spell,
-          accuracy: player2Attempt.accuracy,
-          isValidCounter: player2Attempt.successful,
-          successful: player2Attempt.successful
-        });
+      // Only load if we haven't shown the dialog for this round yet
+      if (roundCompleteShownForRound.current !== currentRound) {
+        const player2Attempt = spellHistory.find(
+          h => h.roundNumber === currentRound && h.playerId === 2
+        );
+        
+        if (player2Attempt && player2Attempt.spell && !counterResult) {
+          setCounterResult({
+            recognized: true,
+            spell: player2Attempt.spell,
+            accuracy: player2Attempt.accuracy,
+            isValidCounter: player2Attempt.successful,
+            successful: player2Attempt.successful
+          });
+        }
       }
     }
   }, [session, spellHistory, counterResult]);
