@@ -435,20 +435,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Require minimum 65% accuracy for recognition (increased from 50% for better precision)
       if (!bestMatch || bestMatch.accuracy < 65) {
+        // Save failed gesture attempt so it appears in history
+        const attemptData = insertGestureAttemptSchema.parse({
+          sessionId,
+          playerId,
+          roundNumber: session.currentRound,
+          spellId: bestMatch?.spell.id || null,
+          drawnGesture: gesture,
+          accuracy: bestMatch?.accuracy || 0,
+          successful: false
+        });
+        await storage.createGestureAttempt(attemptData);
+        
         // If in counter phase and no spell matched, it's wrong defense
         if (spellType === "counter") {
-          // Save failed gesture attempt so it appears in history with red X
-          const attemptData = insertGestureAttemptSchema.parse({
-            sessionId,
-            playerId,
-            roundNumber: session.currentRound,
-            spellId: bestMatch?.spell.id || null,
-            drawnGesture: gesture,
-            accuracy: bestMatch?.accuracy || 0,
-            successful: false
-          });
-          await storage.createGestureAttempt(attemptData);
-          
           return res.json({
             recognized: false,
             wrongDefenseUsed: true,
@@ -470,6 +470,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
+        // Save the best match attempt (will be replaced if user chooses different spell)
+        const attemptData = insertGestureAttemptSchema.parse({
+          sessionId,
+          playerId,
+          roundNumber: session.currentRound,
+          spellId: bestMatch.spell.id,
+          drawnGesture: gesture,
+          accuracy: bestMatch.accuracy,
+          successful: bestMatch.accuracy >= 70
+        });
+        await storage.createGestureAttempt(attemptData);
+        
         return res.json({
           recognized: true,
           multipleMatches: true,
@@ -556,18 +568,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game session not found" });
       }
 
-      const attemptData = insertGestureAttemptSchema.parse({
-        sessionId,
-        playerId,
-        roundNumber: session.currentRound,
-        spellId,
-        drawnGesture: gesture,
-        accuracy,
-        successful: accuracy >= 70
-      });
+      // Check if attempt already exists for this round and player
+      const existingAttempts = await storage.getGestureAttemptsBySession(sessionId);
+      const currentRound = session.currentRound;
+      const existingAttempt = existingAttempts.find(
+        a => a.roundNumber === currentRound && a.playerId === playerId
+      );
 
-      const savedAttempt = await storage.createGestureAttempt(attemptData);
-      console.log("Saved attempt:", savedAttempt);
+      if (existingAttempt) {
+        // Update existing attempt with chosen spell
+        console.log("Updating existing attempt:", existingAttempt.id);
+        await storage.updateGestureAttempt(existingAttempt.id, {
+          spellId,
+          accuracy,
+          successful: accuracy >= 70
+        });
+      } else {
+        // Create new attempt
+        const attemptData = insertGestureAttemptSchema.parse({
+          sessionId,
+          playerId,
+          roundNumber: currentRound,
+          spellId,
+          drawnGesture: gesture,
+          accuracy,
+          successful: accuracy >= 70
+        });
+        await storage.createGestureAttempt(attemptData);
+      }
       
       res.json({ success: true });
     } catch (error) {

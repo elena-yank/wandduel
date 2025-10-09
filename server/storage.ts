@@ -34,6 +34,7 @@ export interface IStorage {
   // Gesture Attempts
   createGestureAttempt(attempt: InsertGestureAttempt): Promise<GestureAttempt>;
   getGestureAttemptsBySession(sessionId: string): Promise<GestureAttempt[]>;
+  updateGestureAttempt(id: string, updates: Partial<InsertGestureAttempt>): Promise<GestureAttempt | undefined>;
   deleteAllGestureAttempts(): Promise<void>;
 }
 
@@ -293,6 +294,15 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async updateGestureAttempt(id: string, updates: Partial<InsertGestureAttempt>): Promise<GestureAttempt | undefined> {
+    const attempt = this.gestureAttempts.get(id);
+    if (!attempt) return undefined;
+    
+    const updated = { ...attempt, ...updates };
+    this.gestureAttempts.set(id, updated);
+    return updated;
+  }
+
   async deleteAllGestureAttempts(): Promise<void> {
     this.gestureAttempts.clear();
   }
@@ -408,6 +418,14 @@ export class PostgresStorage implements IStorage {
 
   async getGestureAttemptsBySession(sessionId: string): Promise<GestureAttempt[]> {
     return await this.db.select().from(gestureAttempts).where(eq(gestureAttempts.sessionId, sessionId));
+  }
+
+  async updateGestureAttempt(id: string, updates: Partial<InsertGestureAttempt>): Promise<GestureAttempt | undefined> {
+    const result = await this.db.update(gestureAttempts)
+      .set(updates)
+      .where(eq(gestureAttempts.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteAllGestureAttempts(): Promise<void> {
