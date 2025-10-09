@@ -109,16 +109,27 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
   const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
 
-  // Calculate similarity using euclidean distance
-  let totalDistance = 0;
-  for (let i = 0; i < sampleCount; i++) {
-    const dx = resampledDrawn[i].x - resampledTarget[i].x;
-    const dy = resampledDrawn[i].y - resampledTarget[i].y;
-    totalDistance += Math.sqrt(dx * dx + dy * dy);
+  // Try different starting offsets to make recognition independent of starting point
+  // This helps when user draws the same shape but starts from a different point
+  let bestDistance = Infinity;
+  const offsetsToTry = [0, sampleCount / 8, sampleCount / 4, sampleCount / 2, 3 * sampleCount / 4]; // Try 0%, 12.5%, 25%, 50%, 75% offsets
+  
+  for (const offset of offsetsToTry) {
+    let distance = 0;
+    for (let i = 0; i < sampleCount; i++) {
+      const targetIndex = Math.floor((i + offset) % sampleCount);
+      const dx = resampledDrawn[i].x - resampledTarget[targetIndex].x;
+      const dy = resampledDrawn[i].y - resampledTarget[targetIndex].y;
+      distance += Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    if (distance < bestDistance) {
+      bestDistance = distance;
+    }
   }
 
   const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100); // Max diagonal distance
-  const baseSimilarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
+  const baseSimilarity = Math.max(0, 1 - (bestDistance / maxPossibleDistance));
   
   // Apply aspect ratio penalty - gestures with different proportions get lower scores
   const finalSimilarity = Math.max(0, baseSimilarity - aspectRatioPenalty);
