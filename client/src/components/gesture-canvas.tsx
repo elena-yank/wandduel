@@ -18,40 +18,6 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   const [gesturePoints, setGesturePoints] = useState<Point[]>([]);
   const gesturePointsRef = useRef<Point[]>([]);
   const isDrawingRef = useRef(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Initialize audio context
-  useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    return () => {
-      audioContextRef.current?.close();
-    };
-  }, []);
-
-  // Play sparkle sound effect
-  const playSparkleSound = useCallback(() => {
-    const audioContext = audioContextRef.current;
-    if (!audioContext) return;
-
-    // Create a short magical sparkle sound
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    // High frequency for sparkle effect
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
-    
-    // Quick fade out
-    gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-    
-    oscillator.type = "sine";
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.15);
-  }, []);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -88,9 +54,6 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   const startDrawing = useCallback((point: Point) => {
     if (isDisabled) return;
     
-    // Play sparkle sound when starting to draw
-    playSparkleSound();
-    
     setIsDrawing(true);
     isDrawingRef.current = true;
     setGesturePoints([point]);
@@ -102,7 +65,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     
     ctx.beginPath();
     ctx.moveTo(point.x, point.y);
-  }, [isDisabled, playSparkleSound]);
+  }, [isDisabled]);
 
   const draw = useCallback((point: Point) => {
     if (!isDrawingRef.current || isDisabled) return;
@@ -116,7 +79,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     if (!ctx) return;
     
     ctx.strokeStyle = "hsl(259, 74%, 56%)";
-    ctx.lineWidth = 1.5; // Thin magical line
+    ctx.lineWidth = 1; // Very thin magical line
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.shadowBlur = 8;
