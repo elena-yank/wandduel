@@ -12,6 +12,11 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 ## Recent Changes (October 2025)
 
+**UI/UX Improvements (October 9, 2025)**:
+- **Thinner Drawing Line**: Reduced canvas drawing line width from 1.5px to 1px for more elegant, precise spell casting
+- **Audio Removed**: Removed sparkle sound effect during drawing based on user preference
+- **Mobile Role Selection**: Optimized role selection screen for mobile landscape mode with side-by-side card layout, responsive typography (14px minimum), and 44px touch targets for accessibility
+
 **Database Migration Completed (October 7, 2025)**: Successfully migrated from in-memory storage to PostgreSQL for permanent data persistence. All spell patterns now stored in database. Changed from Neon serverless driver to node-postgres (pg) driver due to WebSocket compatibility issues in development environment.
 
 **New Spells Added**: 
