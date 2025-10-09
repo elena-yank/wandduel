@@ -358,7 +358,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             playerId: attempt.playerId,
             spell: spell,
             accuracy: attempt.accuracy,
-            successful: attempt.successful
+            successful: attempt.successful,
+            drawnGesture: attempt.drawnGesture
           };
         })
       );
@@ -508,13 +509,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spellId: selectedSpell.id,
         drawnGesture: gesture,
         accuracy: selectedAccuracy,
-        successful: selectedAccuracy >= 60 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 70 && (spellType === "attack" || isValidCounter)
       });
 
       await storage.createGestureAttempt(attemptData);
 
       // If it's a successful attack spell, update session phase and save the spell
-      if (spellType === "attack" && selectedAccuracy >= 60) {
+      if (spellType === "attack" && selectedAccuracy >= 70) {
         await storage.updateGameSession(sessionId, {
           currentPhase: "counter",
           lastAttackSpellId: selectedSpell.id,
@@ -528,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accuracy: selectedAccuracy,
         isValidCounter,
         wrongDefenseUsed,
-        successful: selectedAccuracy >= 60 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 70 && (spellType === "attack" || isValidCounter)
       });
 
     } catch (error) {

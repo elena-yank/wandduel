@@ -25,6 +25,63 @@ type RecognitionResult = {
   wrongDefenseUsed?: boolean;
 };
 
+// Component to display a small preview of drawn gesture
+function GesturePreview({ gesture, className = "" }: { gesture: Point[]; className?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !gesture || gesture.length === 0) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Normalize gesture to fit in the small canvas
+    const minX = Math.min(...gesture.map(p => p.x));
+    const maxX = Math.max(...gesture.map(p => p.x));
+    const minY = Math.min(...gesture.map(p => p.y));
+    const maxY = Math.max(...gesture.map(p => p.y));
+    
+    const width = maxX - minX || 1;
+    const height = maxY - minY || 1;
+    const scale = Math.min(canvas.width / width, canvas.height / height) * 0.8;
+    
+    const offsetX = (canvas.width - width * scale) / 2;
+    const offsetY = (canvas.height - height * scale) / 2;
+
+    // Draw gesture
+    ctx.strokeStyle = 'rgb(147, 51, 234)'; // Purple color
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    gesture.forEach((point, index) => {
+      const x = (point.x - minX) * scale + offsetX;
+      const y = (point.y - minY) * scale + offsetY;
+      
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+  }, [gesture]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      width={100} 
+      height={100} 
+      className={`bg-background/50 rounded border border-primary/20 ${className}`}
+    />
+  );
+}
+
 export default function DuelArena() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/rooms/:roomId/arena");
@@ -78,6 +135,7 @@ export default function DuelArena() {
     spell: Spell | null;
     accuracy: number;
     successful: boolean;
+    drawnGesture: Point[];
   }>>({
     queryKey: ["/api/sessions", currentSessionId, "spell-history"],
     queryFn: async () => {
@@ -825,12 +883,25 @@ export default function DuelArena() {
           <div className="space-y-3 py-3">
             <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
               <p className="text-xs text-muted-foreground mb-1">Атака Player 1</p>
-              <p className="text-base font-semibold text-foreground">
-                {attackResult?.spell?.name}
-              </p>
-              <p className="text-xs text-primary">
-                Точность: {attackResult?.accuracy}%
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-base font-semibold text-foreground">
+                    {attackResult?.spell?.name}
+                  </p>
+                  <p className="text-xs text-primary">
+                    Точность: {attackResult?.accuracy}%
+                  </p>
+                </div>
+                {(() => {
+                  const currentRound = session?.currentRound || 1;
+                  const attackGesture = spellHistory.find(
+                    h => h.roundNumber === currentRound && h.playerId === 1
+                  )?.drawnGesture;
+                  return attackGesture && attackGesture.length > 0 ? (
+                    <GesturePreview gesture={attackGesture} />
+                  ) : null;
+                })()}
+              </div>
             </div>
             
             <div className={`rounded-lg p-3 border ${
@@ -839,15 +910,28 @@ export default function DuelArena() {
                 : 'bg-red-500/10 border-red-500/20'
             }`}>
               <p className="text-xs text-muted-foreground mb-1">Защита Player 2</p>
-              <p className="text-base font-semibold text-foreground">
-                {counterResult?.spell?.name || "Не выполнено"}
-              </p>
-              <p className={`text-xs ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                Точность: {counterResult?.accuracy}%
-              </p>
-              <p className={`text-xs font-semibold mt-1 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-base font-semibold text-foreground">
+                    {counterResult?.spell?.name || "Не выполнено"}
+                  </p>
+                  <p className={`text-xs ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    Точность: {counterResult?.accuracy}%
+                  </p>
+                  <p className={`text-xs font-semibold mt-1 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
+                  </p>
+                </div>
+                {(() => {
+                  const currentRound = session?.currentRound || 1;
+                  const counterGesture = spellHistory.find(
+                    h => h.roundNumber === currentRound && h.playerId === 2
+                  )?.drawnGesture;
+                  return counterGesture && counterGesture.length > 0 ? (
+                    <GesturePreview gesture={counterGesture} />
+                  ) : null;
+                })()}
+              </div>
             </div>
           </div>
           <Button 
