@@ -300,4 +300,9 @@
     width: 2rem !important;
     height: 2rem !important;
   }
+  
+  /* Constrain gesture pattern SVG in dialog for mobile landscape */
+  [data-testid="dialog-gesture-pattern"] .aspect-square {
+    max-width: 250px !important;
+  }
 }

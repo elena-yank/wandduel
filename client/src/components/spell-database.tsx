@@ -250,32 +250,32 @@ const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({
 
       {/* Gesture Pattern Dialog */}
       <Dialog open={showGestureDialog} onOpenChange={setShowGestureDialog}>
-        <DialogContent className="sm:max-w-md" data-testid="dialog-gesture-pattern">
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto" data-testid="dialog-gesture-pattern">
           <DialogHeader>
-            <DialogTitle className="font-decorative text-2xl decorative-text">
+            <DialogTitle className="font-decorative text-xl sm:text-2xl decorative-text">
               {selectedSpell?.name}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               Паттерн жеста для 100% точности
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="aspect-square w-full mb-4">
+          <div className="py-2 sm:py-4">
+            <div className="aspect-square w-full max-w-[250px] sm:max-w-full mx-auto mb-3 sm:mb-4">
               {selectedSpell?.gesturePattern ? renderGesturePattern(selectedSpell.gesturePattern as Point[]) : null}
             </div>
-            <div className="bg-muted/20 rounded-lg p-4 border border-border/20">
-              <p className="text-sm text-muted-foreground mb-2">
+            <div className="bg-muted/20 rounded-lg p-3 sm:p-4 border border-border/20">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">
                 <span className="font-semibold text-foreground">Описание движения:</span>
               </p>
-              <p className="text-sm text-foreground">
+              <p className="text-xs sm:text-sm text-foreground">
                 {selectedSpell?.description}
               </p>
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mt-2 sm:mt-3">
                 <div 
-                  className="w-4 h-4 rounded-full" 
+                  className="w-3 h-3 sm:w-4 sm:h-4 rounded-full" 
                   style={{ backgroundColor: selectedSpell?.color }}
                 />
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   Цвет: {selectedSpell?.colorName}
                 </span>
               </div>
