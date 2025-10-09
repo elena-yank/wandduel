@@ -7,6 +7,7 @@ import RoomLobby from "@/pages/room-lobby";
 import RoleSelection from "@/pages/role-selection";
 import DuelArena from "@/pages/duel-arena";
 import NotFound from "@/pages/not-found";
+import OrientationLock from "@/components/orientation-lock";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <OrientationLock />
         <div className="magical-bg"></div>
         <Toaster />
         <Router />
