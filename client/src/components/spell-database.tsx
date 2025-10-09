@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useState, forwardRef, useEffect, type ReactElement } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Wand2, Shield, Info } from "lucide-react";
@@ -7,11 +7,40 @@ import { type Spell, type Point } from "@shared/schema";
 interface SpellDatabaseProps {
   attackSpells: Spell[];
   counterSpells: Spell[];
+  highlightSpellId?: string | null;
+  onHighlightComplete?: () => void;
 }
 
-export default function SpellDatabase({ attackSpells, counterSpells, ...props }: SpellDatabaseProps) {
+const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({ 
+  attackSpells, 
+  counterSpells, 
+  highlightSpellId,
+  onHighlightComplete,
+  ...props 
+}, ref) => {
   const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
   const [showGestureDialog, setShowGestureDialog] = useState(false);
+  const [highlightedSpellId, setHighlightedSpellId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (highlightSpellId) {
+      setHighlightedSpellId(highlightSpellId);
+      
+      // Scroll to the highlighted spell
+      const spellElement = document.getElementById(`spell-${highlightSpellId}`);
+      if (spellElement) {
+        spellElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      
+      // Remove highlight after 3 seconds
+      const timer = setTimeout(() => {
+        setHighlightedSpellId(null);
+        onHighlightComplete?.();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [highlightSpellId, onHighlightComplete]);
 
   const handleGestureClick = (spell: Spell) => {
     setSelectedSpell(spell);
@@ -19,9 +48,12 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
   };
   const renderSpellCard = (spell: Spell, isCounter: boolean = false) => (
     <div
+      id={`spell-${spell.id}`}
       key={spell.id}
-      className={`bg-background/50 rounded-lg p-4 border transition-colors ${
+      className={`bg-background/50 rounded-lg p-4 border transition-all ${
         isCounter ? "border-accent/20 hover:border-accent/40" : "border-destructive/20 hover:border-destructive/40"
+      } ${
+        highlightedSpellId === spell.id ? "ring-4 ring-primary shadow-2xl scale-105" : ""
       }`}
       data-testid={`spell-card-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
     >
@@ -172,7 +204,7 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
   };
 
   return (
-    <div className="max-w-7xl mx-auto" {...props}>
+    <div ref={ref} className="max-w-7xl mx-auto" {...props}>
       <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
         <BookOpen className="w-8 h-8 text-primary" />
         Spell Grimoire
@@ -253,4 +285,8 @@ export default function SpellDatabase({ attackSpells, counterSpells, ...props }:
       </Dialog>
     </div>
   );
-}
+});
+
+SpellDatabase.displayName = "SpellDatabase";
+
+export default SpellDatabase;

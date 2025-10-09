@@ -97,9 +97,11 @@ export default function DuelArena() {
   const [showSpellChoice, setShowSpellChoice] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
   const [showScrollToCanvas, setShowScrollToCanvas] = useState(false);
+  const [highlightSpellId, setHighlightSpellId] = useState<string | null>(null);
   const { toast } = useToast();
   const canvasRef = useRef<GestureCanvasRef>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const spellDatabaseRef = useRef<HTMLDivElement>(null);
   const roundCompleteShownForRound = useRef<number | null>(null);
 
   const roomId = params?.roomId;
@@ -539,6 +541,16 @@ export default function DuelArena() {
     return "Round Complete";
   };
 
+  const handleSpellClick = (spellId: string) => {
+    // Set highlight
+    setHighlightSpellId(spellId);
+    
+    // Scroll to spell database
+    if (spellDatabaseRef.current) {
+      spellDatabaseRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const getCurrentPlayer = () => roundPhase === "attack" ? 1 : 2;
 
   if (sessionLoading) {
@@ -704,6 +716,7 @@ export default function DuelArena() {
           lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
           accuracy={attackResult?.accuracy || 0}
           spellHistory={spellHistory.filter(h => h.playerId === 1)}
+          onSpellClick={handleSpellClick}
           data-testid="player-card-1"
         />
 
@@ -774,14 +787,18 @@ export default function DuelArena() {
             "Waiting..."}
           accuracy={counterResult?.accuracy || 0}
           spellHistory={spellHistory.filter(h => h.playerId === 2)}
+          onSpellClick={handleSpellClick}
           data-testid="player-card-2"
         />
       </div>
 
       {/* Spell Database */}
       <SpellDatabase 
+        ref={spellDatabaseRef}
         attackSpells={attackSpells} 
-        counterSpells={counterSpells} 
+        counterSpells={counterSpells}
+        highlightSpellId={highlightSpellId}
+        onHighlightComplete={() => setHighlightSpellId(null)}
         data-testid="spell-database"
       />
 

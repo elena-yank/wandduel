@@ -18,6 +18,7 @@ interface PlayerCardProps {
   lastAccuracy: string;
   accuracy: number;
   spellHistory?: SpellHistoryItem[];
+  onSpellClick?: (spellId: string) => void;
 }
 
 export default function PlayerCard({
@@ -28,6 +29,7 @@ export default function PlayerCard({
   lastAccuracy,
   accuracy,
   spellHistory = [],
+  onSpellClick,
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
@@ -86,12 +88,14 @@ export default function PlayerCard({
                   {roundsDisplay.map((round) => (
                     <div 
                       key={round.roundNumber}
+                      onClick={() => round.spell && onSpellClick?.(round.spell.id)}
                       className={cn(
-                        "px-2 py-1 rounded text-xs border transition-opacity flex items-center gap-1",
+                        "px-2 py-1 rounded text-xs border transition-all flex items-center gap-1",
                         round.spell || !round.successful ? "opacity-100" : "opacity-30 border-dashed",
-                        !round.successful ? "border-destructive/50" : round.spell ? (player === 1 ? "border-primary/30" : "border-accent/30") : "border-border/30"
+                        !round.successful ? "border-destructive/50" : round.spell ? (player === 1 ? "border-primary/30" : "border-accent/30") : "border-border/30",
+                        round.spell && onSpellClick && "cursor-pointer hover:scale-105 hover:shadow-md"
                       )}
-                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}` : !round.successful ? "Неверная защита" : `Раунд ${round.roundNumber}`}
+                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}\n\nКликните, чтобы открыть в гримуаре` : !round.successful ? "Неверная защита" : `Раунд ${round.roundNumber}`}
                     >
                       {round.spell ? (
                         <>
