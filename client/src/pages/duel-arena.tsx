@@ -882,8 +882,8 @@ export default function DuelArena() {
           </DialogHeader>
           <div className="space-y-3 py-3">
             <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
-              <p className="text-xs text-muted-foreground mb-1">Атака Player 1</p>
-              <div className="flex items-start gap-3">
+              <p className="text-xs text-muted-foreground mb-2">Атака Player 1</p>
+              <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <p className="text-base font-semibold text-foreground">
                     {attackResult?.spell?.name}
@@ -898,7 +898,7 @@ export default function DuelArena() {
                     h => h.roundNumber === currentRound && h.playerId === 1
                   )?.drawnGesture;
                   return attackGesture && attackGesture.length > 0 ? (
-                    <GesturePreview gesture={attackGesture} />
+                    <GesturePreview gesture={attackGesture} className="flex-shrink-0" />
                   ) : null;
                 })()}
               </div>
@@ -909,8 +909,8 @@ export default function DuelArena() {
                 ? 'bg-green-500/10 border-green-500/20' 
                 : 'bg-red-500/10 border-red-500/20'
             }`}>
-              <p className="text-xs text-muted-foreground mb-1">Защита Player 2</p>
-              <div className="flex items-start gap-3">
+              <p className="text-xs text-muted-foreground mb-2">Защита Player 2</p>
+              <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <p className="text-base font-semibold text-foreground">
                     {counterResult?.spell?.name || "Не выполнено"}
@@ -928,7 +928,7 @@ export default function DuelArena() {
                     h => h.roundNumber === currentRound && h.playerId === 2
                   )?.drawnGesture;
                   return counterGesture && counterGesture.length > 0 ? (
-                    <GesturePreview gesture={counterGesture} />
+                    <GesturePreview gesture={counterGesture} className="flex-shrink-0" />
                   ) : null;
                 })()}
               </div>
