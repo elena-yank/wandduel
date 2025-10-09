@@ -590,14 +590,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let player1ScoreIncrease = 0;
       let player2ScoreIncrease = 0;
 
-      // Player 1 gets points for successful attack
-      if (player1Accuracy >= 60) {
-        player1ScoreIncrease = Math.floor(player1Accuracy / 15); // 4-6 points based on accuracy
+      // Player 1 gets points for successful attack (accuracy >= 70% required for successful cast)
+      if (player1Accuracy >= 70) {
+        player1ScoreIncrease = Math.floor(player1Accuracy / 10); // 7-10 points based on accuracy
       }
 
-      // Player 2 gets points for successful counter
-      if (counterSuccess && player2Accuracy >= 60) {
-        player2ScoreIncrease = Math.floor(player2Accuracy / 12); // 5-8 points based on accuracy
+      // Player 2 gets points for successful counter (accuracy >= 70% AND valid counter spell)
+      if (counterSuccess && player2Accuracy >= 70) {
+        player2ScoreIncrease = Math.floor(player2Accuracy / 10); // 7-10 points based on accuracy (same as attacker)
       }
 
       // Update game session
