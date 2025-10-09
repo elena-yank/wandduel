@@ -205,7 +205,7 @@ const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({
 
   return (
     <div ref={ref} className="max-w-7xl mx-auto" {...props}>
-      <h2 className="text-2xl md:text-3xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
+      <h2 className="text-3xl font-serif font-bold text-foreground mb-6 flex items-center gap-3">
         <BookOpen className="w-8 h-8 text-primary" />
         Spell Grimoire
       </h2>
@@ -217,7 +217,7 @@ const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({
           return (
             <Card key={attackSpell.id} className="spell-card border-border/20">
               <CardContent className="p-6">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {/* Attack Spell */}
                   <div>
                     <h4 className="text-sm font-semibold text-destructive mb-2 flex items-center gap-2">

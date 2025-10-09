@@ -207,3 +207,97 @@
   background-clip: text;
   text-shadow: 0 0 30px hsl(259 74% 56% / 0.5);
 }
+
+/* Mobile Landscape: Optimize desktop layout for narrow screens */
+@media only screen and (max-width: 1023px) and (orientation: landscape) {
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Reduce overall padding */
+  .p-4,
+  .p-6,
+  .p-8 {
+    padding: 0.5rem !important;
+  }
+  
+  /* Tighter gaps in grids */
+  .gap-6 {
+    gap: 0.75rem !important;
+  }
+  
+  .gap-4 {
+    gap: 0.5rem !important;
+  }
+  
+  /* Reduce margins */
+  .mb-8,
+  .mb-12 {
+    margin-bottom: 1rem !important;
+  }
+  
+  .mb-6 {
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Smaller text sizes but still readable */
+  .text-4xl,
+  .text-5xl,
+  .text-6xl,
+  .text-7xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+  
+  .text-3xl {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+  
+  .text-2xl {
+    font-size: 1.125rem !important;
+    line-height: 1.75rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+  }
+  
+  .text-lg {
+    font-size: 0.9375rem !important;
+    line-height: 1.5rem !important;
+  }
+  
+  /* Smaller canvas to fit in narrower column */
+  .canvas-container canvas {
+    max-width: 95% !important;
+    max-height: 280px !important;
+  }
+  
+  /* Tighter content padding */
+  .max-w-7xl {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Slightly smaller player cards but still readable */
+  .spell-card {
+    font-size: 0.9375rem; /* 15px - minimum for accessibility */
+  }
+  
+  /* Reduce icon sizes to save space */
+  .w-12 {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+  
+  .w-10 {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+}

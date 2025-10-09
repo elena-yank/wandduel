@@ -706,7 +706,7 @@ export default function DuelArena() {
       </div>
 
       {/* Main Game Area */}
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6 mb-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-3 gap-6 mb-8">
         {/* Player 1 Info */}
         <PlayerCard
           player={1}
@@ -721,7 +721,7 @@ export default function DuelArena() {
         />
 
         {/* Drawing Canvas */}
-        <div className="lg:col-span-1 flex flex-col" ref={canvasContainerRef}>
+        <div className="flex flex-col" ref={canvasContainerRef}>
           <Card className="spell-card border-border/20 flex-1 flex flex-col">
             <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex justify-between items-center mb-4">
@@ -811,7 +811,7 @@ export default function DuelArena() {
               How to Duel
             </h3>
             
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="bg-background/30 rounded-lg p-4 border border-border/20">
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3">
                   <span className="text-primary font-bold">1</span>
