@@ -38,6 +38,9 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
   - Stores completed round data in lastCompleted* fields for round dialog display
   - Clears lastCompleted* data when dialog is dismissed to prepare for next round
 - **Turn Validation Fix**: Fixed bug where Player 2 received "Not your turn" error when attacking in even rounds. Frontend turn validation now correctly uses `getCurrentPlayer()` function which determines active player based on round parity instead of hardcoded phase logic
+- **Spell History Display Fix**: Fixed bug where Player 2's attack spells appeared in Player 1's counter-spell section. The `getEnhancedSpellHistory()` function now correctly assigns pending spells based on round parity:
+  - Odd rounds: Player 1 gets pendingAttack, Player 2 gets pendingCounter
+  - Even rounds: Player 2 gets pendingAttack, Player 1 gets pendingCounter
 
 ## User Preferences
 

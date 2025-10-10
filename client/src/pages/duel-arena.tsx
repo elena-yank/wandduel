@@ -642,8 +642,15 @@ export default function DuelArena() {
       return baseHistory;
     }
     
-    // Add pending spell for current round if it exists
-    if (playerId === 1 && session?.pendingAttackSpellId) {
+    // Determine who attacks in current round
+    // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
+    // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
+    const isOddRound = currentRound % 2 === 1;
+    const currentAttacker = isOddRound ? 1 : 2;
+    const currentDefender = isOddRound ? 2 : 1;
+    
+    // Add pending attack for the attacker
+    if (playerId === currentAttacker && session?.pendingAttackSpellId) {
       const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingAttackAccuracy || 0;
@@ -651,7 +658,7 @@ export default function DuelArena() {
           ...baseHistory,
           {
             roundNumber: currentRound,
-            playerId: 1,
+            playerId: currentAttacker,
             spell: pendingSpell,
             accuracy: rawAccuracy,
             successful: rawAccuracy >= 57,
@@ -661,7 +668,8 @@ export default function DuelArena() {
       }
     }
     
-    if (playerId === 2 && session?.pendingCounterSpellId) {
+    // Add pending counter for the defender
+    if (playerId === currentDefender && session?.pendingCounterSpellId) {
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingCounterAccuracy || 0;
@@ -669,7 +677,7 @@ export default function DuelArena() {
           ...baseHistory,
           {
             roundNumber: currentRound,
-            playerId: 2,
+            playerId: currentDefender,
             spell: pendingSpell,
             accuracy: rawAccuracy,
             successful: rawAccuracy >= 57,
