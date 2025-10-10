@@ -985,10 +985,9 @@ export default function DuelArena() {
                   </p>
                 </div>
                 {(() => {
-                  const currentRound = session?.currentRound || 1;
-                  const attackGesture = spellHistory.find(
-                    h => h.roundNumber === currentRound && h.playerId === 1
-                  )?.drawnGesture;
+                  // First try to get gesture from pending session data
+                  const attackGesture = session?.pendingAttackGesture as Point[] | undefined;
+                  
                   return attackGesture && attackGesture.length > 0 ? (
                     <div className="flex items-center justify-center">
                       <GesturePreview gesture={attackGesture} className="flex-shrink-0" />
@@ -1017,10 +1016,9 @@ export default function DuelArena() {
                   </p>
                 </div>
                 {(() => {
-                  const currentRound = session?.currentRound || 1;
-                  const counterGesture = spellHistory.find(
-                    h => h.roundNumber === currentRound && h.playerId === 2
-                  )?.drawnGesture;
+                  // First try to get gesture from pending session data
+                  const counterGesture = session?.pendingCounterGesture as Point[] | undefined;
+                  
                   return counterGesture && counterGesture.length > 0 ? (
                     <div className="flex items-center justify-center">
                       <GesturePreview gesture={counterGesture} className="flex-shrink-0" />
