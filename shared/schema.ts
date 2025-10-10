@@ -45,6 +45,7 @@ export const sessionParticipants = pgTable("session_participants", {
   userName: text("user_name").notNull(),
   role: varchar("role", { enum: ["player", "spectator"] }).notNull(),
   playerNumber: integer("player_number"), // 1 or 2 for players, null for spectators
+  house: varchar("house", { enum: ["gryffindor", "ravenclaw", "slytherin", "hufflepuff"] }).notNull(),
   joinedAt: text("joined_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
