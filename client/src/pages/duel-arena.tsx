@@ -1064,29 +1064,12 @@ export default function DuelArena() {
       </Dialog>
 
       {/* Round Complete Dialog */}
-      <Dialog open={showRoundComplete} onOpenChange={async (open) => {
+      <Dialog open={showRoundComplete} onOpenChange={(open) => {
         if (!open) {
           // Mark this round as dismissed when dialog is closed
           const completedRound = session?.lastCompletedRoundNumber || 1;
           const roundKey = `${completedRound}`;
           dismissedDialogForRound.current = roundKey;
-          
-          // Clear lastCompleted data on backend
-          if (currentSessionId) {
-            await apiRequest("PATCH", `/api/sessions/${currentSessionId}`, {
-              lastCompletedRoundNumber: null,
-              lastCompletedAttackSpellId: null,
-              lastCompletedAttackAccuracy: null,
-              lastCompletedAttackGesture: null,
-              lastCompletedCounterSpellId: null,
-              lastCompletedCounterAccuracy: null,
-              lastCompletedCounterGesture: null,
-              lastCompletedCounterSuccess: null
-            });
-          }
-          
-          // Invalidate session queries to sync with server state
-          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
         }
         setShowRoundComplete(open);
       }}>
@@ -1158,31 +1141,14 @@ export default function DuelArena() {
             </div>
           </div>
           <Button 
-            onClick={async () => {
+            onClick={() => {
               // Mark this round as dismissed for this player using round number
               const completedRound = session?.lastCompletedRoundNumber || 1;
               const roundKey = `${completedRound}`;
               dismissedDialogForRound.current = roundKey;
               
-              // Clear lastCompleted data on backend
-              if (currentSessionId) {
-                await apiRequest("PATCH", `/api/sessions/${currentSessionId}`, {
-                  lastCompletedRoundNumber: null,
-                  lastCompletedAttackSpellId: null,
-                  lastCompletedAttackAccuracy: null,
-                  lastCompletedAttackGesture: null,
-                  lastCompletedCounterSpellId: null,
-                  lastCompletedCounterAccuracy: null,
-                  lastCompletedCounterGesture: null,
-                  lastCompletedCounterSuccess: null
-                });
-              }
-              
-              // Close the dialog
+              // Just close the dialog - data will be cleared when next attack starts
               setShowRoundComplete(false);
-              
-              // Invalidate session queries to sync with server state
-              queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
             }}
             className="w-full glow-primary"
             data-testid="button-continue-next-round"

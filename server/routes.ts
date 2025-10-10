@@ -572,7 +572,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pendingAttackAccuracy: selectedAccuracy,
           currentPhase: selectedAccuracy >= 57 ? "counter" : session.currentPhase,
           lastAttackSpellId: selectedAccuracy >= 57 ? selectedSpell.id : session.lastAttackSpellId,
-          lastAttackAccuracy: selectedAccuracy >= 57 ? selectedAccuracy : session.lastAttackAccuracy
+          lastAttackAccuracy: selectedAccuracy >= 57 ? selectedAccuracy : session.lastAttackAccuracy,
+          // Clear lastCompleted data when new attack starts (so previous round dialog data is removed)
+          lastCompletedRoundNumber: null,
+          lastCompletedAttackSpellId: null,
+          lastCompletedAttackAccuracy: null,
+          lastCompletedAttackGesture: null,
+          lastCompletedCounterSpellId: null,
+          lastCompletedCounterAccuracy: null,
+          lastCompletedCounterGesture: null,
+          lastCompletedCounterSuccess: null
         });
       } else {
         // Counter spell - save pending data first
