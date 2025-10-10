@@ -41,6 +41,18 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 - **Spell History Display Fix**: Fixed bug where Player 2's attack spells appeared in Player 1's counter-spell section. The `getEnhancedSpellHistory()` function now correctly assigns pending spells based on round parity:
   - Odd rounds: Player 1 gets pendingAttack, Player 2 gets pendingCounter
   - Even rounds: Player 2 gets pendingAttack, Player 1 gets pendingCounter
+- **Complexity-Based Scoring System**: Implemented new scoring system based on spell gesture pattern complexity instead of accuracy:
+  - Attack spells: 1 point (1-point pattern), 3 points (2-10 point pattern), 4 points (11+ point pattern)
+  - Defense spells: 2 points (1-point pattern), 4 points (2-10 point pattern), 5 points (11+ point pattern)
+  - Points awarded to correct player based on their role (attacker/defender) determined by round parity
+  - Applied consistently in both auto-complete (recognize-gesture) and manual (complete-round) paths
+  - Requires 52% accuracy threshold and valid counter spell check before awarding points
+- **Gesture Recognition Optimization**: Improved recognition algorithm to be more forgiving while maintaining spell distinction:
+  - Changed penalty system from additive to multiplicative (base × (1 - penalty1) × (1 - penalty2))
+  - Reduced maximum penalties to 10% each (aspect ratio and point count) from previous 20-30%
+  - Simple patterns (1-2 points) have very lenient penalties (max 5% only for extreme cases > 15x points)
+  - Complex patterns (3+ points) have moderate penalties (max 10% each for aspect ratio and point count)
+  - Lowered success threshold from 57% to 52% for better gameplay balance
 
 ## User Preferences
 
