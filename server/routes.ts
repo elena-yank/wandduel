@@ -73,7 +73,7 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const drawnAspectRatio = getAspectRatio(drawnGesture);
   const targetAspectRatio = getAspectRatio(targetPattern);
   const aspectRatioDiff = Math.abs(drawnAspectRatio - targetAspectRatio) / Math.max(drawnAspectRatio, targetAspectRatio);
-  const aspectRatioPenalty = aspectRatioDiff * 0.30; // Balanced penalty - 30%
+  const aspectRatioPenalty = aspectRatioDiff * 0.20; // Gentler penalty - 20%
 
   // Penalty for excessive points (scribbling/filling)
   const targetPointCount = (targetPattern as Point[]).length;
@@ -119,9 +119,9 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
   const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
 
-  // Try multiple starting offsets - balanced between flexibility and strictness
+  // Try multiple starting offsets - more variants for better recognition
   let bestDistance = Infinity;
-  const offsetsToTry = [0, sampleCount / 5, sampleCount / 3, sampleCount / 2, (sampleCount * 2) / 3]; // Try 0%, 20%, 33%, 50%, 67% offsets
+  const offsetsToTry = [0, sampleCount / 8, sampleCount / 5, sampleCount / 3, sampleCount / 2, (sampleCount * 2) / 3, (sampleCount * 7) / 8]; // Try 0%, 12.5%, 20%, 33%, 50%, 67%, 87.5% offsets
   
   for (const offset of offsetsToTry) {
     let distance = 0;

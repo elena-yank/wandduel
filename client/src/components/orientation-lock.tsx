@@ -34,7 +34,7 @@ export default function OrientationLock() {
         <div className="mb-8 animate-bounce">
           <RotateCw className="w-24 h-24 text-primary mx-auto" />
         </div>
-        <h1 className="text-3xl font-angst mb-4 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-angst mb-4 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
           МАГИЧЕСКАЯ ДУЭЛЬ
         </h1>
         <p className="text-xl text-foreground font-serif mb-2">

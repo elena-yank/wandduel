@@ -32,6 +32,9 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 - **Mobile Role Selection**: Optimized role selection screen for mobile landscape mode with side-by-side card layout, responsive typography (14px minimum), and 44px touch targets for accessibility
 - **Custom Angst Font**: Added "Angst Bold Serif" font for main titles "Добро пожаловать!" and "МАГИЧЕСКАЯ ДУЭЛЬ" with gradient text effect
 - **Localization Complete**: Fully localized interface - renamed "MAGICAL DUEL ARENA" to "МАГИЧЕСКАЯ ДУЭЛЬ", changed subtitle to "Каждый взмах палочки решает исход"
+- **Golden Glow Effect**: Added drop-shadow golden glow (rgba(234,179,8,0.5)) to all main titles for magical appearance
+- **House Selection Styling**: Changed selected house border from purple to golden (border-yellow-500) with golden shadow for better visibility
+- **Recognition Tuning**: Reduced aspect ratio penalty from 30% to 20%, increased offset variants from 5 to 7 for better complex pattern recognition (especially иммобулюс)
 
 **Database Migration Completed (October 7, 2025)**: Successfully migrated from in-memory storage to PostgreSQL for permanent data persistence. All spell patterns now stored in database. Changed from Neon serverless driver to node-postgres (pg) driver due to WebSocket compatibility issues in development environment.
 
@@ -44,9 +47,9 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 All 14 spells (8 attack + 6 counter) now stored permanently in database. Note: діффІндо exists as both attack and counter spell with identical gesture patterns.
 
-**Gesture Recognition Requirements (Balanced Settings)**: The system uses balanced gesture recognition that provides a middle ground between strict and lenient matching:
-- **Moderate offset tolerance**: 5 start-point offsets (0%, 20%, 33%, 50%, 67%) allows different starting positions
-- **Aspect ratio penalty**: 30% penalty for gestures with wrong proportions - balanced strictness
+**Gesture Recognition Requirements (Gentler Settings)**: The system uses gentler gesture recognition for better pattern matching:
+- **Enhanced offset tolerance**: 7 start-point offsets (0%, 12.5%, 20%, 33%, 50%, 67%, 87.5%) for better cyclic matching
+- **Aspect ratio penalty**: 20% penalty for gestures with wrong proportions - gentler than before
 - **Point-count penalty**: Up to 20% penalty for excessive points (>3x target), moderate penalty for scribbling
 - **Centering preserved**: Position-invariant matching works correctly
 - Minimum accuracy for recognition: 52%
