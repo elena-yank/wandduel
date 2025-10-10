@@ -43,6 +43,15 @@ export const gameSessions = pgTable("game_sessions", {
   pendingCounterSpellId: varchar("pending_counter_spell_id"),
   pendingCounterGesture: jsonb("pending_counter_gesture"),
   pendingCounterAccuracy: integer("pending_counter_accuracy"),
+  // Last completed round data (for showing round complete dialog)
+  lastCompletedRoundNumber: integer("last_completed_round_number"),
+  lastCompletedAttackSpellId: varchar("last_completed_attack_spell_id"),
+  lastCompletedAttackAccuracy: integer("last_completed_attack_accuracy"),
+  lastCompletedAttackGesture: jsonb("last_completed_attack_gesture"),
+  lastCompletedCounterSpellId: varchar("last_completed_counter_spell_id"),
+  lastCompletedCounterAccuracy: integer("last_completed_counter_accuracy"),
+  lastCompletedCounterGesture: jsonb("last_completed_counter_gesture"),
+  lastCompletedCounterSuccess: boolean("last_completed_counter_success"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 

@@ -644,6 +644,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             player1Score,
             player2Score,
             gameStatus,
+            // Save last completed round data for dialog display
+            lastCompletedRoundNumber: currentRound,
+            lastCompletedAttackSpellId: session.pendingAttackSpellId,
+            lastCompletedAttackAccuracy: session.pendingAttackAccuracy,
+            lastCompletedAttackGesture: session.pendingAttackGesture,
+            lastCompletedCounterSpellId: selectedSpell.id,
+            lastCompletedCounterAccuracy: selectedAccuracy,
+            lastCompletedCounterGesture: gesture,
+            lastCompletedCounterSuccess: counterSuccessful,
             // Clear pending data
             pendingAttackPlayerId: null,
             pendingAttackSpellId: null,

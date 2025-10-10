@@ -28,7 +28,8 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
   - Saves both attack and counter attempts to history when counter spell is cast with ≥57% accuracy
   - Updates player scores (Player 1 for successful attack, Player 2 for successful and valid counter)
   - Advances to next round or completes game after 5 rounds
-  - Clears all pending session data to prepare for next round
+  - Stores completed round data in lastCompleted* fields for round dialog display
+  - Clears lastCompleted* data when dialog is dismissed to prepare for next round
 
 ## User Preferences
 

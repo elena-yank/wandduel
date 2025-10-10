@@ -509,30 +509,19 @@ export default function DuelArena() {
     }
   };
 
-  // Show round complete dialog after both players have cast their spells
+  // Show round complete dialog when a round is completed
   useEffect(() => {
-    const currentRound = session?.currentRound || 1;
-    
-    if (
-      attackResult && 
-      counterResult && 
-      !showRoundComplete
-    ) {
-      // Use round number as the key instead of spell combination
-      const roundKey = `${currentRound}`;
+    // Show dialog if we have lastCompletedRoundNumber and haven't shown/dismissed this round yet
+    if (session?.lastCompletedRoundNumber && !showRoundComplete) {
+      const roundKey = `${session.lastCompletedRoundNumber}`;
       
       // Only show if we haven't shown for this round AND user hasn't dismissed it
       if (roundCompleteShownForRound.current !== roundKey && dismissedDialogForRound.current !== roundKey) {
-        // Wait a moment to show the result, then show round complete dialog
-        const timer = setTimeout(() => {
-          setShowRoundComplete(true);
-          roundCompleteShownForRound.current = roundKey;
-        }, 1500); // 1.5 second delay to show result
-        
-        return () => clearTimeout(timer);
+        setShowRoundComplete(true);
+        roundCompleteShownForRound.current = roundKey;
       }
     }
-  }, [attackResult, counterResult, showRoundComplete, session?.currentRound]);
+  }, [session?.lastCompletedRoundNumber, showRoundComplete]);
 
   const handleLeave = () => {
     if (roomId) {
@@ -1075,16 +1064,26 @@ export default function DuelArena() {
       </Dialog>
 
       {/* Round Complete Dialog */}
-      <Dialog open={showRoundComplete} onOpenChange={(open) => {
+      <Dialog open={showRoundComplete} onOpenChange={async (open) => {
         if (!open) {
           // Mark this round as dismissed when dialog is closed
-          const currentRound = session?.currentRound || 1;
-          const roundKey = `${currentRound}`;
+          const completedRound = session?.lastCompletedRoundNumber || 1;
+          const roundKey = `${completedRound}`;
           dismissedDialogForRound.current = roundKey;
           
-          // Clear results
-          setAttackResult(null);
-          setCounterResult(null);
+          // Clear lastCompleted data on backend
+          if (currentSessionId) {
+            await apiRequest("PATCH", `/api/sessions/${currentSessionId}`, {
+              lastCompletedRoundNumber: null,
+              lastCompletedAttackSpellId: null,
+              lastCompletedAttackAccuracy: null,
+              lastCompletedAttackGesture: null,
+              lastCompletedCounterSpellId: null,
+              lastCompletedCounterAccuracy: null,
+              lastCompletedCounterGesture: null,
+              lastCompletedCounterSuccess: null
+            });
+          }
           
           // Invalidate session queries to sync with server state
           queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
@@ -1106,15 +1105,16 @@ export default function DuelArena() {
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-foreground">
-                    {attackResult?.spell?.name}
+                    {session?.lastCompletedAttackSpellId ? 
+                      allSpells.find(s => s.id === session.lastCompletedAttackSpellId)?.name : 
+                      "Неизвестно"}
                   </p>
                   <p className="text-xs text-primary">
-                    Точность: {attackResult?.accuracy || 0}%
+                    Точность: {session?.lastCompletedAttackAccuracy || 0}%
                   </p>
                 </div>
                 {(() => {
-                  // First try to get gesture from pending session data
-                  const attackGesture = session?.pendingAttackGesture as Point[] | undefined;
+                  const attackGesture = session?.lastCompletedAttackGesture as Point[] | undefined;
                   
                   return attackGesture && attackGesture.length > 0 ? (
                     <div className="flex items-center justify-center">
@@ -1126,7 +1126,7 @@ export default function DuelArena() {
             </div>
             
             <div className={`rounded-lg p-3 border ${
-              counterResult?.isValidCounter 
+              session?.lastCompletedCounterSuccess 
                 ? 'bg-green-500/10 border-green-500/20' 
                 : 'bg-red-500/10 border-red-500/20'
             }`}>
@@ -1134,18 +1134,19 @@ export default function DuelArena() {
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-foreground">
-                    {counterResult?.spell?.name || "Не выполнено"}
+                    {session?.lastCompletedCounterSpellId ? 
+                      allSpells.find(s => s.id === session.lastCompletedCounterSpellId)?.name : 
+                      "Не выполнено"}
                   </p>
-                  <p className={`text-xs ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    Точность: {counterResult?.accuracy || 0}%
+                  <p className={`text-xs ${session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    Точность: {session?.lastCompletedCounterAccuracy || 0}%
                   </p>
-                  <p className={`text-xs font-semibold mt-1 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
+                  <p className={`text-xs font-semibold mt-1 ${session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {session?.lastCompletedCounterSuccess ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
                   </p>
                 </div>
                 {(() => {
-                  // First try to get gesture from pending session data
-                  const counterGesture = session?.pendingCounterGesture as Point[] | undefined;
+                  const counterGesture = session?.lastCompletedCounterGesture as Point[] | undefined;
                   
                   return counterGesture && counterGesture.length > 0 ? (
                     <div className="flex items-center justify-center">
@@ -1157,16 +1158,28 @@ export default function DuelArena() {
             </div>
           </div>
           <Button 
-            onClick={() => {
+            onClick={async () => {
               // Mark this round as dismissed for this player using round number
-              const currentRound = session?.currentRound || 1;
-              const roundKey = `${currentRound}`;
+              const completedRound = session?.lastCompletedRoundNumber || 1;
+              const roundKey = `${completedRound}`;
               dismissedDialogForRound.current = roundKey;
               
-              // Close the dialog and clear results
+              // Clear lastCompleted data on backend
+              if (currentSessionId) {
+                await apiRequest("PATCH", `/api/sessions/${currentSessionId}`, {
+                  lastCompletedRoundNumber: null,
+                  lastCompletedAttackSpellId: null,
+                  lastCompletedAttackAccuracy: null,
+                  lastCompletedAttackGesture: null,
+                  lastCompletedCounterSpellId: null,
+                  lastCompletedCounterAccuracy: null,
+                  lastCompletedCounterGesture: null,
+                  lastCompletedCounterSuccess: null
+                });
+              }
+              
+              // Close the dialog
               setShowRoundComplete(false);
-              setAttackResult(null);
-              setCounterResult(null);
               
               // Invalidate session queries to sync with server state
               queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
