@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Wand2, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import duelIconPath from "@assets/image_1760081444104.png";
 
 export default function RoomLobby() {
   const [, setLocation] = useLocation();
@@ -103,7 +104,7 @@ export default function RoomLobby() {
           <CardContent className="p-8">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
-                <Wand2 className="w-16 h-16 text-primary" />
+                <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
               </div>
               <h1 className="text-4xl md:text-5xl font-angst decorative-text mb-3">
                 Добро пожаловать!
