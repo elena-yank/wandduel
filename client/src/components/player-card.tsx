@@ -17,6 +17,7 @@ interface PlayerCardProps {
   houseIcon?: string;
   isActive: boolean;
   lastSpell: string;
+  lastSpellId?: string; // ID of last spell for clicking
   lastAccuracy: string;
   accuracy: number;
   spellHistory?: SpellHistoryItem[];
@@ -72,6 +73,7 @@ export default function PlayerCard({
   houseIcon,
   isActive,
   lastSpell,
+  lastSpellId,
   lastAccuracy,
   accuracy,
   spellHistory = [],
@@ -110,7 +112,8 @@ export default function PlayerCard({
       )}
       style={houseTheme ? {
         borderColor: isActive ? houseTheme.borderActiveColor : houseTheme.borderColor,
-        backgroundColor: houseTheme.bgColor
+        backgroundColor: houseTheme.bgColor,
+        boxShadow: isActive ? `0 10px 15px -3px ${houseTheme.borderActiveColor}80, 0 4px 6px -4px ${houseTheme.borderActiveColor}80` : undefined
       } : undefined}
       {...props}
     >
@@ -223,21 +226,28 @@ export default function PlayerCard({
                   ))}
                 </div>
               ) : (
-                <p 
+                <div
+                  onClick={() => lastSpellId && onSpellClick?.(lastSpellId)}
                   className={cn(
-                    "font-serif font-bold",
-                    !houseTheme && (player === 1 ? "text-primary" : "text-accent")
+                    "cursor-pointer transition-all hover:scale-105",
+                    lastSpellId && onSpellClick && "hover:shadow-md"
                   )}
-                  style={houseTheme ? { color: houseTheme.textColor } : undefined}
-                  data-testid={`text-player-${player}-last-spell`}
+                  title={lastSpellId ? "Кликните, чтобы открыть в гримуаре" : undefined}
                 >
-                  {lastSpell}
-                </p>
-              )}
-              {!roundsDisplay.some(r => r.spell || !r.successful) && (
-                <p className="text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-last-accuracy`}>
-                  {lastAccuracy}
-                </p>
+                  <p 
+                    className={cn(
+                      "font-serif font-bold",
+                      !houseTheme && (player === 1 ? "text-primary" : "text-accent")
+                    )}
+                    style={houseTheme ? { color: houseTheme.textColor } : undefined}
+                    data-testid={`text-player-${player}-last-spell`}
+                  >
+                    {lastSpell}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-last-accuracy`}>
+                    {lastAccuracy}
+                  </p>
+                </div>
               )}
             </div>
           </div>

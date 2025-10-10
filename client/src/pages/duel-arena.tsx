@@ -87,8 +87,8 @@ function GesturePreview({ gesture, className = "" }: { gesture: Point[]; classNa
   return (
     <canvas 
       ref={canvasRef} 
-      width={100} 
-      height={100} 
+      width={80} 
+      height={80} 
       className={`bg-background/50 rounded border border-primary/20 ${className}`}
     />
   );
@@ -784,6 +784,7 @@ export default function DuelArena() {
           houseIcon={player1?.house ? houseIcons[player1.house] : undefined}
           isActive={getCurrentPlayer() === 1}
           lastSpell={attackResult?.spell?.name || "-"}
+          lastSpellId={attackResult?.spell?.id}
           lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
           accuracy={attackResult?.accuracy || 0}
           spellHistory={spellHistory.filter(h => h.playerId === 1)}
@@ -855,6 +856,7 @@ export default function DuelArena() {
           houseIcon={player2?.house ? houseIcons[player2.house] : undefined}
           isActive={getCurrentPlayer() === 2}
           lastSpell={counterResult?.spell?.name || "-"}
+          lastSpellId={counterResult?.spell?.id}
           lastAccuracy={counterResult ? 
             `${counterResult.accuracy}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
             "Waiting..."}
@@ -976,7 +978,7 @@ export default function DuelArena() {
             <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
               <p className="text-xs text-muted-foreground mb-2">Атака Player 1</p>
               <div className="flex items-center gap-3">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-foreground">
                     {attackResult?.spell?.name}
                   </p>
@@ -990,7 +992,9 @@ export default function DuelArena() {
                     h => h.roundNumber === currentRound && h.playerId === 1
                   )?.drawnGesture;
                   return attackGesture && attackGesture.length > 0 ? (
-                    <GesturePreview gesture={attackGesture} className="flex-shrink-0" />
+                    <div className="flex items-center justify-center">
+                      <GesturePreview gesture={attackGesture} className="flex-shrink-0" />
+                    </div>
                   ) : null;
                 })()}
               </div>
@@ -1003,7 +1007,7 @@ export default function DuelArena() {
             }`}>
               <p className="text-xs text-muted-foreground mb-2">Защита Player 2</p>
               <div className="flex items-center gap-3">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-foreground">
                     {counterResult?.spell?.name || "Не выполнено"}
                   </p>
@@ -1020,7 +1024,9 @@ export default function DuelArena() {
                     h => h.roundNumber === currentRound && h.playerId === 2
                   )?.drawnGesture;
                   return counterGesture && counterGesture.length > 0 ? (
-                    <GesturePreview gesture={counterGesture} className="flex-shrink-0" />
+                    <div className="flex items-center justify-center">
+                      <GesturePreview gesture={counterGesture} className="flex-shrink-0" />
+                    </div>
                   ) : null;
                 })()}
               </div>
