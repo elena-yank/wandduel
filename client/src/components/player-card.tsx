@@ -29,7 +29,7 @@ const houseColors = {
   gryffindor: {
     borderColor: "#DC2626", // red-600
     borderActiveColor: "#EF4444", // red-500
-    bgColor: "rgba(220, 38, 38, 0.15)", // red-600/15
+    bgColor: "rgba(220, 38, 38, 0.35)", // red-600/35 - increased from 15%
     iconBg: "rgba(220, 38, 38, 0.25)", // red-600/25
     textColor: "#EF4444", // red-500
     accentColor: "#EAB308", // yellow-500
@@ -38,7 +38,7 @@ const houseColors = {
   slytherin: {
     borderColor: "#059669", // green-600
     borderActiveColor: "#10B981", // green-500
-    bgColor: "rgba(5, 150, 105, 0.15)", // green-600/15
+    bgColor: "rgba(5, 150, 105, 0.35)", // green-600/35 - increased from 15%
     iconBg: "rgba(5, 150, 105, 0.25)", // green-600/25
     textColor: "#10B981", // green-500
     accentColor: "#9CA3AF", // gray-400
@@ -47,7 +47,7 @@ const houseColors = {
   ravenclaw: {
     borderColor: "#2563EB", // blue-600
     borderActiveColor: "#3B82F6", // blue-500
-    bgColor: "rgba(37, 99, 235, 0.15)", // blue-600/15
+    bgColor: "rgba(37, 99, 235, 0.35)", // blue-600/35 - increased from 15%
     iconBg: "rgba(37, 99, 235, 0.25)", // blue-600/25
     textColor: "#3B82F6", // blue-500
     accentColor: "#9CA3AF", // gray-400
@@ -56,7 +56,7 @@ const houseColors = {
   hufflepuff: {
     borderColor: "#CA8A04", // yellow-600
     borderActiveColor: "#EAB308", // yellow-500
-    bgColor: "rgba(202, 138, 4, 0.15)", // yellow-600/15
+    bgColor: "rgba(202, 138, 4, 0.35)", // yellow-600/35 - increased from 15%
     iconBg: "rgba(202, 138, 4, 0.25)", // yellow-600/25
     textColor: "#EAB308", // yellow-500
     accentColor: "#374151", // gray-700
