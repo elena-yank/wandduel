@@ -7,7 +7,7 @@ interface CompactColorPaletteProps {
 }
 
 // Spell color groups with their Russian names (compact version)
-const SPELL_COLORS = [
+export const SPELL_COLORS = [
   { name: "Красный", hex: "#EF4444", colorName: "Красный" },
   { name: "Зелёный", hex: "#22C55E", colorName: "Зелёный" },
   { name: "Голубой", hex: "#3B82F6", colorName: "Голубой" },

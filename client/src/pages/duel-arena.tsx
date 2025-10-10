@@ -6,6 +6,7 @@ import { type GameSession, type Spell, type Point, type SessionParticipant } fro
 import GestureCanvas, { type GestureCanvasRef } from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
 import SpellDatabase from "@/components/spell-database";
+import { SPELL_COLORS } from "@/components/compact-color-palette";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -280,6 +281,18 @@ export default function DuelArena() {
   const player2 = players.find(p => p.playerNumber === 2);
   const player1Name = player1?.userName || "Player 1";
   const player2Name = player2?.userName || "Player 2";
+
+  // Get hex color for drawing based on selected color
+  const getDrawColor = (): string => {
+    if (!selectedColor) return "hsl(259, 74%, 56%)"; // Default purple
+    const colorObj = SPELL_COLORS.find(c => c.colorName === selectedColor);
+    return colorObj?.hex || "hsl(259, 74%, 56%)";
+  };
+
+  // Boost displayed accuracy by 15% (max 100)
+  const boostAccuracy = (accuracy: number): number => {
+    return Math.min(100, accuracy + 15);
+  };
 
   // Find current user's participant to get their actual player number
   const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
@@ -838,8 +851,8 @@ export default function DuelArena() {
           isActive={getCurrentPlayer() === 1}
           lastSpell={attackResult?.spell?.name || "-"}
           lastSpellId={attackResult?.spell?.id}
-          lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
-          accuracy={attackResult?.accuracy || 0}
+          lastAccuracy={attackResult ? `${boostAccuracy(attackResult.accuracy)}% accuracy` : "Waiting..."}
+          accuracy={attackResult?.accuracy ? boostAccuracy(attackResult.accuracy) : 0}
           spellHistory={getEnhancedSpellHistory(1)}
           onSpellClick={handleSpellClick}
           selectedColor={selectedColor}
@@ -872,6 +885,7 @@ export default function DuelArena() {
                   onGestureComplete={handleGestureComplete}
                   isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer())}
                   className="canvas-container"
+                  drawColor={getDrawColor()}
                   data-testid="gesture-canvas"
                 />
               </div>
@@ -914,9 +928,9 @@ export default function DuelArena() {
           lastSpell={counterResult?.spell?.name || "-"}
           lastSpellId={counterResult?.spell?.id}
           lastAccuracy={counterResult ? 
-            `${counterResult.accuracy}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
+            `${boostAccuracy(counterResult.accuracy)}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
             "Waiting..."}
-          accuracy={counterResult?.accuracy || 0}
+          accuracy={counterResult?.accuracy ? boostAccuracy(counterResult.accuracy) : 0}
           spellHistory={getEnhancedSpellHistory(2)}
           onSpellClick={handleSpellClick}
           selectedColor={selectedColor}
@@ -1010,7 +1024,7 @@ export default function DuelArena() {
                       {choice.spell.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {choice.spell.colorName} • {choice.accuracy.toFixed(0)}% точность
+                      {choice.spell.colorName} • {boostAccuracy(choice.accuracy).toFixed(0)}% точность
                     </p>
                   </div>
                 </div>
@@ -1040,7 +1054,7 @@ export default function DuelArena() {
                     {attackResult?.spell?.name}
                   </p>
                   <p className="text-xs text-primary">
-                    Точность: {attackResult?.accuracy}%
+                    Точность: {attackResult?.accuracy ? boostAccuracy(attackResult.accuracy) : 0}%
                   </p>
                 </div>
                 {(() => {
@@ -1068,7 +1082,7 @@ export default function DuelArena() {
                     {counterResult?.spell?.name || "Не выполнено"}
                   </p>
                   <p className={`text-xs ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    Точность: {counterResult?.accuracy}%
+                    Точность: {counterResult?.accuracy ? boostAccuracy(counterResult.accuracy) : 0}%
                   </p>
                   <p className={`text-xs font-semibold mt-1 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}

@@ -6,6 +6,7 @@ interface GestureCanvasProps {
   onGestureComplete: (gesture: Point[]) => void;
   isDisabled?: boolean;
   className?: string;
+  drawColor?: string; // Hex color for drawing the gesture
 }
 
 export interface GestureCanvasRef {
@@ -13,7 +14,7 @@ export interface GestureCanvasRef {
 }
 
 const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
-  ({ onGestureComplete, isDisabled = false, className = "", ...props }, ref) => {
+  ({ onGestureComplete, isDisabled = false, className = "", drawColor = "hsl(259, 74%, 56%)", ...props }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [gesturePoints, setGesturePoints] = useState<Point[]>([]);
@@ -99,16 +100,16 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     const ctx = canvas?.getContext("2d");
     if (!ctx) return;
     
-    ctx.strokeStyle = "hsl(259, 74%, 56%)";
+    ctx.strokeStyle = drawColor;
     ctx.lineWidth = 1; // Very thin magical line
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.shadowBlur = 8;
-    ctx.shadowColor = "hsl(259, 74%, 56%)";
+    ctx.shadowColor = drawColor;
     
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
-  }, [isDisabled]);
+  }, [isDisabled, drawColor]);
 
   const stopDrawing = useCallback(() => {
     if (!isDrawingRef.current || isDisabled) return;
