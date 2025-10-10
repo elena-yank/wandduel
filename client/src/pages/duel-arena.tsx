@@ -6,7 +6,6 @@ import { type GameSession, type Spell, type Point, type SessionParticipant } fro
 import GestureCanvas, { type GestureCanvasRef } from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
 import SpellDatabase from "@/components/spell-database";
-import ColorPalette from "@/components/color-palette";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -843,6 +842,9 @@ export default function DuelArena() {
           accuracy={attackResult?.accuracy || 0}
           spellHistory={getEnhancedSpellHistory(1)}
           onSpellClick={handleSpellClick}
+          selectedColor={selectedColor}
+          onColorSelect={setSelectedColor}
+          showColorPalette={userRole === "player" && actualPlayerNumber === 1 && getCurrentPlayer() === 1}
           data-testid="player-card-1"
         />
 
@@ -873,16 +875,6 @@ export default function DuelArena() {
                   data-testid="gesture-canvas"
                 />
               </div>
-              
-              {/* Color Palette */}
-              {userRole !== "spectator" && !(actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) && (
-                <div className="mt-4">
-                  <ColorPalette
-                    selectedColor={selectedColor}
-                    onColorSelect={setSelectedColor}
-                  />
-                </div>
-              )}
               
               {userRole === "spectator" && (
                 <div className="text-center text-sm text-muted-foreground mt-2">
@@ -927,6 +919,9 @@ export default function DuelArena() {
           accuracy={counterResult?.accuracy || 0}
           spellHistory={getEnhancedSpellHistory(2)}
           onSpellClick={handleSpellClick}
+          selectedColor={selectedColor}
+          onColorSelect={setSelectedColor}
+          showColorPalette={userRole === "player" && actualPlayerNumber === 2 && getCurrentPlayer() === 2}
           data-testid="player-card-2"
         />
       </div>

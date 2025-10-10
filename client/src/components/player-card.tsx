@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { User, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Spell } from "@shared/schema";
+import CompactColorPalette from "@/components/compact-color-palette";
 
 interface SpellHistoryItem {
   roundNumber: number;
@@ -22,6 +23,9 @@ interface PlayerCardProps {
   accuracy: number;
   spellHistory?: SpellHistoryItem[];
   onSpellClick?: (spellId: string) => void;
+  selectedColor?: string | null;
+  onColorSelect?: (colorName: string | null) => void;
+  showColorPalette?: boolean;
 }
 
 // House color themes with actual color values
@@ -76,6 +80,9 @@ export default function PlayerCard({
   accuracy,
   spellHistory = [],
   onSpellClick,
+  selectedColor,
+  onColorSelect,
+  showColorPalette = false,
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
@@ -250,6 +257,16 @@ export default function PlayerCard({
               {accuracy}%
             </p>
           </div>
+
+          {/* Color Palette */}
+          {showColorPalette && onColorSelect && (
+            <div className="pt-2">
+              <CompactColorPalette
+                selectedColor={selectedColor || null}
+                onColorSelect={onColorSelect}
+              />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
