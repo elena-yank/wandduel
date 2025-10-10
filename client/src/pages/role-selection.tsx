@@ -98,7 +98,7 @@ export default function RoleSelection() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <header className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-decorative decorative-text mb-4 tracking-wider">
+          <h1 className="text-4xl md:text-6xl font-angst decorative-text mb-4 tracking-wider">
             МАГИЧЕСКАЯ ДУЭЛЬ
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground font-serif">

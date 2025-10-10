@@ -7,6 +7,13 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'Angst';
+  src: url('/fonts/angst-boldserif.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -206,6 +213,12 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   text-shadow: 0 0 30px hsl(259 74% 56% / 0.5);
+}
+
+/* Angst Font for Main Titles */
+.font-angst {
+  font-family: 'Angst', var(--font-decorative);
+  font-weight: bold;
 }
 
 /* Mobile Landscape: Optimize desktop layout for narrow screens */

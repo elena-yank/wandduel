@@ -105,7 +105,7 @@ export default function RoomLobby() {
               <div className="flex justify-center mb-4">
                 <Wand2 className="w-16 h-16 text-primary" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-decorative decorative-text mb-3">
+              <h1 className="text-4xl md:text-5xl font-angst decorative-text mb-3">
                 Добро пожаловать!
               </h1>
               <p className="text-lg text-muted-foreground font-serif">
