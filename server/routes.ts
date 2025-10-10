@@ -418,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sessions/:sessionId/recognize-gesture", async (req, res) => {
     try {
       const { sessionId } = req.params;
-      const { gesture, playerId } = req.body;
+      const { gesture, playerId, colorFilter } = req.body;
       
       if (!gesture || !Array.isArray(gesture) || gesture.length < 1) {
         return res.status(400).json({ message: "Invalid gesture data" });
@@ -442,6 +442,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             spell.counters.includes(lastAttackSpell.id)
           );
         }
+      }
+
+      // Filter by color if colorFilter is provided
+      if (colorFilter) {
+        availableSpells = availableSpells.filter(spell => spell.colorName === colorFilter);
       }
 
       // Calculate accuracy for all spells

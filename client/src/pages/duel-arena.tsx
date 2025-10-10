@@ -6,6 +6,7 @@ import { type GameSession, type Spell, type Point, type SessionParticipant } fro
 import GestureCanvas, { type GestureCanvasRef } from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
 import SpellDatabase from "@/components/spell-database";
+import ColorPalette from "@/components/color-palette";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -165,11 +166,12 @@ export default function DuelArena() {
 
   // Recognize gesture mutation
   const recognizeGestureMutation = useMutation({
-    mutationFn: async ({ gesture, playerId }: { gesture: Point[]; playerId: number }) => {
+    mutationFn: async ({ gesture, playerId, colorFilter }: { gesture: Point[]; playerId: number; colorFilter?: string | null }) => {
       if (!currentSessionId) throw new Error("No active session");
       const res = await apiRequest("POST", `/api/sessions/${currentSessionId}/recognize-gesture`, {
         gesture,
         playerId,
+        colorFilter: colorFilter || undefined,
       });
       return res.json();
     },
@@ -457,7 +459,7 @@ export default function DuelArena() {
     }
 
     if (actualPlayerNumber) {
-      recognizeGestureMutation.mutate({ gesture, playerId: actualPlayerNumber });
+      recognizeGestureMutation.mutate({ gesture, playerId: actualPlayerNumber, colorFilter: selectedColor });
     }
   };
 
@@ -871,6 +873,16 @@ export default function DuelArena() {
                   data-testid="gesture-canvas"
                 />
               </div>
+              
+              {/* Color Palette */}
+              {userRole !== "spectator" && !(actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) && (
+                <div className="mt-4">
+                  <ColorPalette
+                    selectedColor={selectedColor}
+                    onColorSelect={setSelectedColor}
+                  />
+                </div>
+              )}
               
               {userRole === "spectator" && (
                 <div className="text-center text-sm text-muted-foreground mt-2">
