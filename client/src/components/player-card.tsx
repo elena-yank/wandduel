@@ -22,8 +22,6 @@ interface PlayerCardProps {
   accuracy: number;
   spellHistory?: SpellHistoryItem[];
   onSpellClick?: (spellId: string) => void;
-  opponentSpell?: string; // For Player 2 to see Player 1's attack
-  opponentAccuracy?: string; // For Player 2 to see Player 1's accuracy
 }
 
 // House color themes with actual color values
@@ -78,8 +76,6 @@ export default function PlayerCard({
   accuracy,
   spellHistory = [],
   onSpellClick,
-  opponentSpell,
-  opponentAccuracy,
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
@@ -151,23 +147,6 @@ export default function PlayerCard({
         </div>
         
         <div className="space-y-4">
-          {/* Show opponent's attack spell for Player 2 */}
-          {player === 2 && opponentSpell && opponentSpell !== "-" && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">
-                ⚔️ Атакующее заклинание противника
-              </p>
-              <div className="bg-destructive/10 rounded-lg p-3 border border-destructive/30">
-                <p className="font-serif font-bold text-destructive" data-testid="text-opponent-spell">
-                  {opponentSpell}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1" data-testid="text-opponent-accuracy">
-                  {opponentAccuracy}
-                </p>
-              </div>
-            </div>
-          )}
-          
           <div>
             <p className="text-xs text-muted-foreground mb-2">
               Last {player === 1 ? "Spell" : "Counter-Spell"} Cast

@@ -863,8 +863,6 @@ export default function DuelArena() {
           accuracy={counterResult?.accuracy || 0}
           spellHistory={spellHistory.filter(h => h.playerId === 2)}
           onSpellClick={handleSpellClick}
-          opponentSpell={attackResult?.spell?.name}
-          opponentAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : undefined}
           data-testid="player-card-2"
         />
       </div>
