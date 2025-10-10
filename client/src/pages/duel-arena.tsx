@@ -475,12 +475,11 @@ export default function DuelArena() {
     }
   };
 
-  // Show round complete dialog after Player 2 counter spell
+  // Show round complete dialog after both players have cast their spells
   useEffect(() => {
     const currentRound = session?.currentRound || 1;
     
     if (
-      roundPhase === "counter" && 
       attackResult && 
       counterResult && 
       !showRoundComplete &&
@@ -494,7 +493,7 @@ export default function DuelArena() {
       
       return () => clearTimeout(timer);
     }
-  }, [roundPhase, attackResult, counterResult, showRoundComplete, session?.currentRound]);
+  }, [attackResult, counterResult, showRoundComplete, session?.currentRound]);
 
   const handleLeave = () => {
     if (roomId) {
