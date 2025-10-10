@@ -106,7 +106,7 @@ export default function RoomLobby() {
               <div className="flex justify-center mb-4">
                 <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-angst decorative-text mb-3" style={{ textShadow: '0 0 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.4)' }}>
+              <h1 className="text-4xl md:text-5xl font-angst decorative-text mb-3" style={{ WebkitTextStroke: '1px rgba(251, 191, 36, 0.8)' }}>
                 Добро пожаловать!
               </h1>
               <p className="text-lg text-muted-foreground font-serif">
