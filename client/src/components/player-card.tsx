@@ -158,7 +158,14 @@ export default function PlayerCard({
             <p className="text-xs text-muted-foreground mb-2">
               Last {player === 1 ? "Spell" : "Counter-Spell"} Cast
             </p>
-            <div className="bg-background/50 rounded-lg p-3 border border-border/30 min-h-[60px]">
+            <div 
+              className="bg-background/50 rounded-lg p-3 border min-h-[60px]"
+              style={houseTheme ? {
+                borderColor: houseTheme.borderColor + "80" // 50% opacity
+              } : {
+                borderColor: 'hsl(var(--border) / 0.3)'
+              }}
+            >
               {roundsDisplay.some(r => r.spell || !r.successful) ? (
                 <div className="flex flex-wrap gap-1">
                   {roundsDisplay.map((round) => (

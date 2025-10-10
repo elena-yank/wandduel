@@ -327,9 +327,34 @@ export default function DuelArena() {
     loadAttackSpell();
   }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, session?.currentRound, allSpells]);
 
-  // Load counter spell info from spell history for all players
+  // Load counter spell info from spell history or pending session data
   useEffect(() => {
-    if (session && spellHistory.length > 0) {
+    // First, try to get from pending session data (most up-to-date)
+    if (session?.pendingCounterSpellId) {
+      const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
+      if (pendingSpell) {
+        const needsUpdate = !counterResult || 
+          !counterResult.spell || 
+          counterResult.spell.id !== pendingSpell.id;
+          
+        if (needsUpdate) {
+          // Check if it's a valid counter for the attack spell
+          const isValidCounter = !!(session.lastAttackSpellId && 
+            Array.isArray(pendingSpell.counters) &&
+            pendingSpell.counters.includes(session.lastAttackSpellId));
+            
+          setCounterResult({
+            recognized: true,
+            spell: pendingSpell,
+            accuracy: session.pendingCounterAccuracy || 0,
+            isValidCounter: isValidCounter,
+            successful: (session.pendingCounterAccuracy || 0) >= 57
+          });
+        }
+      }
+    }
+    // Otherwise, load from spell history
+    else if (session && spellHistory.length > 0) {
       const currentRound = session.currentRound || 1;
       const player2Attempt = spellHistory.find(
         h => h.roundNumber === currentRound && h.playerId === 2
@@ -352,7 +377,7 @@ export default function DuelArena() {
         }
       }
     }
-  }, [session, spellHistory]);
+  }, [session, spellHistory, allSpells]);
 
   // Check for role and session on component mount
   useEffect(() => {
