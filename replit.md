@@ -12,6 +12,13 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 ## Recent Changes (October 2025)
 
+**History Saving Fix (October 10, 2025)**:
+- **Fixed Bug**: Spells now save to history only after round completes, not during recognition
+- **Pending Data System**: Added pending fields to gameSessions schema to temporarily store attempt data
+- **Recognition Flow**: /recognize-gesture saves pending data to session (all cases: failed, multiple matches, single match)
+- **Round Completion**: /complete-round reads pending data, saves to gestureAttempts table, clears pending fields
+- **Multiple Matches**: When multiple spells match, saves first match as default with gesture, updates if user chooses different spell
+
 **House Selection System (October 10, 2025)**:
 - **House Selection**: Players now choose their Hogwarts house (Гриффиндор, Когтевран, Слизерин, Пуффендуй) when creating or joining a room
 - **Visual Cards**: House selection UI features 2x2 grid with house crests/icons for each faction

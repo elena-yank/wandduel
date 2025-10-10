@@ -506,8 +506,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const successfulMatches = spellMatches.filter(m => m.accuracy >= 57);
       
       // If multiple successful attack spells match, return them all for user to choose
-      // Don't save to history yet - wait for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
+        // Save pending data with first match as default (will be updated when user chooses)
+        const firstMatch = successfulMatches[0];
+        await storage.updateGameSession(sessionId, {
+          pendingAttackPlayerId: playerId,
+          pendingAttackSpellId: firstMatch.spell.id,
+          pendingAttackGesture: gesture,
+          pendingAttackAccuracy: firstMatch.accuracy
+        });
+        
         return res.json({
           recognized: true,
           multipleMatches: true,
@@ -626,8 +634,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save pending attempts to history now that the round is complete
       const currentRound = session.currentRound ?? 1;
       
+      console.log("=== COMPLETE ROUND - SAVE PENDING ATTEMPTS ===");
+      console.log("Session pending attack player:", session.pendingAttackPlayerId);
+      console.log("Session pending attack spell:", session.pendingAttackSpellId);
+      console.log("Session pending attack accuracy:", session.pendingAttackAccuracy);
+      console.log("Session pending counter player:", session.pendingCounterPlayerId);
+      console.log("Session pending counter spell:", session.pendingCounterSpellId);
+      console.log("Session pending counter accuracy:", session.pendingCounterAccuracy);
+      
       // Save attack attempt if exists
       if (session.pendingAttackPlayerId !== null && session.pendingAttackPlayerId !== undefined) {
+        console.log("Saving attack attempt to history...");
         const attackAttemptData = insertGestureAttemptSchema.parse({
           sessionId,
           playerId: session.pendingAttackPlayerId,
@@ -638,10 +655,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           successful: (session.pendingAttackAccuracy ?? 0) >= 57
         });
         await storage.createGestureAttempt(attackAttemptData);
+        console.log("Attack attempt saved!");
+      } else {
+        console.log("No attack attempt to save (pendingAttackPlayerId is null/undefined)");
       }
 
       // Save counter attempt if exists
       if (session.pendingCounterPlayerId !== null && session.pendingCounterPlayerId !== undefined) {
+        console.log("Saving counter attempt to history...");
         const counterAttemptData = insertGestureAttemptSchema.parse({
           sessionId,
           playerId: session.pendingCounterPlayerId,
@@ -652,7 +673,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= 57
         });
         await storage.createGestureAttempt(counterAttemptData);
+        console.log("Counter attempt saved!");
+      } else {
+        console.log("No counter attempt to save (pendingCounterPlayerId is null/undefined)");
       }
+      console.log("===============================================");
 
       // Award points based on performance
       let player1ScoreIncrease = 0;
