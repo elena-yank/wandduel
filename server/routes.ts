@@ -73,7 +73,7 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const drawnAspectRatio = getAspectRatio(drawnGesture);
   const targetAspectRatio = getAspectRatio(targetPattern);
   const aspectRatioDiff = Math.abs(drawnAspectRatio - targetAspectRatio) / Math.max(drawnAspectRatio, targetAspectRatio);
-  const aspectRatioPenalty = aspectRatioDiff * 0.5; // Increased to 50% penalty
+  const aspectRatioPenalty = aspectRatioDiff * 0.35; // Balanced penalty - 35%
 
   // Penalty for excessive points (scribbling/filling)
   const targetPointCount = (targetPattern as Point[]).length;
@@ -81,9 +81,9 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const pointCountRatio = drawnPointCount / targetPointCount;
   let pointCountPenalty = 0;
   
-  // If drawn has more than 3x the target points, apply heavy penalty
+  // If drawn has more than 3x the target points, apply moderate penalty
   if (pointCountRatio > 3) {
-    pointCountPenalty = Math.min(0.4, (pointCountRatio - 3) * 0.1); // Up to 40% penalty
+    pointCountPenalty = Math.min(0.25, (pointCountRatio - 3) * 0.08); // Up to 25% penalty
   }
 
   // Resample to same number of points for comparison
@@ -119,10 +119,9 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
   const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
 
-  // Try limited starting offsets - allows different start points but fewer than before
-  // Reduced from 5 offsets to 3 for stricter matching
+  // Try multiple starting offsets - balanced between flexibility and strictness
   let bestDistance = Infinity;
-  const offsetsToTry = [0, sampleCount / 4, sampleCount / 2]; // Try 0%, 25%, 50% offsets only
+  const offsetsToTry = [0, sampleCount / 5, sampleCount / 3, sampleCount / 2, (sampleCount * 2) / 3]; // Try 0%, 20%, 33%, 50%, 67% offsets
   
   for (const offset of offsetsToTry) {
     let distance = 0;
@@ -460,8 +459,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get best match
       const bestMatch = spellMatches[0];
 
-      // Require minimum 65% accuracy for recognition (increased from 50% for better precision)
-      if (!bestMatch || bestMatch.accuracy < 65) {
+      // Require minimum 55% accuracy for recognition (balanced threshold)
+      if (!bestMatch || bestMatch.accuracy < 55) {
         // Save failed gesture attempt so it appears in history
         const attemptData = insertGestureAttemptSchema.parse({
           sessionId,
@@ -492,8 +491,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find all successful matches (>= 70% accuracy) for attack spells (increased from 60%)
-      const successfulMatches = spellMatches.filter(m => m.accuracy >= 70);
+      // Find all successful matches (>= 60% accuracy) for attack spells (balanced threshold)
+      const successfulMatches = spellMatches.filter(m => m.accuracy >= 60);
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
@@ -505,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           spellId: bestMatch.spell.id,
           drawnGesture: gesture,
           accuracy: bestMatch.accuracy,
-          successful: bestMatch.accuracy >= 70
+          successful: bestMatch.accuracy >= 60
         });
         await storage.createGestureAttempt(attemptData);
         
@@ -548,13 +547,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spellId: selectedSpell.id,
         drawnGesture: gesture,
         accuracy: selectedAccuracy,
-        successful: selectedAccuracy >= 70 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 60 && (spellType === "attack" || isValidCounter)
       });
 
       await storage.createGestureAttempt(attemptData);
 
       // If it's a successful attack spell, update session phase and save the spell
-      if (spellType === "attack" && selectedAccuracy >= 70) {
+      if (spellType === "attack" && selectedAccuracy >= 60) {
         await storage.updateGameSession(sessionId, {
           currentPhase: "counter",
           lastAttackSpellId: selectedSpell.id,
@@ -568,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accuracy: selectedAccuracy,
         isValidCounter,
         wrongDefenseUsed,
-        successful: selectedAccuracy >= 70 && (spellType === "attack" || isValidCounter)
+        successful: selectedAccuracy >= 60 && (spellType === "attack" || isValidCounter)
       });
 
     } catch (error) {
@@ -608,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateGestureAttempt(existingAttempt.id, {
           spellId,
           accuracy,
-          successful: accuracy >= 70
+          successful: accuracy >= 60
         });
       } else {
         // Create new attempt
@@ -619,7 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           spellId,
           drawnGesture: gesture,
           accuracy,
-          successful: accuracy >= 70
+          successful: accuracy >= 60
         });
         await storage.createGestureAttempt(attemptData);
       }
@@ -646,14 +645,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let player1ScoreIncrease = 0;
       let player2ScoreIncrease = 0;
 
-      // Player 1 gets points for successful attack (accuracy >= 70% required for successful cast)
-      if (player1Accuracy >= 70) {
-        player1ScoreIncrease = Math.floor(player1Accuracy / 10); // 7-10 points based on accuracy
+      // Player 1 gets points for successful attack (accuracy >= 60% required for successful cast)
+      if (player1Accuracy >= 60) {
+        player1ScoreIncrease = Math.floor(player1Accuracy / 10); // 6-10 points based on accuracy
       }
 
-      // Player 2 gets points for successful counter (accuracy >= 70% AND valid counter spell)
-      if (counterSuccess && player2Accuracy >= 70) {
-        player2ScoreIncrease = Math.floor(player2Accuracy / 10); // 7-10 points based on accuracy (same as attacker)
+      // Player 2 gets points for successful counter (accuracy >= 60% AND valid counter spell)
+      if (counterSuccess && player2Accuracy >= 60) {
+        player2ScoreIncrease = Math.floor(player2Accuracy / 12); // 5-8 points based on accuracy (harder to defend)
       }
 
       // Update game session

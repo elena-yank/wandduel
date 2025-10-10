@@ -30,14 +30,14 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 All 14 spells (8 attack + 6 counter) now stored permanently in database. Note: діффІндо exists as both attack and counter spell with identical gesture patterns.
 
-**Gesture Recognition Requirements (Maximum Strictness)**: The system now demands very precise gesture drawing for successful spell casting:
-- **Reduced offset tolerance**: Only 3 start-point offsets (0%, 25%, 50%) instead of 5, reducing random matches
-- **Aspect ratio penalty**: 50% penalty for gestures with wrong proportions (increased from 30%)
-- **Point-count penalty**: Up to 40% penalty for excessive points (>3x target), preventing "scribbling" attacks
-- **Centering preserved**: Position-invariant matching still works correctly
-- Minimum accuracy for recognition: 65%
-- Minimum accuracy for successful spell cast: 70%
-- Scoring system: Player 1 gets accuracy/10 points, Player 2 gets accuracy/12 points (min 70% required)
+**Gesture Recognition Requirements (Balanced Strictness)**: The system uses balanced gesture recognition that prevents random scribbles while allowing legitimate spells:
+- **Moderate offset tolerance**: 5 start-point offsets (0%, 20%, 33%, 50%, 67%) allows different starting positions
+- **Aspect ratio penalty**: 35% penalty for gestures with wrong proportions - catches wrong shapes
+- **Point-count penalty**: Up to 25% penalty for excessive points (>3x target), prevents "scribbling" attacks
+- **Centering preserved**: Position-invariant matching works correctly
+- Minimum accuracy for recognition: 55%
+- Minimum accuracy for successful spell cast: 60%
+- Scoring system: Player 1 gets accuracy/10 points, Player 2 gets accuracy/12 points (min 60% required)
 
 ## User Preferences
 
