@@ -13,6 +13,8 @@ interface SpellHistoryItem {
 interface PlayerCardProps {
   player: 1 | 2;
   playerName?: string;
+  playerHouse?: string;
+  houseIcon?: string;
   isActive: boolean;
   lastSpell: string;
   lastAccuracy: string;
@@ -24,6 +26,8 @@ interface PlayerCardProps {
 export default function PlayerCard({
   player,
   playerName,
+  playerHouse,
+  houseIcon,
   isActive,
   lastSpell,
   lastAccuracy,
@@ -62,10 +66,18 @@ export default function PlayerCard({
             "w-12 h-12 rounded-full flex items-center justify-center",
             player === 1 ? "bg-primary/20" : "bg-accent/20"
           )}>
-            <User className={cn(
-              "w-6 h-6",
-              player === 1 ? "text-primary" : "text-accent"
-            )} />
+            {houseIcon ? (
+              <img 
+                src={houseIcon} 
+                alt={playerHouse || "House"} 
+                className="w-10 h-10 object-contain"
+              />
+            ) : (
+              <User className={cn(
+                "w-6 h-6",
+                player === 1 ? "text-primary" : "text-accent"
+              )} />
+            )}
           </div>
           <div>
             <h3 className="text-xl font-serif font-bold text-foreground" data-testid={`text-player-${player}-name`}>

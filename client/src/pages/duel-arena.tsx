@@ -12,6 +12,17 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
+import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
+import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
+import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
+
+const houseIcons: Record<string, string> = {
+  gryffindor: gryffindorIcon,
+  ravenclaw: ravenclawIcon,
+  slytherin: slytherinIcon,
+  hufflepuff: hufflepuffIcon,
+};
 
 type RecognitionResult = {
   recognized: boolean;
@@ -595,12 +606,30 @@ export default function DuelArena() {
 
             <div className="flex justify-center gap-12 mb-8">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">{player1Name}</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {player1?.house && houseIcons[player1.house] && (
+                    <img 
+                      src={houseIcons[player1.house]} 
+                      alt={player1.house} 
+                      className="w-6 h-6 object-contain"
+                    />
+                  )}
+                  <p className="text-sm text-muted-foreground">{player1Name}</p>
+                </div>
                 <p className="text-4xl font-bold text-primary">{session.player1Score ?? 0}</p>
               </div>
               <Separator orientation="vertical" className="h-16" />
               <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">{player2Name}</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {player2?.house && houseIcons[player2.house] && (
+                    <img 
+                      src={houseIcons[player2.house]} 
+                      alt={player2.house} 
+                      className="w-6 h-6 object-contain"
+                    />
+                  )}
+                  <p className="text-sm text-muted-foreground">{player2Name}</p>
+                </div>
                 <p className="text-4xl font-bold text-accent">{session.player2Score ?? 0}</p>
               </div>
             </div>
@@ -715,6 +744,8 @@ export default function DuelArena() {
         <PlayerCard
           player={1}
           playerName={player1Name}
+          playerHouse={player1?.house}
+          houseIcon={player1?.house ? houseIcons[player1.house] : undefined}
           isActive={getCurrentPlayer() === 1}
           lastSpell={attackResult?.spell?.name || "-"}
           lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
@@ -784,6 +815,8 @@ export default function DuelArena() {
         <PlayerCard
           player={2}
           playerName={player2Name}
+          playerHouse={player2?.house}
+          houseIcon={player2?.house ? houseIcons[player2.house] : undefined}
           isActive={getCurrentPlayer() === 2}
           lastSpell={counterResult?.spell?.name || "-"}
           lastAccuracy={counterResult ? 
