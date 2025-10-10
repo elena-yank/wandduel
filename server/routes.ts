@@ -623,6 +623,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game session not found" });
       }
 
+      // Save pending attempts to history now that the round is complete
+      const currentRound = session.currentRound ?? 1;
+      
+      // Save attack attempt if exists
+      if (session.pendingAttackPlayerId !== null && session.pendingAttackPlayerId !== undefined) {
+        const attackAttemptData = insertGestureAttemptSchema.parse({
+          sessionId,
+          playerId: session.pendingAttackPlayerId,
+          roundNumber: currentRound,
+          spellId: session.pendingAttackSpellId,
+          drawnGesture: session.pendingAttackGesture,
+          accuracy: session.pendingAttackAccuracy ?? 0,
+          successful: (session.pendingAttackAccuracy ?? 0) >= 57
+        });
+        await storage.createGestureAttempt(attackAttemptData);
+      }
+
+      // Save counter attempt if exists
+      if (session.pendingCounterPlayerId !== null && session.pendingCounterPlayerId !== undefined) {
+        const counterAttemptData = insertGestureAttemptSchema.parse({
+          sessionId,
+          playerId: session.pendingCounterPlayerId,
+          roundNumber: currentRound,
+          spellId: session.pendingCounterSpellId,
+          drawnGesture: session.pendingCounterGesture,
+          accuracy: session.pendingCounterAccuracy ?? 0,
+          successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= 57
+        });
+        await storage.createGestureAttempt(counterAttemptData);
+      }
+
       // Award points based on performance
       let player1ScoreIncrease = 0;
       let player2ScoreIncrease = 0;
@@ -638,7 +669,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update game session
-      const currentRound = session.currentRound ?? 1;
       const player1Score = session.player1Score ?? 0;
       const player2Score = session.player2Score ?? 0;
       
@@ -654,7 +684,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         player2Score: player2Score + player2ScoreIncrease,
         lastAttackSpellId: null,
         lastAttackAccuracy: null,
-        gameStatus: isGameComplete ? "completed" as const : session.gameStatus
+        gameStatus: isGameComplete ? "completed" as const : session.gameStatus,
+        // Clear pending attempt data
+        pendingAttackPlayerId: null,
+        pendingAttackSpellId: null,
+        pendingAttackGesture: null,
+        pendingAttackAccuracy: null,
+        pendingCounterPlayerId: null,
+        pendingCounterSpellId: null,
+        pendingCounterGesture: null,
+        pendingCounterAccuracy: null
       };
 
       const updatedSession = await storage.updateGameSession(sessionId, updates);
