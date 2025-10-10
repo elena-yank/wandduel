@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { type Point } from "@shared/schema";
+import windChimeSound from "@assets/wind-chimes-daydream-transition-soundroll-variation-8-8-00-15_1760111140370.mp3";
 
 interface GestureCanvasProps {
   onGestureComplete: (gesture: Point[]) => void;
@@ -18,6 +19,20 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   const [gesturePoints, setGesturePoints] = useState<Point[]>([]);
   const gesturePointsRef = useRef<Point[]>([]);
   const isDrawingRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio on mount
+  useEffect(() => {
+    audioRef.current = new Audio(windChimeSound);
+    audioRef.current.loop = true; // Loop while drawing
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -59,6 +74,12 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     setGesturePoints([point]);
     gesturePointsRef.current = [point];
     
+    // Play wind chime sound
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(err => console.log("Audio play failed:", err));
+    }
+    
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!ctx) return;
@@ -94,6 +115,12 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     
     setIsDrawing(false);
     isDrawingRef.current = false;
+    
+    // Stop wind chime sound
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     
     // Use ref to get the latest points
     const currentPoints = gesturePointsRef.current;
