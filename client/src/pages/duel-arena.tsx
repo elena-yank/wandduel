@@ -111,6 +111,7 @@ export default function DuelArena() {
   const [showRoundComplete, setShowRoundComplete] = useState(false);
   const [showScrollToCanvas, setShowScrollToCanvas] = useState(false);
   const [highlightSpellId, setHighlightSpellId] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const { toast } = useToast();
   const canvasRef = useRef<GestureCanvasRef>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
