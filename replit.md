@@ -14,6 +14,9 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 - **Improved Visibility**: Increased player card background opacity from 15% to 35% for better house color visibility against the blue application background
 - **Round Dialog Gesture Fix**: Round completion dialog now correctly displays drawn gestures from pending session data instead of history data
 - **Spell History Real-time Display**: Player cards now show spell history immediately after recognition using `getEnhancedSpellHistory()` function that merges base history with pending session data, eliminating the delay where players couldn't see what spell was recognized until round completion
+- **Color Palette Relocation**: Moved color filter palette from center canvas area to individual player cards for better mobile-friendliness. Palette appears only for the active player during their turn
+- **Gesture Drawing Color**: Gestures now draw in the selected spell color from the palette instead of default purple, providing visual feedback of color selection
+- **Accuracy Display Boost**: All displayed accuracy percentages are now boosted by +15% (max 100%) for better user experience, while actual accuracy values sent to backend remain unchanged to preserve game logic
 
 ## User Preferences
 
