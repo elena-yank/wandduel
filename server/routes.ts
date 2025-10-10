@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, insertSessionParticipantSchema, insertGameRoomSchema, type Point } from "@shared/schema";
 import { z } from "zod";
 
-// Gesture recognition function
+// Gesture recognition function with MAXIMUM STRICTNESS
 function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[]): number {
   if (drawnGesture.length < 1 || targetPattern.length < 1) {
     return 0;
@@ -33,8 +33,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return 0;
   }
 
-  // Normalize both gestures to 0-100 coordinate space WHILE PRESERVING ASPECT RATIO
-  const normalizeGestureWithAspectRatio = (gesture: Point[]) => {
+  // Normalize to 0-100 space WITH centering - but use strict penalties elsewhere
+  const normalizeGestureStrict = (gesture: Point[]) => {
     const minX = Math.min(...gesture.map(p => p.x));
     const maxX = Math.max(...gesture.map(p => p.x));
     const minY = Math.min(...gesture.map(p => p.y));
@@ -43,10 +43,10 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     const width = maxX - minX || 1;
     const height = maxY - minY || 1;
     
-    // Use the larger dimension to scale, preserving aspect ratio
+    // Scale to fit in 100x100 space while preserving aspect ratio
     const scale = Math.max(width, height);
     
-    // Center the gesture in 100x100 space
+    // Center the gesture in 100x100 space for position invariance
     const offsetX = (100 - (width / scale * 100)) / 2;
     const offsetY = (100 - (height / scale * 100)) / 2;
     
@@ -56,10 +56,10 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     }));
   };
 
-  const normalizedDrawn = normalizeGestureWithAspectRatio(drawnGesture);
-  const normalizedTarget = normalizeGestureWithAspectRatio(targetPattern);
+  const normalizedDrawn = normalizeGestureStrict(drawnGesture);
+  const normalizedTarget = normalizeGestureStrict(targetPattern);
   
-  // Calculate aspect ratio difference as additional penalty
+  // Calculate aspect ratio difference penalty (stricter)
   const getAspectRatio = (gesture: Point[]) => {
     const minX = Math.min(...gesture.map(p => p.x));
     const maxX = Math.max(...gesture.map(p => p.x));
@@ -73,9 +73,20 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const drawnAspectRatio = getAspectRatio(drawnGesture);
   const targetAspectRatio = getAspectRatio(targetPattern);
   const aspectRatioDiff = Math.abs(drawnAspectRatio - targetAspectRatio) / Math.max(drawnAspectRatio, targetAspectRatio);
-  const aspectRatioPenalty = aspectRatioDiff * 0.3; // Up to 30% penalty for different aspect ratios
+  const aspectRatioPenalty = aspectRatioDiff * 0.5; // Increased to 50% penalty
 
-  // Resample both gestures to have the same number of points
+  // Penalty for excessive points (scribbling/filling)
+  const targetPointCount = (targetPattern as Point[]).length;
+  const drawnPointCount = drawnGesture.length;
+  const pointCountRatio = drawnPointCount / targetPointCount;
+  let pointCountPenalty = 0;
+  
+  // If drawn has more than 3x the target points, apply heavy penalty
+  if (pointCountRatio > 3) {
+    pointCountPenalty = Math.min(0.4, (pointCountRatio - 3) * 0.1); // Up to 40% penalty
+  }
+
+  // Resample to same number of points for comparison
   const resampleGesture = (gesture: Point[], targetLength: number) => {
     if (gesture.length === targetLength) return gesture;
     
@@ -104,15 +115,14 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return resampled;
   };
 
-  // Use fixed sample count for better matching between gestures with different point counts
-  const sampleCount = 64; // Fixed sample count for consistent comparison
+  const sampleCount = 64;
   const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
   const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
 
-  // Try different starting offsets to make recognition independent of starting point
-  // This helps when user draws the same shape but starts from a different point
+  // Try limited starting offsets - allows different start points but fewer than before
+  // Reduced from 5 offsets to 3 for stricter matching
   let bestDistance = Infinity;
-  const offsetsToTry = [0, sampleCount / 8, sampleCount / 4, sampleCount / 2, 3 * sampleCount / 4]; // Try 0%, 12.5%, 25%, 50%, 75% offsets
+  const offsetsToTry = [0, sampleCount / 4, sampleCount / 2]; // Try 0%, 25%, 50% offsets only
   
   for (const offset of offsetsToTry) {
     let distance = 0;
@@ -127,14 +137,20 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
       bestDistance = distance;
     }
   }
+  
+  const totalDistance = bestDistance;
 
-  const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100); // Max diagonal distance
-  const baseSimilarity = Math.max(0, 1 - (bestDistance / maxPossibleDistance));
+  // Use stricter similarity calculation
+  const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100);
+  let baseSimilarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
   
-  // Apply aspect ratio penalty - gestures with different proportions get lower scores
-  const finalSimilarity = Math.max(0, baseSimilarity - aspectRatioPenalty);
+  // Apply all penalties
+  baseSimilarity = Math.max(0, baseSimilarity - aspectRatioPenalty - pointCountPenalty);
   
-  return Math.min(100, Math.round(finalSimilarity * 100));
+  // No exponential strictness - use direct multiplication for balance
+  // This keeps good matches high while penalizing bad ones
+  
+  return Math.min(100, Math.round(baseSimilarity * 100));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
