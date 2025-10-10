@@ -4,6 +4,16 @@
 
 Wizard Duel Arena is a magical spell-casting game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, determining successful casts. Player 1 always attacks, and Player 2 always defends. Each duel consists of exactly 5 rounds. The game supports multiple concurrent rooms, allowing players to create or join existing duels. Users can join as active players or spectators, with a system for selecting Hogwarts houses, which influences in-game visuals. The project aims to provide an engaging and visually rich spell-dueling experience.
 
+## Recent Changes (October 10, 2025)
+
+- **House Selection Enhancement**: House selection cards now highlight with their respective house colors instead of golden:
+  - Gryffindor: Red (#EF4444)
+  - Ravenclaw: Blue (#3B82F6)
+  - Slytherin: Green (#10B981)
+  - Hufflepuff: Yellow (#EAB308)
+- **Improved Visibility**: Increased player card background opacity from 15% to 35% for better house color visibility against the blue application background
+- **Round Dialog Gesture Fix**: Round completion dialog now correctly displays drawn gestures from pending session data instead of history data
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

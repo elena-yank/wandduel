@@ -17,10 +17,10 @@ import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_17600830
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
 
 const houses = [
-  { id: "gryffindor", name: "Гриффиндор", icon: gryffindorIcon },
-  { id: "ravenclaw", name: "Когтевран", icon: ravenclawIcon },
-  { id: "slytherin", name: "Слизерин", icon: slytherinIcon },
-  { id: "hufflepuff", name: "Пуффендуй", icon: hufflepuffIcon },
+  { id: "gryffindor", name: "Гриффиндор", icon: gryffindorIcon, color: "#EF4444", shadowColor: "239, 68, 68" },
+  { id: "ravenclaw", name: "Когтевран", icon: ravenclawIcon, color: "#3B82F6", shadowColor: "59, 130, 246" },
+  { id: "slytherin", name: "Слизерин", icon: slytherinIcon, color: "#10B981", shadowColor: "16, 185, 129" },
+  { id: "hufflepuff", name: "Пуффендуй", icon: hufflepuffIcon, color: "#EAB308", shadowColor: "234, 179, 8" },
 ] as const;
 
 export default function RoomLobby() {
@@ -167,11 +167,12 @@ export default function RoomLobby() {
                         key={house.id}
                         type="button"
                         onClick={() => setCreateHouse(house.id)}
-                        className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                          createHouse === house.id
-                            ? "border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/50"
-                            : "border-border/20 hover:border-yellow-500/50"
-                        }`}
+                        className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                        style={{
+                          borderColor: createHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
+                          backgroundColor: createHouse === house.id ? `${house.color}15` : "transparent",
+                          boxShadow: createHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
+                        }}
                         data-testid={`button-house-${house.id}-create`}
                       >
                         <img
@@ -222,11 +223,12 @@ export default function RoomLobby() {
                         key={house.id}
                         type="button"
                         onClick={() => setJoinHouse(house.id)}
-                        className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
-                          joinHouse === house.id
-                            ? "border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/50"
-                            : "border-border/20 hover:border-yellow-500/50"
-                        }`}
+                        className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                        style={{
+                          borderColor: joinHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
+                          backgroundColor: joinHouse === house.id ? `${house.color}15` : "transparent",
+                          boxShadow: joinHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
+                        }}
                         data-testid={`button-house-${house.id}-join`}
                       >
                         <img
