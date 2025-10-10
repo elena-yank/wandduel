@@ -624,11 +624,11 @@ export default function DuelArena() {
     <div className="relative z-10 min-h-screen p-4 md:p-8">
       {/* Header */}
       <header className="text-center mb-8 md:mb-12 relative">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-decorative decorative-text mb-4 tracking-wider">
-          MAGICAL DUEL ARENA
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-angst decorative-text mb-4 tracking-wider">
+          МАГИЧЕСКАЯ ДУЭЛЬ
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground font-serif">
-          Cast your spells with precision and courage
+          Сражайтесь с помощью магии и мужества
         </p>
         <Button
           variant="outline"
