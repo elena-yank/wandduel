@@ -23,6 +23,7 @@ type RecognitionResult = {
   multipleMatches?: boolean;
   matches?: Array<{ spell: Spell; accuracy: number }>;
   wrongDefenseUsed?: boolean;
+  gesture?: Point[]; // Gesture data for saving later when user chooses
 };
 
 // Component to display a small preview of drawn gesture
@@ -94,6 +95,7 @@ export default function DuelArena() {
   const [attackResult, setAttackResult] = useState<RecognitionResult | null>(null);
   const [counterResult, setCounterResult] = useState<RecognitionResult | null>(null);
   const [spellChoices, setSpellChoices] = useState<Array<{ spell: Spell; accuracy: number }> | null>(null);
+  const [pendingGesture, setPendingGesture] = useState<Point[] | null>(null);
   const [showSpellChoice, setShowSpellChoice] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
   const [showScrollToCanvas, setShowScrollToCanvas] = useState(false);
@@ -163,6 +165,7 @@ export default function DuelArena() {
       // Handle multiple spell matches - show choice dialog
       if (result.multipleMatches && result.matches) {
         setSpellChoices(result.matches);
+        setPendingGesture(result.gesture || null); // Save gesture for later
         setShowSpellChoice(true);
         // Don't clear canvas yet - user needs to see their drawing while choosing
         return;
@@ -495,14 +498,14 @@ export default function DuelArena() {
     if (roundPhase === "attack") {
       setAttackResult(result);
       
-      // Save spell attempt to history
-      if (currentSessionId && actualPlayerNumber) {
+      // Save spell attempt to history using the pending gesture
+      if (currentSessionId && actualPlayerNumber && pendingGesture) {
         try {
           await apiRequest("POST", `/api/sessions/${currentSessionId}/save-spell-attempt`, {
             spellId: choice.spell.id,
             playerId: actualPlayerNumber,
             accuracy: choice.accuracy,
-            gesture: lastGesture
+            gesture: pendingGesture
           });
           
           // Invalidate spell history to show the new attempt
@@ -528,7 +531,8 @@ export default function DuelArena() {
       }
     }
     
-    // Clear canvas after spell choice
+    // Clear pending gesture and canvas after spell choice
+    setPendingGesture(null);
     canvasRef.current?.clearCanvas();
   };
 
