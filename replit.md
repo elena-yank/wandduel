@@ -12,6 +12,13 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 
 ## Recent Changes (October 2025)
 
+**House Selection System (October 10, 2025)**:
+- **House Selection**: Players now choose their Hogwarts house (Гриффиндор, Когтевран, Слизерин, Пуффендуй) when creating or joining a room
+- **Visual Cards**: House selection UI features 2x2 grid with house crests/icons for each faction
+- **Database**: Added `house` field to sessionParticipants table with enum validation (gryffindor, ravenclaw, slytherin, hufflepuff)
+- **Icon Display**: House crests shown next to player names in arena player cards and game completion screen
+- **Persistence**: Selected house stored in localStorage and passed through join flow to database
+
 **UI/UX Improvements (October 9-10, 2025)**:
 - **Thinner Drawing Line**: Reduced canvas drawing line width from 1.5px to 1px for more elegant, precise spell casting
 - **Audio Removed**: Removed sparkle sound effect during drawing based on user preference
