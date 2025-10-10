@@ -39,6 +39,7 @@ export default function RoleSelection() {
     try {
       const userId = getUserId();
       const userName = localStorage.getItem("userName") || "Player";
+      const userHouse = localStorage.getItem("userHouse") || "gryffindor";
       
       // Get session for this room
       const sessionRes = await fetch(`/api/rooms/${roomId}/session`);
@@ -48,11 +49,12 @@ export default function RoleSelection() {
       const session = await sessionRes.json();
       const sessionId = session.id;
 
-      // Join session with selected role
+      // Join session with selected role and house
       const joinRes = await apiRequest("POST", `/api/sessions/${sessionId}/join`, {
         userId,
         userName,
-        role
+        role,
+        house: userHouse
       });
 
       if (!joinRes.ok) {

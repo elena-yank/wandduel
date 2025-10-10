@@ -282,10 +282,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sessions/:sessionId/join", async (req, res) => {
     try {
       const { sessionId } = req.params;
-      const { userId, userName, role } = req.body;
+      const { userId, userName, role, house } = req.body;
 
       if (!userId || !role) {
         return res.status(400).json({ message: "userId and role are required" });
+      }
+
+      if (!house) {
+        return res.status(400).json({ message: "house is required" });
       }
 
       // Check if session exists
@@ -318,7 +322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId,
           userName: userName || "Player",
           role: "player",
-          playerNumber
+          playerNumber,
+          house
         });
 
         const participant = await storage.addParticipant(participantData);
@@ -331,7 +336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         userName: userName || "Player",
         role: "spectator",
-        playerNumber: null
+        playerNumber: null,
+        house
       });
 
       const participant = await storage.addParticipant(participantData);
