@@ -18,7 +18,17 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 - **Gesture Drawing Color**: Gestures now draw in the selected spell color from the palette instead of default purple, providing visual feedback of color selection
 - **Gesture Recognition Improvements**: Enhanced gesture validation with minimum 5-point requirement to prevent single dots/clicks from matching complex patterns. Added penalty up to 30% for gestures with insufficient detail (< 50% of target point count)
 - **Accuracy Display**: All accuracy percentages now display honest values without any artificial boosting
-- **Round Completion Dialog Fix**: Dialog now appears correctly for both attacking and defending players. Uses spell combination tracking (spell IDs) instead of round numbers to ensure dialog shows once per round for all players. Counter result loading improved to update properly when Player 2 completes their turn
+- **Round Completion Dialog Improvements**: 
+  - Dialog now uses round number tracking instead of spell combination to prevent duplicate displays when same spells are used
+  - Each player controls their dialog independently without triggering popups for the other player
+  - Player 2's view is frozen during round completion dialog to prevent seeing Player 1's new attack prematurely
+  - Dialog dismissal triggers session query invalidation for proper state synchronization
+  - Both onOpenChange and button click properly mark rounds as dismissed
+- **Auto Round Completion**: Fixed critical bug where counter-spell recognition didn't automatically complete rounds. Backend now automatically:
+  - Saves both attack and counter attempts to history when counter spell is cast with ≥57% accuracy
+  - Updates player scores (Player 1 for successful attack, Player 2 for successful and valid counter)
+  - Advances to next round or completes game after 5 rounds
+  - Clears all pending session data to prepare for next round
 
 ## User Preferences
 

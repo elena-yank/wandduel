@@ -575,12 +575,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastAttackAccuracy: selectedAccuracy >= 57 ? selectedAccuracy : session.lastAttackAccuracy
         });
       } else {
+        // Counter spell - save pending data first
         await storage.updateGameSession(sessionId, {
           pendingCounterPlayerId: playerId,
           pendingCounterSpellId: selectedSpell.id,
           pendingCounterGesture: gesture,
           pendingCounterAccuracy: selectedAccuracy
         });
+
+        // Auto-complete round after counter spell is cast
+        if (selectedAccuracy >= 57) {
+          // Save both attack and counter attempts to history
+          const currentRound = session.currentRound || 1;
+          
+          // Save attack attempt from pending data
+          if (session.pendingAttackSpellId && session.pendingAttackPlayerId) {
+            await storage.createGestureAttempt({
+              sessionId,
+              playerId: session.pendingAttackPlayerId,
+              spellId: session.pendingAttackSpellId,
+              drawnGesture: session.pendingAttackGesture as Point[] || [],
+              accuracy: session.pendingAttackAccuracy || 0,
+              successful: (session.pendingAttackAccuracy || 0) >= 57,
+              roundNumber: currentRound
+            });
+          }
+
+          // Save counter attempt
+          await storage.createGestureAttempt({
+            sessionId,
+            playerId: playerId,
+            spellId: selectedSpell.id,
+            drawnGesture: gesture,
+            accuracy: selectedAccuracy,
+            successful: selectedAccuracy >= 57 && isValidCounter,
+            roundNumber: currentRound
+          });
+
+          // Update scores
+          const updatedSession = await storage.getGameSession(sessionId);
+          if (!updatedSession) {
+            throw new Error("Session not found");
+          }
+
+          let player1Score = updatedSession.player1Score ?? 0;
+          let player2Score = updatedSession.player2Score ?? 0;
+
+          // Player 1 gets point if attack was successful (>= 57%)
+          const attackSuccessful = (session.pendingAttackAccuracy || 0) >= 57;
+          if (attackSuccessful) {
+            player1Score += 1;
+          }
+
+          // Player 2 gets point if counter was successful (>= 57% AND valid counter)
+          const counterSuccessful = selectedAccuracy >= 57 && isValidCounter;
+          if (counterSuccessful) {
+            player2Score += 1;
+          }
+
+          // Determine if game is complete (after 5 rounds)
+          const isGameComplete = currentRound >= 5;
+          const gameStatus = isGameComplete ? "completed" : "active";
+          
+          // Advance to next round or complete game
+          await storage.updateGameSession(sessionId, {
+            currentRound: isGameComplete ? currentRound : currentRound + 1,
+            currentPhase: isGameComplete ? null : "attack",
+            player1Score,
+            player2Score,
+            gameStatus,
+            // Clear pending data
+            pendingAttackPlayerId: null,
+            pendingAttackSpellId: null,
+            pendingAttackGesture: null,
+            pendingAttackAccuracy: null,
+            pendingCounterPlayerId: null,
+            pendingCounterSpellId: null,
+            pendingCounterGesture: null,
+            pendingCounterAccuracy: null,
+            lastAttackSpellId: null,
+            lastAttackAccuracy: null
+          });
+        }
       }
 
       res.json({
