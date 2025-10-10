@@ -582,6 +582,27 @@ export default function DuelArena() {
                    (session.player2Score ?? 0) > (session.player1Score ?? 0) ? 2 : 
                    null;
     const winnerName = winner === 1 ? player1Name : winner === 2 ? player2Name : null;
+    const winnerHouse = winner === 1 ? player1?.house : winner === 2 ? player2?.house : null;
+    
+    // House colors matching player-card.tsx
+    const houseColors = {
+      gryffindor: "#EF4444", // red-500
+      ravenclaw: "#3B82F6", // blue-500
+      slytherin: "#10B981", // green-500
+      hufflepuff: "#EAB308" // yellow-500
+    };
+    
+    const winnerColor = winnerHouse && winnerHouse in houseColors 
+      ? houseColors[winnerHouse as keyof typeof houseColors] 
+      : undefined;
+
+    const player1Color = player1?.house && player1.house in houseColors 
+      ? houseColors[player1.house as keyof typeof houseColors] 
+      : undefined;
+      
+    const player2Color = player2?.house && player2.house in houseColors 
+      ? houseColors[player2.house as keyof typeof houseColors] 
+      : undefined;
 
     return (
       <div className="relative z-10 min-h-screen p-4 md:p-8 flex items-center justify-center">
@@ -595,7 +616,12 @@ export default function DuelArena() {
             {winner ? (
               <>
                 <p className="text-2xl font-serif mb-8">
-                  Победитель: <span className="text-primary font-bold">{winnerName}</span>
+                  Победитель: <span 
+                    className="font-bold" 
+                    style={winnerColor ? { color: winnerColor } : undefined}
+                  >
+                    {winnerName}
+                  </span>
                 </p>
               </>
             ) : (
@@ -614,7 +640,12 @@ export default function DuelArena() {
                       className="w-6 h-6 object-contain"
                     />
                   )}
-                  <p className="text-sm text-muted-foreground">{player1Name}</p>
+                  <p 
+                    className="text-sm font-medium"
+                    style={player1Color ? { color: player1Color } : undefined}
+                  >
+                    {player1Name}
+                  </p>
                 </div>
                 <p className="text-4xl font-bold text-primary">{session.player1Score ?? 0}</p>
               </div>
@@ -628,7 +659,12 @@ export default function DuelArena() {
                       className="w-6 h-6 object-contain"
                     />
                   )}
-                  <p className="text-sm text-muted-foreground">{player2Name}</p>
+                  <p 
+                    className="text-sm font-medium"
+                    style={player2Color ? { color: player2Color } : undefined}
+                  >
+                    {player2Name}
+                  </p>
                 </div>
                 <p className="text-4xl font-bold text-accent">{session.player2Score ?? 0}</p>
               </div>

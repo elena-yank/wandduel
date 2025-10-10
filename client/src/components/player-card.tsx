@@ -116,15 +116,12 @@ export default function PlayerCard({
     >
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div 
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={houseTheme ? { backgroundColor: houseTheme.iconBg } : undefined}
-          >
+          <div className="w-12 h-12 flex items-center justify-center">
             {houseIcon ? (
               <img 
                 src={houseIcon} 
                 alt={playerHouse || "House"} 
-                className="w-10 h-10 object-contain"
+                className="w-12 h-12 object-contain"
               />
             ) : (
               <User 
@@ -137,7 +134,11 @@ export default function PlayerCard({
             )}
           </div>
           <div>
-            <h3 className="text-xl font-serif font-bold text-foreground" data-testid={`text-player-${player}-name`}>
+            <h3 
+              className="text-xl font-serif font-bold" 
+              style={houseTheme ? { color: houseTheme.textColor } : undefined}
+              data-testid={`text-player-${player}-name`}
+            >
               {displayName}
             </h3>
             <p className="text-sm text-muted-foreground" data-testid={`text-player-${player}-role`}>
