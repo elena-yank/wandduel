@@ -106,7 +106,7 @@ export default function RoomLobby() {
               <div className="flex justify-center mb-4">
                 <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-angst decorative-text mb-3">
+              <h1 className="text-4xl md:text-5xl font-angst mb-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent">
                 Добро пожаловать!
               </h1>
               <p className="text-lg text-muted-foreground font-serif">
