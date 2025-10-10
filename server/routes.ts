@@ -467,17 +467,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Require minimum 52% accuracy for recognition (balanced threshold)
       if (!bestMatch || bestMatch.accuracy < 52) {
-        // Save failed gesture attempt so it appears in history
-        const attemptData = insertGestureAttemptSchema.parse({
-          sessionId,
-          playerId,
-          roundNumber: session.currentRound,
-          spellId: bestMatch?.spell.id || null,
-          drawnGesture: gesture,
-          accuracy: bestMatch?.accuracy || 0,
-          successful: false
-        });
-        await storage.createGestureAttempt(attemptData);
+        // Save pending attempt data (will be saved to history when round completes)
+        if (spellType === "attack") {
+          await storage.updateGameSession(sessionId, {
+            pendingAttackPlayerId: playerId,
+            pendingAttackSpellId: bestMatch?.spell.id || null,
+            pendingAttackGesture: gesture,
+            pendingAttackAccuracy: bestMatch?.accuracy || 0
+          });
+        } else {
+          await storage.updateGameSession(sessionId, {
+            pendingCounterPlayerId: playerId,
+            pendingCounterSpellId: bestMatch?.spell.id || null,
+            pendingCounterGesture: gesture,
+            pendingCounterAccuracy: bestMatch?.accuracy || 0
+          });
+        }
         
         // If in counter phase and no spell matched, it's wrong defense
         if (spellType === "counter") {
@@ -535,25 +540,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create gesture attempt record with correct successful value
-      const attemptData = insertGestureAttemptSchema.parse({
-        sessionId,
-        playerId,
-        roundNumber: session.currentRound,
-        spellId: selectedSpell.id,
-        drawnGesture: gesture,
-        accuracy: selectedAccuracy,
-        successful: selectedAccuracy >= 57 && (spellType === "attack" || isValidCounter)
-      });
-
-      await storage.createGestureAttempt(attemptData);
-
-      // If it's a successful attack spell, update session phase and save the spell
-      if (spellType === "attack" && selectedAccuracy >= 57) {
+      // Save pending attempt data (will be saved to history when round completes)
+      if (spellType === "attack") {
         await storage.updateGameSession(sessionId, {
-          currentPhase: "counter",
-          lastAttackSpellId: selectedSpell.id,
-          lastAttackAccuracy: selectedAccuracy
+          pendingAttackPlayerId: playerId,
+          pendingAttackSpellId: selectedSpell.id,
+          pendingAttackGesture: gesture,
+          pendingAttackAccuracy: selectedAccuracy,
+          currentPhase: selectedAccuracy >= 57 ? "counter" : session.currentPhase,
+          lastAttackSpellId: selectedAccuracy >= 57 ? selectedSpell.id : session.lastAttackSpellId,
+          lastAttackAccuracy: selectedAccuracy >= 57 ? selectedAccuracy : session.lastAttackAccuracy
+        });
+      } else {
+        await storage.updateGameSession(sessionId, {
+          pendingCounterPlayerId: playerId,
+          pendingCounterSpellId: selectedSpell.id,
+          pendingCounterGesture: gesture,
+          pendingCounterAccuracy: selectedAccuracy
         });
       }
 
@@ -590,34 +593,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game session not found" });
       }
 
-      // Check if attempt already exists for this round and player
-      const existingAttempts = await storage.getGestureAttemptsBySession(sessionId);
-      const currentRound = session.currentRound;
-      const existingAttempt = existingAttempts.find(
-        a => a.roundNumber === currentRound && a.playerId === playerId
-      );
-
-      if (existingAttempt) {
-        // Update existing attempt with chosen spell
-        console.log("Updating existing attempt:", existingAttempt.id);
-        await storage.updateGestureAttempt(existingAttempt.id, {
-          spellId,
-          accuracy,
-          successful: accuracy >= 57
-        });
-      } else {
-        // Create new attempt
-        const attemptData = insertGestureAttemptSchema.parse({
-          sessionId,
-          playerId,
-          roundNumber: currentRound,
-          spellId,
-          drawnGesture: gesture,
-          accuracy,
-          successful: accuracy >= 57
-        });
-        await storage.createGestureAttempt(attemptData);
-      }
+      // Save pending attempt data (will be saved to history when round completes)
+      // This is always attack phase (multiple matches only happen for attack spells)
+      await storage.updateGameSession(sessionId, {
+        pendingAttackPlayerId: playerId,
+        pendingAttackSpellId: spellId,
+        pendingAttackGesture: gesture,
+        pendingAttackAccuracy: accuracy,
+        currentPhase: accuracy >= 57 ? "counter" : session.currentPhase,
+        lastAttackSpellId: accuracy >= 57 ? spellId : session.lastAttackSpellId,
+        lastAttackAccuracy: accuracy >= 57 ? accuracy : session.lastAttackAccuracy
+      });
       
       res.json({ success: true });
     } catch (error) {
