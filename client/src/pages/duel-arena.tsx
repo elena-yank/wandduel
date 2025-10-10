@@ -117,7 +117,7 @@ export default function DuelArena() {
   const canvasRef = useRef<GestureCanvasRef>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const spellDatabaseRef = useRef<HTMLDivElement>(null);
-  const roundCompleteShownForRound = useRef<number | null>(null);
+  const roundCompleteShownForRound = useRef<string | null>(null);
 
   const roomId = params?.roomId;
 
@@ -289,10 +289,6 @@ export default function DuelArena() {
     return colorObj?.hex || "hsl(259, 74%, 56%)";
   };
 
-  // Boost displayed accuracy by 15% (max 100)
-  const boostAccuracy = (accuracy: number): number => {
-    return Math.min(100, accuracy + 15);
-  };
 
   // Find current user's participant to get their actual player number
   const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
@@ -315,7 +311,7 @@ export default function DuelArena() {
           setAttackResult({
             recognized: true,
             spell: spell,
-            accuracy: boostAccuracy(session.lastAttackAccuracy || 100), // Apply boost
+            accuracy: session.lastAttackAccuracy || 100,
             successful: true
           });
         }
@@ -324,9 +320,7 @@ export default function DuelArena() {
         setAttackResult(null);
         setCounterResult(null);
         // Reset the shown round tracker when new round starts
-        if (session?.currentRound && roundCompleteShownForRound.current && roundCompleteShownForRound.current < session.currentRound) {
-          roundCompleteShownForRound.current = null;
-        }
+        roundCompleteShownForRound.current = null;
       }
     };
 
@@ -341,17 +335,24 @@ export default function DuelArena() {
         h => h.roundNumber === currentRound && h.playerId === 2
       );
       
-      if (player2Attempt && player2Attempt.spell && !counterResult) {
-        setCounterResult({
-          recognized: true,
-          spell: player2Attempt.spell,
-          accuracy: boostAccuracy(player2Attempt.accuracy), // Apply boost
-          isValidCounter: player2Attempt.successful,
-          successful: player2Attempt.successful
-        });
+      if (player2Attempt && player2Attempt.spell) {
+        // Check if we need to update counterResult for current round
+        const needsUpdate = !counterResult || 
+          !counterResult.spell || 
+          counterResult.spell.id !== player2Attempt.spell.id;
+          
+        if (needsUpdate) {
+          setCounterResult({
+            recognized: true,
+            spell: player2Attempt.spell,
+            accuracy: player2Attempt.accuracy,
+            isValidCounter: player2Attempt.successful,
+            successful: player2Attempt.successful
+          });
+        }
       }
     }
-  }, [session, spellHistory, counterResult]);
+  }, [session, spellHistory]);
 
   // Check for role and session on component mount
   useEffect(() => {
@@ -474,18 +475,23 @@ export default function DuelArena() {
     if (
       attackResult && 
       counterResult && 
-      !showRoundComplete &&
-      roundCompleteShownForRound.current !== currentRound
+      !showRoundComplete
     ) {
-      // Wait a moment to show the result, then show round complete dialog
-      const timer = setTimeout(() => {
-        setShowRoundComplete(true);
-        roundCompleteShownForRound.current = currentRound;
-      }, 1500); // 1.5 second delay to show result
+      // Check if we already showed dialog for this combination of spells
+      const spellKey = `${attackResult.spell?.id}-${counterResult.spell?.id}`;
       
-      return () => clearTimeout(timer);
+      // Only show if we haven't shown for this spell combination
+      if (roundCompleteShownForRound.current !== spellKey) {
+        // Wait a moment to show the result, then show round complete dialog
+        const timer = setTimeout(() => {
+          setShowRoundComplete(true);
+          roundCompleteShownForRound.current = spellKey;
+        }, 1500); // 1.5 second delay to show result
+        
+        return () => clearTimeout(timer);
+      }
     }
-  }, [attackResult, counterResult, showRoundComplete, session?.currentRound]);
+  }, [attackResult, counterResult, showRoundComplete]);
 
   const handleLeave = () => {
     if (roomId) {
@@ -598,8 +604,8 @@ export default function DuelArena() {
             roundNumber: currentRound,
             playerId: 1,
             spell: pendingSpell,
-            accuracy: boostAccuracy(rawAccuracy), // Apply boost for display
-            successful: rawAccuracy >= 57, // Using success threshold with unboosted value
+            accuracy: rawAccuracy,
+            successful: rawAccuracy >= 57,
             drawnGesture: (session.pendingAttackGesture as Point[]) || []
           }
         ];
@@ -616,8 +622,8 @@ export default function DuelArena() {
             roundNumber: currentRound,
             playerId: 2,
             spell: pendingSpell,
-            accuracy: boostAccuracy(rawAccuracy), // Apply boost for display
-            successful: rawAccuracy >= 57, // Using success threshold with unboosted value
+            accuracy: rawAccuracy,
+            successful: rawAccuracy >= 57,
             drawnGesture: (session.pendingCounterGesture as Point[]) || []
           }
         ];
@@ -844,8 +850,8 @@ export default function DuelArena() {
           isActive={getCurrentPlayer() === 1}
           lastSpell={attackResult?.spell?.name || "-"}
           lastSpellId={attackResult?.spell?.id}
-          lastAccuracy={attackResult ? `${boostAccuracy(attackResult.accuracy)}% accuracy` : "Waiting..."}
-          accuracy={attackResult?.accuracy ? boostAccuracy(attackResult.accuracy) : 0}
+          lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
+          accuracy={attackResult?.accuracy || 0}
           spellHistory={getEnhancedSpellHistory(1)}
           onSpellClick={handleSpellClick}
           selectedColor={selectedColor}
@@ -921,9 +927,9 @@ export default function DuelArena() {
           lastSpell={counterResult?.spell?.name || "-"}
           lastSpellId={counterResult?.spell?.id}
           lastAccuracy={counterResult ? 
-            `${boostAccuracy(counterResult.accuracy)}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
+            `${counterResult.accuracy}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
             "Waiting..."}
-          accuracy={counterResult?.accuracy ? boostAccuracy(counterResult.accuracy) : 0}
+          accuracy={counterResult?.accuracy || 0}
           spellHistory={getEnhancedSpellHistory(2)}
           onSpellClick={handleSpellClick}
           selectedColor={selectedColor}
@@ -1017,7 +1023,7 @@ export default function DuelArena() {
                       {choice.spell.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {choice.spell.colorName} • {boostAccuracy(choice.accuracy).toFixed(0)}% точность
+                      {choice.spell.colorName} • {choice.accuracy.toFixed(0)}% точность
                     </p>
                   </div>
                 </div>
@@ -1047,7 +1053,7 @@ export default function DuelArena() {
                     {attackResult?.spell?.name}
                   </p>
                   <p className="text-xs text-primary">
-                    Точность: {attackResult?.accuracy ? boostAccuracy(attackResult.accuracy) : 0}%
+                    Точность: {attackResult?.accuracy || 0}%
                   </p>
                 </div>
                 {(() => {
@@ -1075,7 +1081,7 @@ export default function DuelArena() {
                     {counterResult?.spell?.name || "Не выполнено"}
                   </p>
                   <p className={`text-xs ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    Точность: {counterResult?.accuracy ? boostAccuracy(counterResult.accuracy) : 0}%
+                    Точность: {counterResult?.accuracy || 0}%
                   </p>
                   <p className={`text-xs font-semibold mt-1 ${counterResult?.isValidCounter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {counterResult?.isValidCounter ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
