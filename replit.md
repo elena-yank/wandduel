@@ -17,6 +17,7 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 - **Audio Removed**: Removed sparkle sound effect during drawing based on user preference
 - **Mobile Role Selection**: Optimized role selection screen for mobile landscape mode with side-by-side card layout, responsive typography (14px minimum), and 44px touch targets for accessibility
 - **Custom Angst Font**: Added "Angst Bold Serif" font for main titles "Добро пожаловать!" and "МАГИЧЕСКАЯ ДУЭЛЬ" with gradient text effect
+- **Localization Complete**: Fully localized interface - renamed "MAGICAL DUEL ARENA" to "МАГИЧЕСКАЯ ДУЭЛЬ", changed subtitle to "Каждый взмах палочки решает исход"
 
 **Database Migration Completed (October 7, 2025)**: Successfully migrated from in-memory storage to PostgreSQL for permanent data persistence. All spell patterns now stored in database. Changed from Neon serverless driver to node-postgres (pg) driver due to WebSocket compatibility issues in development environment.
 

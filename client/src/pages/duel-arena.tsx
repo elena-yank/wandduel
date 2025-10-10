@@ -628,7 +628,7 @@ export default function DuelArena() {
           МАГИЧЕСКАЯ ДУЭЛЬ
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground font-serif">
-          Сражайтесь с помощью магии и мужества
+          Каждый взмах палочки решает исход
         </p>
         <Button
           variant="outline"
