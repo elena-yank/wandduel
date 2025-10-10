@@ -37,6 +37,7 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
   - Advances to next round or completes game after 10 rounds
   - Stores completed round data in lastCompleted* fields for round dialog display
   - Clears lastCompleted* data when dialog is dismissed to prepare for next round
+- **Turn Validation Fix**: Fixed bug where Player 2 received "Not your turn" error when attacking in even rounds. Frontend turn validation now correctly uses `getCurrentPlayer()` function which determines active player based on round parity instead of hardcoded phase logic
 
 ## User Preferences
 
