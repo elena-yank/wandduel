@@ -169,8 +169,8 @@ export default function RoomLobby() {
                         onClick={() => setCreateHouse(house.id)}
                         className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
                           createHouse === house.id
-                            ? "border-primary bg-primary/10 shadow-lg"
-                            : "border-border/20 hover:border-primary/50"
+                            ? "border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/50"
+                            : "border-border/20 hover:border-yellow-500/50"
                         }`}
                         data-testid={`button-house-${house.id}-create`}
                       >
@@ -224,8 +224,8 @@ export default function RoomLobby() {
                         onClick={() => setJoinHouse(house.id)}
                         className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
                           joinHouse === house.id
-                            ? "border-primary bg-primary/10 shadow-lg"
-                            : "border-border/20 hover:border-primary/50"
+                            ? "border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/50"
+                            : "border-border/20 hover:border-yellow-500/50"
                         }`}
                         data-testid={`button-house-${house.id}-join`}
                       >
