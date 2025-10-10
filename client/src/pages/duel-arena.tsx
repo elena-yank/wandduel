@@ -309,20 +309,15 @@ export default function DuelArena() {
   useEffect(() => {
     const loadAttackSpell = async () => {
       if (session?.currentPhase === "counter" && session.lastAttackSpellId) {
-        const currentRound = session.currentRound || 1;
-        // Only load if we haven't shown the dialog for this round yet
-        if (roundCompleteShownForRound.current !== currentRound) {
-          // Fetch the attack spell details
-          const spell = allSpells.find(s => s.id === session.lastAttackSpellId);
-          if (spell && !attackResult) {
-            // Set attack result from session data
-            setAttackResult({
-              recognized: true,
-              spell: spell,
-              accuracy: session.lastAttackAccuracy || 100,
-              successful: true
-            });
-          }
+        const spell = allSpells.find(s => s.id === session.lastAttackSpellId);
+        if (spell && !attackResult) {
+          // Set attack result from session data
+          setAttackResult({
+            recognized: true,
+            spell: spell,
+            accuracy: boostAccuracy(session.lastAttackAccuracy || 100), // Apply boost
+            successful: true
+          });
         }
       } else if (session?.currentPhase === "attack") {
         // Clear results when new round starts
@@ -342,21 +337,18 @@ export default function DuelArena() {
   useEffect(() => {
     if (session && spellHistory.length > 0) {
       const currentRound = session.currentRound || 1;
-      // Only load if we haven't shown the dialog for this round yet
-      if (roundCompleteShownForRound.current !== currentRound) {
-        const player2Attempt = spellHistory.find(
-          h => h.roundNumber === currentRound && h.playerId === 2
-        );
-        
-        if (player2Attempt && player2Attempt.spell && !counterResult) {
-          setCounterResult({
-            recognized: true,
-            spell: player2Attempt.spell,
-            accuracy: player2Attempt.accuracy,
-            isValidCounter: player2Attempt.successful,
-            successful: player2Attempt.successful
-          });
-        }
+      const player2Attempt = spellHistory.find(
+        h => h.roundNumber === currentRound && h.playerId === 2
+      );
+      
+      if (player2Attempt && player2Attempt.spell && !counterResult) {
+        setCounterResult({
+          recognized: true,
+          spell: player2Attempt.spell,
+          accuracy: boostAccuracy(player2Attempt.accuracy), // Apply boost
+          isValidCounter: player2Attempt.successful,
+          successful: player2Attempt.successful
+        });
       }
     }
   }, [session, spellHistory, counterResult]);
@@ -599,14 +591,15 @@ export default function DuelArena() {
     if (playerId === 1 && session?.pendingAttackSpellId) {
       const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
       if (pendingSpell) {
+        const rawAccuracy = session.pendingAttackAccuracy || 0;
         return [
           ...baseHistory,
           {
             roundNumber: currentRound,
             playerId: 1,
             spell: pendingSpell,
-            accuracy: session.pendingAttackAccuracy || 0,
-            successful: (session.pendingAttackAccuracy || 0) >= 57, // Using success threshold
+            accuracy: boostAccuracy(rawAccuracy), // Apply boost for display
+            successful: rawAccuracy >= 57, // Using success threshold with unboosted value
             drawnGesture: (session.pendingAttackGesture as Point[]) || []
           }
         ];
@@ -616,14 +609,15 @@ export default function DuelArena() {
     if (playerId === 2 && session?.pendingCounterSpellId) {
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
       if (pendingSpell) {
+        const rawAccuracy = session.pendingCounterAccuracy || 0;
         return [
           ...baseHistory,
           {
             roundNumber: currentRound,
             playerId: 2,
             spell: pendingSpell,
-            accuracy: session.pendingCounterAccuracy || 0,
-            successful: (session.pendingCounterAccuracy || 0) >= 57, // Using success threshold
+            accuracy: boostAccuracy(rawAccuracy), // Apply boost for display
+            successful: rawAccuracy >= 57, // Using success threshold with unboosted value
             drawnGesture: (session.pendingCounterGesture as Point[]) || []
           }
         ];
