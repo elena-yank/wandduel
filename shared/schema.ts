@@ -34,6 +34,15 @@ export const gameSessions = pgTable("game_sessions", {
   lastAttackSpellId: varchar("last_attack_spell_id"),
   lastAttackAccuracy: integer("last_attack_accuracy"),
   gameStatus: varchar("game_status", { enum: ["active", "completed", "paused"] }).default("active"),
+  // Pending attempt data (saved only when round completes)
+  pendingAttackPlayerId: integer("pending_attack_player_id"),
+  pendingAttackSpellId: varchar("pending_attack_spell_id"),
+  pendingAttackGesture: jsonb("pending_attack_gesture"),
+  pendingAttackAccuracy: integer("pending_attack_accuracy"),
+  pendingCounterPlayerId: integer("pending_counter_player_id"),
+  pendingCounterSpellId: varchar("pending_counter_spell_id"),
+  pendingCounterGesture: jsonb("pending_counter_gesture"),
+  pendingCounterAccuracy: integer("pending_counter_accuracy"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
