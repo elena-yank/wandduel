@@ -568,6 +568,57 @@ export default function DuelArena() {
 
   const getCurrentPlayer = () => roundPhase === "attack" ? 1 : 2;
 
+  // Enhanced spell history: add pending spells for current round
+  const getEnhancedSpellHistory = (playerId: number) => {
+    const baseHistory = spellHistory.filter(h => h.playerId === playerId);
+    const currentRound = session?.currentRound || 1;
+    
+    // Check if current round already has a record in history
+    const hasCurrentRound = baseHistory.some(h => h.roundNumber === currentRound);
+    
+    // If round already completed, return base history
+    if (hasCurrentRound) {
+      return baseHistory;
+    }
+    
+    // Add pending spell for current round if it exists
+    if (playerId === 1 && session?.pendingAttackSpellId) {
+      const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
+      if (pendingSpell) {
+        return [
+          ...baseHistory,
+          {
+            roundNumber: currentRound,
+            playerId: 1,
+            spell: pendingSpell,
+            accuracy: session.pendingAttackAccuracy || 0,
+            successful: (session.pendingAttackAccuracy || 0) >= 57, // Using success threshold
+            drawnGesture: (session.pendingAttackGesture as Point[]) || []
+          }
+        ];
+      }
+    }
+    
+    if (playerId === 2 && session?.pendingCounterSpellId) {
+      const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
+      if (pendingSpell) {
+        return [
+          ...baseHistory,
+          {
+            roundNumber: currentRound,
+            playerId: 2,
+            spell: pendingSpell,
+            accuracy: session.pendingCounterAccuracy || 0,
+            successful: (session.pendingCounterAccuracy || 0) >= 57, // Using success threshold
+            drawnGesture: (session.pendingCounterGesture as Point[]) || []
+          }
+        ];
+      }
+    }
+    
+    return baseHistory;
+  };
+
   if (sessionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -787,7 +838,7 @@ export default function DuelArena() {
           lastSpellId={attackResult?.spell?.id}
           lastAccuracy={attackResult ? `${attackResult.accuracy}% accuracy` : "Waiting..."}
           accuracy={attackResult?.accuracy || 0}
-          spellHistory={spellHistory.filter(h => h.playerId === 1)}
+          spellHistory={getEnhancedSpellHistory(1)}
           onSpellClick={handleSpellClick}
           data-testid="player-card-1"
         />
@@ -861,7 +912,7 @@ export default function DuelArena() {
             `${counterResult.accuracy}% accuracy${counterResult.isValidCounter ? " - Valid counter!" : ""}` : 
             "Waiting..."}
           accuracy={counterResult?.accuracy || 0}
-          spellHistory={spellHistory.filter(h => h.playerId === 2)}
+          spellHistory={getEnhancedSpellHistory(2)}
           onSpellClick={handleSpellClick}
           data-testid="player-card-2"
         />

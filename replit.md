@@ -13,6 +13,7 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
   - Hufflepuff: Yellow (#EAB308)
 - **Improved Visibility**: Increased player card background opacity from 15% to 35% for better house color visibility against the blue application background
 - **Round Dialog Gesture Fix**: Round completion dialog now correctly displays drawn gestures from pending session data instead of history data
+- **Spell History Real-time Display**: Player cards now show spell history immediately after recognition using `getEnhancedSpellHistory()` function that merges base history with pending session data, eliminating the delay where players couldn't see what spell was recognized until round completion
 
 ## User Preferences
 
