@@ -118,6 +118,7 @@ export default function DuelArena() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const spellDatabaseRef = useRef<HTMLDivElement>(null);
   const roundCompleteShownForRound = useRef<string | null>(null);
+  const dismissedDialogForRound = useRef<string | null>(null); // Track when user dismisses dialog
 
   const roomId = params?.roomId;
 
@@ -301,9 +302,21 @@ export default function DuelArena() {
     }
   }, [session?.currentPhase]);
 
+  // Reset dialog tracking when round number changes
+  useEffect(() => {
+    // Reset both round trackers when a new round starts
+    roundCompleteShownForRound.current = null;
+    dismissedDialogForRound.current = null;
+  }, [session?.currentRound]);
+
   // Load attack spell info when in counter phase
   useEffect(() => {
     const loadAttackSpell = async () => {
+      // If Player 2 has round complete dialog open, don't update to new phase yet
+      if (actualPlayerNumber === 2 && showRoundComplete) {
+        return; // Wait until Player 2 closes their dialog
+      }
+
       if (session?.currentPhase === "counter" && session.lastAttackSpellId) {
         const spell = allSpells.find(s => s.id === session.lastAttackSpellId);
         if (spell && !attackResult) {
@@ -319,16 +332,19 @@ export default function DuelArena() {
         // Clear results when new round starts
         setAttackResult(null);
         setCounterResult(null);
-        // Reset the shown round tracker when new round starts
-        roundCompleteShownForRound.current = null;
       }
     };
 
     loadAttackSpell();
-  }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, session?.currentRound, allSpells]);
+  }, [session?.currentPhase, session?.lastAttackSpellId, session?.lastAttackAccuracy, session?.currentRound, allSpells, actualPlayerNumber, showRoundComplete]);
 
   // Load counter spell info from spell history or pending session data
   useEffect(() => {
+    // If Player 2 has round complete dialog open, don't update yet
+    if (actualPlayerNumber === 2 && showRoundComplete) {
+      return; // Wait until Player 2 closes their dialog
+    }
+
     // First, try to get from pending session data (most up-to-date)
     if (session?.pendingCounterSpellId) {
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
@@ -377,7 +393,7 @@ export default function DuelArena() {
         }
       }
     }
-  }, [session, spellHistory, allSpells]);
+  }, [session, spellHistory, allSpells, actualPlayerNumber, showRoundComplete]);
 
   // Check for role and session on component mount
   useEffect(() => {
@@ -502,21 +518,21 @@ export default function DuelArena() {
       counterResult && 
       !showRoundComplete
     ) {
-      // Check if we already showed dialog for this combination of spells
-      const spellKey = `${attackResult.spell?.id}-${counterResult.spell?.id}`;
+      // Use round number as the key instead of spell combination
+      const roundKey = `${currentRound}`;
       
-      // Only show if we haven't shown for this spell combination
-      if (roundCompleteShownForRound.current !== spellKey) {
+      // Only show if we haven't shown for this round AND user hasn't dismissed it
+      if (roundCompleteShownForRound.current !== roundKey && dismissedDialogForRound.current !== roundKey) {
         // Wait a moment to show the result, then show round complete dialog
         const timer = setTimeout(() => {
           setShowRoundComplete(true);
-          roundCompleteShownForRound.current = spellKey;
+          roundCompleteShownForRound.current = roundKey;
         }, 1500); // 1.5 second delay to show result
         
         return () => clearTimeout(timer);
       }
     }
-  }, [attackResult, counterResult, showRoundComplete]);
+  }, [attackResult, counterResult, showRoundComplete, session?.currentRound]);
 
   const handleLeave = () => {
     if (roomId) {
@@ -1059,7 +1075,22 @@ export default function DuelArena() {
       </Dialog>
 
       {/* Round Complete Dialog */}
-      <Dialog open={showRoundComplete} onOpenChange={setShowRoundComplete}>
+      <Dialog open={showRoundComplete} onOpenChange={(open) => {
+        if (!open) {
+          // Mark this round as dismissed when dialog is closed
+          const currentRound = session?.currentRound || 1;
+          const roundKey = `${currentRound}`;
+          dismissedDialogForRound.current = roundKey;
+          
+          // Clear results
+          setAttackResult(null);
+          setCounterResult(null);
+          
+          // Invalidate session queries to sync with server state
+          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+        }
+        setShowRoundComplete(open);
+      }}>
         <DialogContent className="sm:max-w-sm" data-testid="dialog-round-complete">
           <DialogHeader>
             <DialogTitle className="font-decorative text-xl decorative-text">
@@ -1127,14 +1158,18 @@ export default function DuelArena() {
           </div>
           <Button 
             onClick={() => {
-              if (attackResult && counterResult) {
-                completeRoundMutation.mutate({
-                  attackSpellId: attackResult.spell?.id || null,
-                  counterSuccess: counterResult.successful && (counterResult.isValidCounter ?? false),
-                  player1Accuracy: attackResult.accuracy,
-                  player2Accuracy: counterResult.accuracy,
-                });
-              }
+              // Mark this round as dismissed for this player using round number
+              const currentRound = session?.currentRound || 1;
+              const roundKey = `${currentRound}`;
+              dismissedDialogForRound.current = roundKey;
+              
+              // Close the dialog and clear results
+              setShowRoundComplete(false);
+              setAttackResult(null);
+              setCounterResult(null);
+              
+              // Invalidate session queries to sync with server state
+              queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
             }}
             className="w-full glow-primary"
             data-testid="button-continue-next-round"
