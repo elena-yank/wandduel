@@ -621,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             roundNumber: currentRound
           });
 
-          // Update scores
+          // Update scores based on spell complexity
           const updatedSession = await storage.getGameSession(sessionId);
           if (!updatedSession) {
             throw new Error("Session not found");
@@ -630,16 +630,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let player1Score = updatedSession.player1Score ?? 0;
           let player2Score = updatedSession.player2Score ?? 0;
 
-          // Player 1 gets point if attack was successful (>= 57%)
+          // Determine who is attacker and defender in current round
+          // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
+          // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
+          const isOddRound = currentRound % 2 === 1;
+          const attackerPlayerId = isOddRound ? 1 : 2;
+          const defenderPlayerId = isOddRound ? 2 : 1;
+
+          // Award attacker points if attack was successful (>= 57%)
           const attackSuccessful = (session.pendingAttackAccuracy || 0) >= 57;
-          if (attackSuccessful) {
-            player1Score += 1;
+          if (attackSuccessful && session.pendingAttackSpellId) {
+            const attackSpell = await storage.getSpellById(session.pendingAttackSpellId);
+            if (attackSpell && attackSpell.gesturePattern) {
+              const patternPoints = (attackSpell.gesturePattern as any[]).length;
+              let attackPoints = 0;
+              
+              if (patternPoints === 1) {
+                attackPoints = 1;
+              } else if (patternPoints >= 2 && patternPoints <= 10) {
+                attackPoints = 3;
+              } else if (patternPoints >= 11) {
+                attackPoints = 4;
+              }
+              
+              if (attackerPlayerId === 1) {
+                player1Score += attackPoints;
+              } else {
+                player2Score += attackPoints;
+              }
+            }
           }
 
-          // Player 2 gets point if counter was successful (>= 57% AND valid counter)
+          // Award defender points if counter was successful (>= 57% AND valid counter)
           const counterSuccessful = selectedAccuracy >= 57 && isValidCounter;
           if (counterSuccessful) {
-            player2Score += 1;
+            const counterSpell = selectedSpell;
+            if (counterSpell && counterSpell.gesturePattern) {
+              const patternPoints = (counterSpell.gesturePattern as any[]).length;
+              let defensePoints = 0;
+              
+              if (patternPoints === 1) {
+                defensePoints = 2;
+              } else if (patternPoints >= 2 && patternPoints <= 10) {
+                defensePoints = 4;
+              } else if (patternPoints >= 11) {
+                defensePoints = 5;
+              }
+              
+              if (defenderPlayerId === 1) {
+                player1Score += defensePoints;
+              } else {
+                player2Score += defensePoints;
+              }
+            }
           }
 
           // Determine if game is complete (after 10 rounds)
@@ -788,18 +831,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log("===============================================");
 
-      // Award points based on performance
+      // Award points based on spell complexity (pattern point count)
       let player1ScoreIncrease = 0;
       let player2ScoreIncrease = 0;
 
-      // Player 1 gets points for successful attack (accuracy >= 57% required for successful cast)
-      if (player1Accuracy >= 57) {
-        player1ScoreIncrease = Math.floor(player1Accuracy / 10); // 6-10 points based on accuracy
+      // Determine who is attacker and defender in current round
+      // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
+      // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
+      const isOddRound = currentRound % 2 === 1;
+      const attackerPlayerId = isOddRound ? 1 : 2;
+      const defenderPlayerId = isOddRound ? 2 : 1;
+
+      // Get attack spell and calculate attacker points
+      if (session.pendingAttackSpellId && session.pendingAttackAccuracy && session.pendingAttackAccuracy >= 57) {
+        const attackSpell = await storage.getSpellById(session.pendingAttackSpellId);
+        if (attackSpell && attackSpell.gesturePattern) {
+          const patternPoints = (attackSpell.gesturePattern as any[]).length;
+          let attackPoints = 0;
+          
+          if (patternPoints === 1) {
+            attackPoints = 1;
+          } else if (patternPoints >= 2 && patternPoints <= 10) {
+            attackPoints = 3;
+          } else if (patternPoints >= 11) {
+            attackPoints = 4;
+          }
+          
+          if (attackerPlayerId === 1) {
+            player1ScoreIncrease = attackPoints;
+          } else {
+            player2ScoreIncrease = attackPoints;
+          }
+        }
       }
 
-      // Player 2 gets points for successful counter (accuracy >= 57% AND valid counter spell)
-      if (counterSuccess && player2Accuracy >= 57) {
-        player2ScoreIncrease = Math.floor(player2Accuracy / 12); // 5-8 points based on accuracy (harder to defend)
+      // Get counter spell and calculate defender points (only if valid counter and successful)
+      if (counterSuccess && session.pendingCounterSpellId && session.pendingCounterAccuracy && session.pendingCounterAccuracy >= 57) {
+        const counterSpell = await storage.getSpellById(session.pendingCounterSpellId);
+        if (counterSpell && counterSpell.gesturePattern) {
+          const patternPoints = (counterSpell.gesturePattern as any[]).length;
+          let defensePoints = 0;
+          
+          if (patternPoints === 1) {
+            defensePoints = 2;
+          } else if (patternPoints >= 2 && patternPoints <= 10) {
+            defensePoints = 4;
+          } else if (patternPoints >= 11) {
+            defensePoints = 5;
+          }
+          
+          if (defenderPlayerId === 1) {
+            player1ScoreIncrease = defensePoints;
+          } else {
+            player2ScoreIncrease = defensePoints;
+          }
+        }
       }
 
       // Update game session
