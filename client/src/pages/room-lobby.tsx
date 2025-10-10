@@ -11,11 +11,24 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Wand2, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import duelIconPath from "@assets/image_1760081444104.png";
+import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
+import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
+import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
+import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
+
+const houses = [
+  { id: "gryffindor", name: "Гриффиндор", icon: gryffindorIcon },
+  { id: "ravenclaw", name: "Когтевран", icon: ravenclawIcon },
+  { id: "slytherin", name: "Слизерин", icon: slytherinIcon },
+  { id: "hufflepuff", name: "Пуффендуй", icon: hufflepuffIcon },
+] as const;
 
 export default function RoomLobby() {
   const [, setLocation] = useLocation();
   const [createUserName, setCreateUserName] = useState("");
+  const [createHouse, setCreateHouse] = useState<string>("");
   const [joinUserName, setJoinUserName] = useState("");
+  const [joinHouse, setJoinHouse] = useState<string>("");
   const [joinRoomId, setJoinRoomId] = useState("");
   const [createdRoomId, setCreatedRoomId] = useState("");
   const [showRoomDialog, setShowRoomDialog] = useState(false);
@@ -27,12 +40,16 @@ export default function RoomLobby() {
       if (!createUserName.trim()) {
         throw new Error("Введите ваше имя");
       }
+      if (!createHouse) {
+        throw new Error("Выберите факультет");
+      }
       const res = await apiRequest("POST", "/api/rooms", { hostName: createUserName });
       return res.json();
     },
     onSuccess: (data) => {
       const { room } = data;
       localStorage.setItem("userName", createUserName);
+      localStorage.setItem("userHouse", createHouse);
       setCreatedRoomId(room.id);
       setShowRoomDialog(true);
     },
@@ -50,6 +67,9 @@ export default function RoomLobby() {
       if (!joinUserName.trim()) {
         throw new Error("Введите ваше имя");
       }
+      if (!joinHouse) {
+        throw new Error("Выберите факультет");
+      }
       if (!joinRoomId.trim()) {
         throw new Error("Введите ID комнаты");
       }
@@ -63,6 +83,7 @@ export default function RoomLobby() {
     },
     onSuccess: (data) => {
       localStorage.setItem("userName", joinUserName);
+      localStorage.setItem("userHouse", joinHouse);
       setLocation(`/rooms/${data.roomId}/role-selection`);
     },
     onError: (error: Error) => {
@@ -136,6 +157,34 @@ export default function RoomLobby() {
                   />
                 </div>
 
+                <div>
+                  <Label className="text-base font-medium">
+                    Ваш факультет
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    {houses.map((house) => (
+                      <button
+                        key={house.id}
+                        type="button"
+                        onClick={() => setCreateHouse(house.id)}
+                        className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                          createHouse === house.id
+                            ? "border-primary bg-primary/10 shadow-lg"
+                            : "border-border/20 hover:border-primary/50"
+                        }`}
+                        data-testid={`button-house-${house.id}-create`}
+                      >
+                        <img
+                          src={house.icon}
+                          alt={house.name}
+                          className="w-16 h-16 mx-auto mb-2"
+                        />
+                        <p className="text-sm font-medium text-center">{house.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <Button
                   onClick={handleCreateRoom}
                   disabled={createRoomMutation.isPending}
@@ -161,6 +210,34 @@ export default function RoomLobby() {
                     className="mt-2 h-12 text-base"
                     data-testid="input-join-user-name"
                   />
+                </div>
+
+                <div>
+                  <Label className="text-base font-medium">
+                    Ваш факультет
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    {houses.map((house) => (
+                      <button
+                        key={house.id}
+                        type="button"
+                        onClick={() => setJoinHouse(house.id)}
+                        className={`p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                          joinHouse === house.id
+                            ? "border-primary bg-primary/10 shadow-lg"
+                            : "border-border/20 hover:border-primary/50"
+                        }`}
+                        data-testid={`button-house-${house.id}-join`}
+                      >
+                        <img
+                          src={house.icon}
+                          alt={house.name}
+                          className="w-16 h-16 mx-auto mb-2"
+                        />
+                        <p className="text-sm font-medium text-center">{house.name}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
