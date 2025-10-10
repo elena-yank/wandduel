@@ -21,6 +21,8 @@ interface PlayerCardProps {
   accuracy: number;
   spellHistory?: SpellHistoryItem[];
   onSpellClick?: (spellId: string) => void;
+  opponentSpell?: string; // For Player 2 to see Player 1's attack
+  opponentAccuracy?: string; // For Player 2 to see Player 1's accuracy
 }
 
 // House color themes with actual color values
@@ -28,7 +30,8 @@ const houseColors = {
   gryffindor: {
     borderColor: "#DC2626", // red-600
     borderActiveColor: "#EF4444", // red-500
-    iconBg: "rgba(220, 38, 38, 0.2)", // red-600/20
+    bgColor: "rgba(220, 38, 38, 0.15)", // red-600/15
+    iconBg: "rgba(220, 38, 38, 0.25)", // red-600/25
     textColor: "#EF4444", // red-500
     accentColor: "#EAB308", // yellow-500
     barGradient: "linear-gradient(to right, #DC2626, #EAB308)" // red to yellow
@@ -36,7 +39,8 @@ const houseColors = {
   slytherin: {
     borderColor: "#059669", // green-600
     borderActiveColor: "#10B981", // green-500
-    iconBg: "rgba(5, 150, 105, 0.2)", // green-600/20
+    bgColor: "rgba(5, 150, 105, 0.15)", // green-600/15
+    iconBg: "rgba(5, 150, 105, 0.25)", // green-600/25
     textColor: "#10B981", // green-500
     accentColor: "#9CA3AF", // gray-400
     barGradient: "linear-gradient(to right, #059669, #9CA3AF)" // green to gray
@@ -44,7 +48,8 @@ const houseColors = {
   ravenclaw: {
     borderColor: "#2563EB", // blue-600
     borderActiveColor: "#3B82F6", // blue-500
-    iconBg: "rgba(37, 99, 235, 0.2)", // blue-600/20
+    bgColor: "rgba(37, 99, 235, 0.15)", // blue-600/15
+    iconBg: "rgba(37, 99, 235, 0.25)", // blue-600/25
     textColor: "#3B82F6", // blue-500
     accentColor: "#9CA3AF", // gray-400
     barGradient: "linear-gradient(to right, #2563EB, #9CA3AF)" // blue to gray
@@ -52,7 +57,8 @@ const houseColors = {
   hufflepuff: {
     borderColor: "#CA8A04", // yellow-600
     borderActiveColor: "#EAB308", // yellow-500
-    iconBg: "rgba(202, 138, 4, 0.2)", // yellow-600/20
+    bgColor: "rgba(202, 138, 4, 0.15)", // yellow-600/15
+    iconBg: "rgba(202, 138, 4, 0.25)", // yellow-600/25
     textColor: "#EAB308", // yellow-500
     accentColor: "#374151", // gray-700
     barGradient: "linear-gradient(to right, #CA8A04, #374151)" // yellow to gray
@@ -70,6 +76,8 @@ export default function PlayerCard({
   accuracy,
   spellHistory = [],
   onSpellClick,
+  opponentSpell,
+  opponentAccuracy,
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
@@ -101,7 +109,8 @@ export default function PlayerCard({
         isActive && !houseTheme && "player-active"
       )}
       style={houseTheme ? {
-        borderColor: isActive ? houseTheme.borderActiveColor : houseTheme.borderColor
+        borderColor: isActive ? houseTheme.borderActiveColor : houseTheme.borderColor,
+        backgroundColor: houseTheme.bgColor
       } : undefined}
       {...props}
     >
@@ -138,6 +147,23 @@ export default function PlayerCard({
         </div>
         
         <div className="space-y-4">
+          {/* Show opponent's attack spell for Player 2 */}
+          {player === 2 && opponentSpell && opponentSpell !== "-" && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">
+                ⚔️ Атакующее заклинание противника
+              </p>
+              <div className="bg-destructive/10 rounded-lg p-3 border border-destructive/30">
+                <p className="font-serif font-bold text-destructive" data-testid="text-opponent-spell">
+                  {opponentSpell}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1" data-testid="text-opponent-accuracy">
+                  {opponentAccuracy}
+                </p>
+              </div>
+            </div>
+          )}
+          
           <div>
             <p className="text-xs text-muted-foreground mb-2">
               Last {player === 1 ? "Spell" : "Counter-Spell"} Cast
