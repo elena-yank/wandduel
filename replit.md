@@ -38,6 +38,8 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 - **House-Themed Player Cards**: Player cards now display in house colors - Gryffindor (red/gold), Slytherin (green/gray), Ravenclaw (blue/gray), Hufflepuff (yellow/black). Borders, icons, spell names, and accuracy bars all use house-specific color gradients
 - **House-Colored Backgrounds**: Added translucent house-colored backgrounds (15% opacity) to player cards - red for Gryffindor, green for Slytherin, blue for Ravenclaw, yellow for Hufflepuff
 - **Opponent Spell Visibility**: Player 2 (defender) now sees Player 1's attacking spell name and accuracy in a red warning box, helping them choose the correct counter-spell
+- **House Icons Without Background**: Removed circular background from house crest icons - they now display as original PNG files without added decoration
+- **Colored Player Names**: Player names are now colored according to their house - Gryffindor (#EF4444 red), Ravenclaw (#3B82F6 blue), Slytherin (#10B981 green), Hufflepuff (#EAB308 yellow). Applied in arena cards and game completion screen
 
 **Database Migration Completed (October 7, 2025)**: Successfully migrated from in-memory storage to PostgreSQL for permanent data persistence. All spell patterns now stored in database. Changed from Neon serverless driver to node-postgres (pg) driver due to WebSocket compatibility issues in development environment.
 
