@@ -33,6 +33,11 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return 0;
   }
 
+  // Minimum points requirement: need at least 5 points for a valid gesture
+  if (drawnGesture.length < 5) {
+    return 0;
+  }
+
   // Normalize to 0-100 space WITH centering - but use strict penalties elsewhere
   const normalizeGestureStrict = (gesture: Point[]) => {
     const minX = Math.min(...gesture.map(p => p.x));
@@ -75,15 +80,20 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const aspectRatioDiff = Math.abs(drawnAspectRatio - targetAspectRatio) / Math.max(drawnAspectRatio, targetAspectRatio);
   const aspectRatioPenalty = aspectRatioDiff * 0.20; // Gentler penalty - 20%
 
-  // Penalty for excessive points (scribbling/filling)
+  // Penalty for point count mismatch (both too many or too few)
   const targetPointCount = (targetPattern as Point[]).length;
   const drawnPointCount = drawnGesture.length;
   const pointCountRatio = drawnPointCount / targetPointCount;
   let pointCountPenalty = 0;
   
-  // If drawn has more than 3x the target points, apply moderate penalty
+  // Penalty for too many points (scribbling/filling)
   if (pointCountRatio > 3) {
     pointCountPenalty = Math.min(0.20, (pointCountRatio - 3) * 0.06); // Up to 20% penalty
+  }
+  
+  // Penalty for too few points (insufficient detail)
+  if (pointCountRatio < 0.5) {
+    pointCountPenalty = Math.min(0.30, (0.5 - pointCountRatio) * 0.5); // Up to 30% penalty for very short gestures
   }
 
   // Resample to same number of points for comparison
