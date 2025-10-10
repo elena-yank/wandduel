@@ -26,6 +26,7 @@ interface PlayerCardProps {
   selectedColor?: string | null;
   onColorSelect?: (colorName: string | null) => void;
   showColorPalette?: boolean;
+  currentRound?: number; // Add current round to determine role
 }
 
 // House color themes with actual color values
@@ -83,10 +84,19 @@ export default function PlayerCard({
   selectedColor,
   onColorSelect,
   showColorPalette = false,
+  currentRound = 1,
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
-  const playerRole = player === 1 ? "Атакующий" : "Защищающийся";
+  
+  // Determine role based on current round
+  // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
+  // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
+  const isOddRound = currentRound % 2 === 1;
+  const playerRole = (player === 1) 
+    ? (isOddRound ? "Атакующий" : "Защищающийся")
+    : (isOddRound ? "Защищающийся" : "Атакующий");
+  
   const displayName = playerName || `Player ${player}`;
   
   // Get house colors or fallback to default
@@ -94,8 +104,8 @@ export default function PlayerCard({
     ? houseColors[playerHouse as keyof typeof houseColors]
     : null;
 
-  // Create array for all 5 rounds
-  const roundsDisplay = Array.from({ length: 5 }, (_, i) => {
+  // Create array for all 10 rounds
+  const roundsDisplay = Array.from({ length: 10 }, (_, i) => {
     const roundNum = i + 1;
     const historyItem = spellHistory.find(h => h.roundNumber === roundNum);
     return {
@@ -104,6 +114,19 @@ export default function PlayerCard({
       accuracy: historyItem?.accuracy || 0,
       successful: historyItem?.successful ?? true
     };
+  });
+
+  // Separate attacks and defenses based on round number
+  // For Player 1: odd rounds are attacks, even rounds are defenses
+  // For Player 2: even rounds are attacks, odd rounds are defenses
+  const attacks = roundsDisplay.filter(round => {
+    const isOddRound = round.roundNumber % 2 === 1;
+    return player === 1 ? isOddRound : !isOddRound;
+  });
+  
+  const defenses = roundsDisplay.filter(round => {
+    const isOddRound = round.roundNumber % 2 === 1;
+    return player === 1 ? !isOddRound : isOddRound;
   });
 
   return (
@@ -154,21 +177,22 @@ export default function PlayerCard({
         </div>
         
         <div className="space-y-4">
+          {/* Attack Spells Section */}
           <div>
             <p className="text-xs text-muted-foreground mb-2">
-              Last {player === 1 ? "Spell" : "Counter-Spell"} Cast
+              последнее атакующее заклинание
             </p>
             <div 
               className="bg-background/50 rounded-lg p-3 border min-h-[60px]"
               style={houseTheme ? {
-                borderColor: houseTheme.borderColor + "80" // 50% opacity
+                borderColor: houseTheme.borderColor + "80"
               } : {
                 borderColor: 'hsl(var(--border) / 0.3)'
               }}
             >
-              {roundsDisplay.some(r => r.spell || !r.successful) ? (
+              {attacks.some(r => r.spell || !r.successful) ? (
                 <div className="flex flex-wrap gap-1">
-                  {roundsDisplay.map((round) => (
+                  {attacks.map((round) => (
                     <div 
                       key={round.roundNumber}
                       onClick={() => round.spell && onSpellClick?.(round.spell.id)}
@@ -181,7 +205,73 @@ export default function PlayerCard({
                         round.spell && onSpellClick && "cursor-pointer hover:scale-105 hover:shadow-md"
                       )}
                       style={houseTheme && round.spell && round.successful ? {
-                        borderColor: houseTheme.borderColor + "4D" // 30% opacity
+                        borderColor: houseTheme.borderColor + "4D"
+                      } : undefined}
+                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)\n\nКликните, чтобы открыть в гримуаре` : `Раунд ${round.roundNumber}`}
+                    >
+                      {round.spell ? (
+                        <>
+                          <span 
+                            className={cn(
+                              "font-serif font-semibold",
+                              !houseTheme && (player === 1 ? "text-primary" : "text-accent")
+                            )}
+                            style={houseTheme ? { color: houseTheme.textColor } : undefined}
+                          >
+                            {round.spell.name}
+                          </span>
+                          <span className={cn(
+                            "text-xs font-medium ml-1",
+                            round.accuracy <= 55 ? "text-red-500" : 
+                            round.accuracy <= 75 ? "text-yellow-500" : 
+                            "text-green-500"
+                          )}>
+                            {round.accuracy}%
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-sm text-muted-foreground">
+                  Ожидание...
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Defense Spells Section */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">
+              последнее контр-заклинание
+            </p>
+            <div 
+              className="bg-background/50 rounded-lg p-3 border min-h-[60px]"
+              style={houseTheme ? {
+                borderColor: houseTheme.borderColor + "80"
+              } : {
+                borderColor: 'hsl(var(--border) / 0.3)'
+              }}
+            >
+              {defenses.some(r => r.spell || !r.successful) ? (
+                <div className="flex flex-wrap gap-1">
+                  {defenses.map((round) => (
+                    <div 
+                      key={round.roundNumber}
+                      onClick={() => round.spell && onSpellClick?.(round.spell.id)}
+                      className={cn(
+                        "px-2 py-1 rounded text-xs border transition-all flex items-center gap-1",
+                        round.spell || !round.successful ? "opacity-100" : "opacity-30 border-dashed",
+                        !round.successful ? "border-destructive/50" : round.spell ? (
+                          !houseTheme && (player === 1 ? "border-primary/30" : "border-accent/30")
+                        ) : "border-border/30",
+                        round.spell && onSpellClick && "cursor-pointer hover:scale-105 hover:shadow-md"
+                      )}
+                      style={houseTheme && round.spell && round.successful ? {
+                        borderColor: houseTheme.borderColor + "4D"
                       } : undefined}
                       title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}\n\nКликните, чтобы открыть в гримуаре` : !round.successful ? "Неверная защита" : `Раунд ${round.roundNumber}`}
                     >
@@ -219,27 +309,8 @@ export default function PlayerCard({
                   ))}
                 </div>
               ) : (
-                <div
-                  onClick={() => lastSpellId && onSpellClick?.(lastSpellId)}
-                  className={cn(
-                    "cursor-pointer transition-all hover:scale-105",
-                    lastSpellId && onSpellClick && "hover:shadow-md"
-                  )}
-                  title={lastSpellId ? "Кликните, чтобы открыть в гримуаре" : undefined}
-                >
-                  <p 
-                    className={cn(
-                      "font-serif font-bold",
-                      !houseTheme && (player === 1 ? "text-primary" : "text-accent")
-                    )}
-                    style={houseTheme ? { color: houseTheme.textColor } : undefined}
-                    data-testid={`text-player-${player}-last-spell`}
-                  >
-                    {lastSpell}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-last-accuracy`}>
-                    {lastAccuracy}
-                  </p>
+                <div className="text-center text-sm text-muted-foreground">
+                  Ожидание...
                 </div>
               )}
             </div>

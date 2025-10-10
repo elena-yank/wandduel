@@ -642,8 +642,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             player2Score += 1;
           }
 
-          // Determine if game is complete (after 5 rounds)
-          const isGameComplete = currentRound >= 5;
+          // Determine if game is complete (after 10 rounds)
+          const isGameComplete = currentRound >= 10;
           const gameStatus = isGameComplete ? "completed" : "active";
           
           // Advance to next round or complete game
@@ -806,13 +806,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const player1Score = session.player1Score ?? 0;
       const player2Score = session.player2Score ?? 0;
       
-      // Game ends after 5 rounds or when a player reaches winning score
+      // Game ends after 10 rounds
       const nextRound = currentRound + 1;
-      const isGameComplete = nextRound > 5;
+      const isGameComplete = nextRound > 10;
+      
+      // Determine attacker for next round
+      // Odd rounds (1,3,5,7,9): Player 1 attacks
+      // Even rounds (2,4,6,8,10): Player 2 attacks
+      const nextAttacker = nextRound % 2 === 1 ? 1 : 2;
       
       const updates = {
         currentRound: nextRound,
-        currentPlayer: 1, // Player 1 always attacks
+        currentPlayer: nextAttacker,
         currentPhase: "attack" as const,
         player1Score: player1Score + player1ScoreIncrease,
         player2Score: player2Score + player2ScoreIncrease,

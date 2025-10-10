@@ -2,9 +2,16 @@
 
 ## Overview
 
-Wizard Duel Arena is a magical spell-casting game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, determining successful casts. Player 1 always attacks, and Player 2 always defends. Each duel consists of exactly 5 rounds. The game supports multiple concurrent rooms, allowing players to create or join existing duels. Users can join as active players or spectators, with a system for selecting Hogwarts houses, which influences in-game visuals. The project aims to provide an engaging and visually rich spell-dueling experience.
+Wizard Duel Arena is a magical spell-casting game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, determining successful casts. The duel consists of 10 rounds with alternating attacker/defender roles: odd rounds have Player 1 attacking while Player 2 defends, and even rounds reverse the roles. The game supports multiple concurrent rooms, allowing players to create or join existing duels. Users can join as active players or spectators, with a system for selecting Hogwarts houses, which influences in-game visuals. The project aims to provide an engaging and visually rich spell-dueling experience.
 
 ## Recent Changes (October 10, 2025)
+
+- **10-Round Duel System**: Extended game from 5 to 10 rounds with alternating attacker/defender roles:
+  - Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
+  - Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
+  - Player roles dynamically update based on current round number
+- **Separated Attack/Defense Display**: Player cards now show attacks and counter-spells in separate sections for clarity
+- **Comprehensive Game Summary**: Final results dialog displays all 10 rounds with compact gesture previews and spell details
 
 - **House Selection Enhancement**: House selection cards now highlight with their respective house colors instead of golden:
   - Gryffindor: Red (#EF4444)
@@ -27,7 +34,7 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 - **Auto Round Completion**: Fixed critical bug where counter-spell recognition didn't automatically complete rounds. Backend now automatically:
   - Saves both attack and counter attempts to history when counter spell is cast with ≥57% accuracy
   - Updates player scores (Player 1 for successful attack, Player 2 for successful and valid counter)
-  - Advances to next round or completes game after 5 rounds
+  - Advances to next round or completes game after 10 rounds
   - Stores completed round data in lastCompleted* fields for round dialog display
   - Clears lastCompleted* data when dialog is dismissed to prepare for next round
 

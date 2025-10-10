@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
@@ -483,7 +484,7 @@ export default function DuelArena() {
 
     // Check if it's this player's turn
     if (actualPlayerNumber) {
-      const activePlayer = roundPhase === "attack" ? 1 : 2;
+      const activePlayer = getCurrentPlayer();
       if (actualPlayerNumber !== activePlayer) {
         toast({
           title: "Не ваш ход",
@@ -593,9 +594,16 @@ export default function DuelArena() {
   const counterSpells = allSpells.filter(spell => spell.type === "counter");
 
   const getPhaseText = () => {
-    if (roundPhase === "attack") return "Player 1 - Attack";
-    if (roundPhase === "counter") return "Player 2 - Counter";
-    return "Round Complete";
+    const currentRound = session?.currentRound || 1;
+    const isOddRound = currentRound % 2 === 1;
+    
+    if (roundPhase === "attack") {
+      return isOddRound ? "Player 1 - Атака" : "Player 2 - Атака";
+    }
+    if (roundPhase === "counter") {
+      return isOddRound ? "Player 2 - Защита" : "Player 1 - Защита";
+    }
+    return "Раунд завершен";
   };
 
   const handleSpellClick = (spellId: string) => {
@@ -608,7 +616,18 @@ export default function DuelArena() {
     }
   };
 
-  const getCurrentPlayer = () => roundPhase === "attack" ? 1 : 2;
+  const getCurrentPlayer = () => {
+    const currentRound = session?.currentRound || 1;
+    // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
+    // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
+    const isOddRound = currentRound % 2 === 1;
+    
+    if (roundPhase === "attack") {
+      return isOddRound ? 1 : 2;
+    } else {
+      return isOddRound ? 2 : 1;
+    }
+  };
 
   // Enhanced spell history: add pending spells for current round
   const getEnhancedSpellHistory = (playerId: number) => {
@@ -765,9 +784,73 @@ export default function DuelArena() {
               </div>
             </div>
 
-            <p className="text-muted-foreground mb-8">
-              Всего раундов: {(session.currentRound ?? 1) - 1} из 5
+            <p className="text-muted-foreground mb-4">
+              Всего раундов: {(session.currentRound ?? 1) - 1} из 10
             </p>
+
+            {/* Round History */}
+            <div className="mb-8 max-h-96 overflow-y-auto">
+              <h3 className="text-lg font-serif font-semibold mb-3 text-foreground">История раундов</h3>
+              <div className="space-y-2">
+                {Array.from({ length: 10 }, (_, i) => {
+                  const roundNum = i + 1;
+                  const isOddRound = roundNum % 2 === 1;
+                  const attackerId = isOddRound ? 1 : 2;
+                  const defenderId = isOddRound ? 2 : 1;
+                  
+                  const attackHistory = spellHistory.find(h => h.roundNumber === roundNum && h.playerId === attackerId);
+                  const defenseHistory = spellHistory.find(h => h.roundNumber === roundNum && h.playerId === defenderId);
+                  
+                  if (!attackHistory) return null;
+                  
+                  return (
+                    <div key={roundNum} className="bg-background/50 rounded-lg p-2 border border-border/30 text-left">
+                      <div className="flex items-center gap-3">
+                        <div className="text-xs font-bold text-muted-foreground w-16">
+                          Раунд {roundNum}
+                        </div>
+                        
+                        {/* Attack */}
+                        <div className="flex items-center gap-2 flex-1">
+                          <GesturePreview gesture={attackHistory.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold truncate" style={{
+                              color: attackerId === 1 ? player1Color : player2Color
+                            }}>
+                              {attackHistory.spell?.name || "Unknown"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {attackerId === 1 ? player1Name : player2Name} - {attackHistory.accuracy}%
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Defense */}
+                        {defenseHistory && (
+                          <div className="flex items-center gap-2 flex-1">
+                            <GesturePreview gesture={defenseHistory.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className={cn(
+                                "text-xs font-semibold truncate",
+                                !defenseHistory.successful && "text-destructive"
+                              )} style={defenseHistory.successful ? {
+                                color: defenderId === 1 ? player1Color : player2Color
+                              } : undefined}>
+                                {defenseHistory.spell?.name || "Unknown"}
+                                {!defenseHistory.successful && " ❌"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {defenderId === 1 ? player1Name : player2Name} - {defenseHistory.accuracy}%
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             <Button 
               onClick={handleLeave}
@@ -887,6 +970,7 @@ export default function DuelArena() {
           selectedColor={selectedColor}
           onColorSelect={setSelectedColor}
           showColorPalette={userRole === "player" && actualPlayerNumber === 1 && getCurrentPlayer() === 1}
+          currentRound={session?.currentRound || 1}
           data-testid="player-card-1"
         />
 
@@ -965,6 +1049,7 @@ export default function DuelArena() {
           selectedColor={selectedColor}
           onColorSelect={setSelectedColor}
           showColorPalette={userRole === "player" && actualPlayerNumber === 2 && getCurrentPlayer() === 2}
+          currentRound={session?.currentRound || 1}
           data-testid="player-card-2"
         />
       </div>
