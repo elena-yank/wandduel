@@ -35,6 +35,7 @@ A magical spell-casting duel game where two players compete by drawing gesture p
 - **Golden Glow Effect**: Added drop-shadow golden glow (rgba(234,179,8,0.5)) to all main titles for magical appearance
 - **House Selection Styling**: Changed selected house border from purple to golden (border-yellow-500) with golden shadow for better visibility
 - **Recognition Tuning**: Reduced aspect ratio penalty from 30% to 20%, increased offset variants from 5 to 7 for better complex pattern recognition (especially иммобулюс)
+- **House-Themed Player Cards**: Player cards now display in house colors - Gryffindor (red/gold), Slytherin (green/gray), Ravenclaw (blue/gray), Hufflepuff (yellow/black). Borders, icons, spell names, and accuracy bars all use house-specific color gradients
 
 **Database Migration Completed (October 7, 2025)**: Successfully migrated from in-memory storage to PostgreSQL for permanent data persistence. All spell patterns now stored in database. Changed from Neon serverless driver to node-postgres (pg) driver due to WebSocket compatibility issues in development environment.
 

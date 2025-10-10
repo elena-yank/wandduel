@@ -23,6 +23,42 @@ interface PlayerCardProps {
   onSpellClick?: (spellId: string) => void;
 }
 
+// House color themes with actual color values
+const houseColors = {
+  gryffindor: {
+    borderColor: "#DC2626", // red-600
+    borderActiveColor: "#EF4444", // red-500
+    iconBg: "rgba(220, 38, 38, 0.2)", // red-600/20
+    textColor: "#EF4444", // red-500
+    accentColor: "#EAB308", // yellow-500
+    barGradient: "linear-gradient(to right, #DC2626, #EAB308)" // red to yellow
+  },
+  slytherin: {
+    borderColor: "#059669", // green-600
+    borderActiveColor: "#10B981", // green-500
+    iconBg: "rgba(5, 150, 105, 0.2)", // green-600/20
+    textColor: "#10B981", // green-500
+    accentColor: "#9CA3AF", // gray-400
+    barGradient: "linear-gradient(to right, #059669, #9CA3AF)" // green to gray
+  },
+  ravenclaw: {
+    borderColor: "#2563EB", // blue-600
+    borderActiveColor: "#3B82F6", // blue-500
+    iconBg: "rgba(37, 99, 235, 0.2)", // blue-600/20
+    textColor: "#3B82F6", // blue-500
+    accentColor: "#9CA3AF", // gray-400
+    barGradient: "linear-gradient(to right, #2563EB, #9CA3AF)" // blue to gray
+  },
+  hufflepuff: {
+    borderColor: "#CA8A04", // yellow-600
+    borderActiveColor: "#EAB308", // yellow-500
+    iconBg: "rgba(202, 138, 4, 0.2)", // yellow-600/20
+    textColor: "#EAB308", // yellow-500
+    accentColor: "#374151", // gray-700
+    barGradient: "linear-gradient(to right, #CA8A04, #374151)" // yellow to gray
+  }
+} as const;
+
 export default function PlayerCard({
   player,
   playerName,
@@ -39,6 +75,11 @@ export default function PlayerCard({
   const playerColor = player === 1 ? "primary" : "accent";
   const playerRole = player === 1 ? "Атакующий" : "Защищающийся";
   const displayName = playerName || `Player ${player}`;
+  
+  // Get house colors or fallback to default
+  const houseTheme = playerHouse && playerHouse in houseColors 
+    ? houseColors[playerHouse as keyof typeof houseColors]
+    : null;
 
   // Create array for all 5 rounds
   const roundsDisplay = Array.from({ length: 5 }, (_, i) => {
@@ -55,17 +96,21 @@ export default function PlayerCard({
   return (
     <Card 
       className={cn(
-        "spell-card border-border/20",
-        isActive && "player-active"
+        "spell-card border-2 transition-all",
+        !houseTheme && "border-border/20",
+        isActive && !houseTheme && "player-active"
       )}
+      style={houseTheme ? {
+        borderColor: isActive ? houseTheme.borderActiveColor : houseTheme.borderColor
+      } : undefined}
       {...props}
     >
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className={cn(
-            "w-12 h-12 rounded-full flex items-center justify-center",
-            player === 1 ? "bg-primary/20" : "bg-accent/20"
-          )}>
+          <div 
+            className="w-12 h-12 rounded-full flex items-center justify-center"
+            style={houseTheme ? { backgroundColor: houseTheme.iconBg } : undefined}
+          >
             {houseIcon ? (
               <img 
                 src={houseIcon} 
@@ -73,10 +118,13 @@ export default function PlayerCard({
                 className="w-10 h-10 object-contain"
               />
             ) : (
-              <User className={cn(
-                "w-6 h-6",
-                player === 1 ? "text-primary" : "text-accent"
-              )} />
+              <User 
+                className={cn(
+                  "w-6 h-6",
+                  !houseTheme && (player === 1 ? "text-primary" : "text-accent")
+                )}
+                style={houseTheme ? { color: houseTheme.textColor } : undefined}
+              />
             )}
           </div>
           <div>
@@ -104,9 +152,14 @@ export default function PlayerCard({
                       className={cn(
                         "px-2 py-1 rounded text-xs border transition-all flex items-center gap-1",
                         round.spell || !round.successful ? "opacity-100" : "opacity-30 border-dashed",
-                        !round.successful ? "border-destructive/50" : round.spell ? (player === 1 ? "border-primary/30" : "border-accent/30") : "border-border/30",
+                        !round.successful ? "border-destructive/50" : round.spell ? (
+                          !houseTheme && (player === 1 ? "border-primary/30" : "border-accent/30")
+                        ) : "border-border/30",
                         round.spell && onSpellClick && "cursor-pointer hover:scale-105 hover:shadow-md"
                       )}
+                      style={houseTheme && round.spell && round.successful ? {
+                        borderColor: houseTheme.borderColor + "4D" // 30% opacity
+                      } : undefined}
                       title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}\n\nКликните, чтобы открыть в гримуаре` : !round.successful ? "Неверная защита" : `Раунд ${round.roundNumber}`}
                     >
                       {round.spell ? (
@@ -114,10 +167,15 @@ export default function PlayerCard({
                           {!round.successful && (
                             <X className="w-3 h-3 text-destructive" />
                           )}
-                          <span className={cn(
-                            "font-serif font-semibold",
-                            round.successful ? (player === 1 ? "text-primary" : "text-accent") : "text-destructive"
-                          )}>
+                          <span 
+                            className={cn(
+                              "font-serif font-semibold",
+                              round.successful ? (
+                                !houseTheme && (player === 1 ? "text-primary" : "text-accent")
+                              ) : "text-destructive"
+                            )}
+                            style={houseTheme && round.successful ? { color: houseTheme.textColor } : undefined}
+                          >
                             {round.spell.name}
                           </span>
                           <span className={cn(
@@ -138,10 +196,14 @@ export default function PlayerCard({
                   ))}
                 </div>
               ) : (
-                <p className={cn(
-                  "font-serif font-bold",
-                  player === 1 ? "text-primary" : "text-accent"
-                )} data-testid={`text-player-${player}-last-spell`}>
+                <p 
+                  className={cn(
+                    "font-serif font-bold",
+                    !houseTheme && (player === 1 ? "text-primary" : "text-accent")
+                  )}
+                  style={houseTheme ? { color: houseTheme.textColor } : undefined}
+                  data-testid={`text-player-${player}-last-spell`}
+                >
                   {lastSpell}
                 </p>
               )}
@@ -157,8 +219,14 @@ export default function PlayerCard({
             <p className="text-xs text-muted-foreground mb-2">Точность движения палочкой</p>
             <div className="bg-background/50 rounded-full h-3 overflow-hidden">
               <div 
-                className="accuracy-bar h-full transition-all duration-500" 
-                style={{ width: `${accuracy}%` }}
+                className={cn(
+                  "h-full transition-all duration-500",
+                  !houseTheme && "accuracy-bar"
+                )}
+                style={houseTheme ? {
+                  width: `${accuracy}%`,
+                  backgroundImage: houseTheme.barGradient
+                } : { width: `${accuracy}%` }}
                 data-testid={`accuracy-bar-player-${player}`}
               />
             </div>
