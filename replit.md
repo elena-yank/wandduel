@@ -6,6 +6,18 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 
 ## Recent Changes (October 11, 2025)
 
+- **Accuracy Bonus System**: Implemented bonus points based on gesture accuracy:
+  - 55%-70% accuracy: +1 bonus point
+  - 71%-90% accuracy: +2 bonus points  
+  - 91%-100% accuracy: +3 bonus points
+  - Special rules for 1-point pattern spells:
+    - Attack spells (1 point): no accuracy bonus
+    - Defense spells (1 point): max +0.5 bonus
+  - Points can now be fractional (e.g., 2.5)
+  - Applied consistently in both auto-complete and manual round completion paths
+- **Grimoire Highlight Enhancement**: Improved spell highlight when clicking spell history:
+  - Duration reduced from 3 seconds to 1 second for faster feedback
+  - Changed highlight color from blue/purple to golden (#FFD700) with matching shadow
 - **Round Count Display Fix**: Fixed bug where final results showed "9 из 10" instead of "10 из 10"
   - Auto-complete path now consistently increments currentRound after each round, even when game completes
   - Both auto and manual completion paths now use identical round advancement logic
