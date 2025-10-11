@@ -659,37 +659,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const attackerPlayerId = isOddRound ? 1 : 2;
           const defenderPlayerId = isOddRound ? 2 : 1;
 
-          // Helper function to calculate accuracy multiplier
-          const getAccuracyMultiplier = (accuracy: number, patternPoints: number): number => {
-            if (accuracy <= 60) {
-              return 1;
-            } else if (accuracy <= 80) {
-              return 1.5;
-            } else { // 81-100%
-              // x2 only if pattern > 5 points
-              return patternPoints > 5 ? 2 : 1.5;
-            }
-          };
-
           // Award attacker points if attack was successful (>= 52%)
           const attackSuccessful = (session.pendingAttackAccuracy || 0) >= 52;
           if (attackSuccessful && session.pendingAttackSpellId) {
             const attackSpell = await storage.getSpellById(session.pendingAttackSpellId);
             if (attackSpell && attackSpell.gesturePattern) {
               const patternPoints = (attackSpell.gesturePattern as any[]).length;
-              let baseAttackPoints = 0;
+              let attackPoints = 0;
               
               if (patternPoints === 1) {
-                baseAttackPoints = 1;
+                attackPoints = 1;
               } else if (patternPoints >= 2 && patternPoints <= 10) {
-                baseAttackPoints = 3;
+                attackPoints = 3;
               } else if (patternPoints >= 11) {
-                baseAttackPoints = 4;
+                attackPoints = 4;
               }
-              
-              // Apply accuracy multiplier
-              const multiplier = getAccuracyMultiplier(session.pendingAttackAccuracy || 0, patternPoints);
-              const attackPoints = Math.round(baseAttackPoints * multiplier);
               
               if (attackerPlayerId === 1) {
                 player1Score += attackPoints;
@@ -705,19 +689,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const counterSpell = selectedSpell;
             if (counterSpell && counterSpell.gesturePattern) {
               const patternPoints = (counterSpell.gesturePattern as any[]).length;
-              let baseDefensePoints = 0;
+              let defensePoints = 0;
               
               if (patternPoints === 1) {
-                baseDefensePoints = 2;
+                defensePoints = 2;
               } else if (patternPoints >= 2 && patternPoints <= 10) {
-                baseDefensePoints = 4;
+                defensePoints = 4;
               } else if (patternPoints >= 11) {
-                baseDefensePoints = 5;
+                defensePoints = 5;
               }
-              
-              // Apply accuracy multiplier
-              const multiplier = getAccuracyMultiplier(selectedAccuracy, patternPoints);
-              const defensePoints = Math.round(baseDefensePoints * multiplier);
               
               if (defenderPlayerId === 1) {
                 player1Score += defensePoints;
@@ -874,18 +854,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log("===============================================");
 
-      // Helper function to calculate accuracy multiplier
-      const getAccuracyMultiplier = (accuracy: number, patternPoints: number): number => {
-        if (accuracy <= 60) {
-          return 1;
-        } else if (accuracy <= 80) {
-          return 1.5;
-        } else { // 81-100%
-          // x2 only if pattern > 5 points
-          return patternPoints > 5 ? 2 : 1.5;
-        }
-      };
-
       // Award points based on spell complexity (pattern point count)
       let player1ScoreIncrease = 0;
       let player2ScoreIncrease = 0;
@@ -902,19 +870,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const attackSpell = await storage.getSpellById(session.pendingAttackSpellId);
         if (attackSpell && attackSpell.gesturePattern) {
           const patternPoints = (attackSpell.gesturePattern as any[]).length;
-          let baseAttackPoints = 0;
+          let attackPoints = 0;
           
           if (patternPoints === 1) {
-            baseAttackPoints = 1;
+            attackPoints = 1;
           } else if (patternPoints >= 2 && patternPoints <= 10) {
-            baseAttackPoints = 3;
+            attackPoints = 3;
           } else if (patternPoints >= 11) {
-            baseAttackPoints = 4;
+            attackPoints = 4;
           }
-          
-          // Apply accuracy multiplier
-          const multiplier = getAccuracyMultiplier(session.pendingAttackAccuracy, patternPoints);
-          const attackPoints = Math.round(baseAttackPoints * multiplier);
           
           if (attackerPlayerId === 1) {
             player1ScoreIncrease = attackPoints;
@@ -929,19 +893,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const counterSpell = await storage.getSpellById(session.pendingCounterSpellId);
         if (counterSpell && counterSpell.gesturePattern) {
           const patternPoints = (counterSpell.gesturePattern as any[]).length;
-          let baseDefensePoints = 0;
+          let defensePoints = 0;
           
           if (patternPoints === 1) {
-            baseDefensePoints = 2;
+            defensePoints = 2;
           } else if (patternPoints >= 2 && patternPoints <= 10) {
-            baseDefensePoints = 4;
+            defensePoints = 4;
           } else if (patternPoints >= 11) {
-            baseDefensePoints = 5;
+            defensePoints = 5;
           }
-          
-          // Apply accuracy multiplier
-          const multiplier = getAccuracyMultiplier(session.pendingCounterAccuracy, patternPoints);
-          const defensePoints = Math.round(baseDefensePoints * multiplier);
           
           if (defenderPlayerId === 1) {
             player1ScoreIncrease = defensePoints;

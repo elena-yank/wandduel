@@ -6,12 +6,6 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 
 ## Recent Changes (October 11, 2025)
 
-- **Accuracy Multipliers System**: Implemented point multipliers based on gesture accuracy:
-  - 0-60% accuracy: 1x base points
-  - 61-80% accuracy: 1.5x base points  
-  - 81-100% accuracy: 2x base points (only if spell pattern > 5 points, otherwise 1.5x)
-  - Applied consistently in both auto-complete (recognize-gesture) and manual (complete-round) paths
-  - Works with existing complexity-based scoring system (attack: 1/3/4 pts, defense: 2/4/5 pts)
 - **Round Count Display Fix**: Fixed bug where final results showed "9 из 10" instead of "10 из 10"
   - Auto-complete path now consistently increments currentRound after each round, even when game completes
   - Both auto and manual completion paths now use identical round advancement logic
