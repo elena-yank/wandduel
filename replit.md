@@ -18,6 +18,10 @@ Wizard Duel Arena is a magical spell-casting game where two players compete by d
 - **Results Dialog UI Update**: Enhanced final results dialog styling:
   - "Дуэль завершена!" title now uses Angst Bold Serif font with golden gradient and glow effect (matching "Добро пожаловать")
   - Replaced trophy icon with crossed wands image from home screen for thematic consistency
+- **Релашио Spell Pattern Update**: Enhanced "релАшио" counter spell gesture pattern:
+  - Increased from 2 points to 4 points (added 2 intermediate points)
+  - Now uses 2-10 point pattern tier for complexity scoring (4 base defense points instead of 2)
+  - Maintains vertical line appearance with smoother recognition
 
 ## Recent Changes (October 10, 2025)
 

@@ -404,7 +404,7 @@ export async function initializeSpells() {
   const colloshuSpell = await storage.createSpell(colloshu);
   console.log("Created spell:", colloshuSpell.name);
 
-  // Create counter spell: релАшио (2 точки из SVG - вертикальная линия)
+  // Create counter spell: релАшио (4 точки из SVG - вертикальная линия)
   const relaxio: InsertSpell = {
     name: "релАшио",
     type: "counter",
@@ -412,8 +412,10 @@ export async function initializeSpells() {
     colorName: "Жёлтый",
     description: "Вертикальная линия",
     gesturePattern: [
-      { x: 200, y: 338 },    // SVG 500x500 -> Canvas 400x400: (250, 422.5) -> (200, 338)
-      { x: 200, y: 51.84 }   // SVG 500x500 -> Canvas 400x400: (250, 64.8) -> (200, 51.84)
+      { x: 200, y: 338 },    // Нижняя точка
+      { x: 200, y: 242.61 }, // Промежуточная точка 1
+      { x: 200, y: 147.22 }, // Промежуточная точка 2
+      { x: 200, y: 51.84 }   // Верхняя точка
     ],
     counters: [colloshuSpell.id],
   };
