@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, jsonb, boolean, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -29,8 +29,8 @@ export const gameSessions = pgTable("game_sessions", {
   currentRound: integer("current_round").default(1),
   currentPlayer: integer("current_player").default(1),
   currentPhase: varchar("current_phase", { enum: ["attack", "counter"] }).default("attack"),
-  player1Score: integer("player1_score").default(0),
-  player2Score: integer("player2_score").default(0),
+  player1Score: numeric("player1_score").default("0"),
+  player2Score: numeric("player2_score").default("0"),
   lastAttackSpellId: varchar("last_attack_spell_id"),
   lastAttackAccuracy: integer("last_attack_accuracy"),
   gameStatus: varchar("game_status", { enum: ["active", "completed", "paused"] }).default("active"),

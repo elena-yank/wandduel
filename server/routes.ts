@@ -649,8 +649,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error("Session not found");
           }
 
-          let player1Score = updatedSession.player1Score ?? 0;
-          let player2Score = updatedSession.player2Score ?? 0;
+          let player1Score = Number(updatedSession.player1Score) || 0;
+          let player2Score = Number(updatedSession.player2Score) || 0;
 
           // Determine who is attacker and defender in current round
           // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
@@ -742,8 +742,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateGameSession(sessionId, {
             currentRound: nextRound,
             currentPhase: isGameComplete ? null : "attack",
-            player1Score,
-            player2Score,
+            player1Score: player1Score.toString(),
+            player2Score: player2Score.toString(),
             gameStatus,
             // Save last completed round data for dialog display
             lastCompletedRoundNumber: currentRound,
@@ -964,8 +964,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update game session
-      const player1Score = session.player1Score ?? 0;
-      const player2Score = session.player2Score ?? 0;
+      const player1Score = Number(session.player1Score) || 0;
+      const player2Score = Number(session.player2Score) || 0;
       
       // Game ends after 10 rounds
       const nextRound = currentRound + 1;
@@ -980,8 +980,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentRound: nextRound,
         currentPlayer: nextAttacker,
         currentPhase: "attack" as const,
-        player1Score: player1Score + player1ScoreIncrease,
-        player2Score: player2Score + player2ScoreIncrease,
+        player1Score: (player1Score + player1ScoreIncrease).toString(),
+        player2Score: (player2Score + player2ScoreIncrease).toString(),
         lastAttackSpellId: null,
         lastAttackAccuracy: null,
         gameStatus: isGameComplete ? "completed" as const : session.gameStatus,
