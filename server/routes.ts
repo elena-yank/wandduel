@@ -95,15 +95,16 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     }
     // No penalty for too few points on simple patterns
   } else {
-    // Complex patterns: apply moderate penalties
+    // Complex patterns: apply STRICT penalties for incomplete gestures
     // Penalty for too many points (scribbling/filling)
     if (pointCountRatio > 5) {
-      pointCountPenaltyFactor = Math.min(0.10, (pointCountRatio - 5) * 0.03); // Up to 10% penalty
+      pointCountPenaltyFactor = Math.min(0.15, (pointCountRatio - 5) * 0.04); // Up to 15% penalty
     }
     
-    // Penalty for too few points (insufficient detail)
-    if (pointCountRatio < 0.4) {
-      pointCountPenaltyFactor = Math.min(0.10, (0.4 - pointCountRatio) * 0.3); // Up to 10% penalty
+    // STRICT penalty for too few points (insufficient detail - incomplete gesture)
+    if (pointCountRatio < 0.5) {
+      // Heavily penalize incomplete gestures: 30-60% penalty
+      pointCountPenaltyFactor = Math.min(0.60, (0.5 - pointCountRatio) * 1.2); 
     }
   }
   
@@ -660,23 +661,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const defenderPlayerId = isOddRound ? 2 : 1;
 
           // Helper function to calculate accuracy bonus
-          const getAccuracyBonus = (accuracy: number, patternPoints: number, isAttack: boolean): number => {
-            // 1-point attack spells get no bonus
-            if (isAttack && patternPoints === 1) {
+          const getAccuracyBonus = (accuracy: number, patternPoints: number): number => {
+            // 1-point spells get no accuracy bonus
+            if (patternPoints === 1) {
               return 0;
             }
             
-            // 1-point defense spells get max 0.5 bonus
-            const maxBonus = (!isAttack && patternPoints === 1) ? 0.5 : 3;
-            
-            if (accuracy >= 55 && accuracy <= 70) {
-              return Math.min(1, maxBonus);
-            } else if (accuracy >= 71 && accuracy <= 90) {
-              return Math.min(2, maxBonus);
-            } else if (accuracy >= 91 && accuracy <= 100) {
-              return Math.min(3, maxBonus);
+            // Accuracy bonuses for 2+ point spells
+            if (accuracy < 56) {
+              return 0.5;
+            } else if (accuracy >= 56 && accuracy <= 65) {
+              return 1;
+            } else if (accuracy >= 66 && accuracy <= 75) {
+              return 2;
+            } else if (accuracy >= 76 && accuracy <= 85) {
+              return 3;
+            } else if (accuracy >= 86 && accuracy <= 90) {
+              return 4;
+            } else if (accuracy > 90) {
+              return 5;
             }
-            return 0;
+            return 0.5; // Default for edge cases
           };
 
           // Award attacker points if attack was successful (>= 52%)
@@ -689,13 +694,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (patternPoints === 1) {
                 baseAttackPoints = 1;
-              } else if (patternPoints >= 2 && patternPoints <= 10) {
+              } else if (patternPoints >= 2 && patternPoints <= 5) {
+                baseAttackPoints = 2;
+              } else if (patternPoints >= 6) {
                 baseAttackPoints = 3;
-              } else if (patternPoints >= 11) {
-                baseAttackPoints = 4;
               }
               
-              const accuracyBonus = getAccuracyBonus(session.pendingAttackAccuracy || 0, patternPoints, true);
+              const accuracyBonus = getAccuracyBonus(session.pendingAttackAccuracy || 0, patternPoints);
               const attackPoints = baseAttackPoints + accuracyBonus;
               
               if (attackerPlayerId === 1) {
@@ -715,14 +720,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let baseDefensePoints = 0;
               
               if (patternPoints === 1) {
+                baseDefensePoints = 1;
+              } else if (patternPoints >= 2 && patternPoints <= 5) {
                 baseDefensePoints = 2;
-              } else if (patternPoints >= 2 && patternPoints <= 10) {
-                baseDefensePoints = 4;
-              } else if (patternPoints >= 11) {
-                baseDefensePoints = 5;
+              } else if (patternPoints >= 6) {
+                baseDefensePoints = 3;
               }
               
-              const accuracyBonus = getAccuracyBonus(selectedAccuracy, patternPoints, false);
+              const accuracyBonus = getAccuracyBonus(selectedAccuracy, patternPoints);
               const defensePoints = baseDefensePoints + accuracyBonus;
               
               if (defenderPlayerId === 1) {
@@ -881,23 +886,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("===============================================");
 
       // Helper function to calculate accuracy bonus
-      const getAccuracyBonus = (accuracy: number, patternPoints: number, isAttack: boolean): number => {
-        // 1-point attack spells get no bonus
-        if (isAttack && patternPoints === 1) {
+      const getAccuracyBonus = (accuracy: number, patternPoints: number): number => {
+        // 1-point spells get no accuracy bonus
+        if (patternPoints === 1) {
           return 0;
         }
         
-        // 1-point defense spells get max 0.5 bonus
-        const maxBonus = (!isAttack && patternPoints === 1) ? 0.5 : 3;
-        
-        if (accuracy >= 55 && accuracy <= 70) {
-          return Math.min(1, maxBonus);
-        } else if (accuracy >= 71 && accuracy <= 90) {
-          return Math.min(2, maxBonus);
-        } else if (accuracy >= 91 && accuracy <= 100) {
-          return Math.min(3, maxBonus);
+        // Accuracy bonuses for 2+ point spells
+        if (accuracy < 56) {
+          return 0.5;
+        } else if (accuracy >= 56 && accuracy <= 65) {
+          return 1;
+        } else if (accuracy >= 66 && accuracy <= 75) {
+          return 2;
+        } else if (accuracy >= 76 && accuracy <= 85) {
+          return 3;
+        } else if (accuracy >= 86 && accuracy <= 90) {
+          return 4;
+        } else if (accuracy > 90) {
+          return 5;
         }
-        return 0;
+        return 0.5; // Default for edge cases
       };
 
       // Award points based on spell complexity (pattern point count)
@@ -920,13 +929,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (patternPoints === 1) {
             baseAttackPoints = 1;
-          } else if (patternPoints >= 2 && patternPoints <= 10) {
+          } else if (patternPoints >= 2 && patternPoints <= 5) {
+            baseAttackPoints = 2;
+          } else if (patternPoints >= 6) {
             baseAttackPoints = 3;
-          } else if (patternPoints >= 11) {
-            baseAttackPoints = 4;
           }
           
-          const accuracyBonus = getAccuracyBonus(session.pendingAttackAccuracy, patternPoints, true);
+          const accuracyBonus = getAccuracyBonus(session.pendingAttackAccuracy, patternPoints);
           const attackPoints = baseAttackPoints + accuracyBonus;
           
           if (attackerPlayerId === 1) {
@@ -945,14 +954,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let baseDefensePoints = 0;
           
           if (patternPoints === 1) {
+            baseDefensePoints = 1;
+          } else if (patternPoints >= 2 && patternPoints <= 5) {
             baseDefensePoints = 2;
-          } else if (patternPoints >= 2 && patternPoints <= 10) {
-            baseDefensePoints = 4;
-          } else if (patternPoints >= 11) {
-            baseDefensePoints = 5;
+          } else if (patternPoints >= 6) {
+            baseDefensePoints = 3;
           }
           
-          const accuracyBonus = getAccuracyBonus(session.pendingCounterAccuracy, patternPoints, false);
+          const accuracyBonus = getAccuracyBonus(session.pendingCounterAccuracy, patternPoints);
           const defensePoints = baseDefensePoints + accuracyBonus;
           
           if (defenderPlayerId === 1) {

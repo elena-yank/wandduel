@@ -40,6 +40,43 @@ type RecognitionResult = {
   gesture?: Point[]; // Gesture data for saving later when user chooses
 };
 
+// Helper function to calculate points earned from a spell
+function calculatePoints(spell: Spell | undefined, accuracy: number): number {
+  if (!spell || !spell.gesturePattern) return 0;
+  
+  const patternPoints = (spell.gesturePattern as any[]).length;
+  let basePoints = 0;
+  
+  // Base points calculation
+  if (patternPoints === 1) {
+    basePoints = 1;
+  } else if (patternPoints >= 2 && patternPoints <= 5) {
+    basePoints = 2;
+  } else if (patternPoints >= 6) {
+    basePoints = 3;
+  }
+  
+  // Accuracy bonus (only for 2+ point spells)
+  let accuracyBonus = 0;
+  if (patternPoints > 1) {
+    if (accuracy < 56) {
+      accuracyBonus = 0.5;
+    } else if (accuracy >= 56 && accuracy <= 65) {
+      accuracyBonus = 1;
+    } else if (accuracy >= 66 && accuracy <= 75) {
+      accuracyBonus = 2;
+    } else if (accuracy >= 76 && accuracy <= 85) {
+      accuracyBonus = 3;
+    } else if (accuracy >= 86 && accuracy <= 90) {
+      accuracyBonus = 4;
+    } else if (accuracy > 90) {
+      accuracyBonus = 5;
+    }
+  }
+  
+  return basePoints + accuracyBonus;
+}
+
 // Component to display a small preview of drawn gesture
 function GesturePreview({ gesture, className = "" }: { gesture: Point[]; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -814,6 +851,10 @@ export default function DuelArena() {
                   
                   if (!attackHistory) return null;
                   
+                  // Calculate points for attack and defense
+                  const attackPoints = attackHistory.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy) : 0;
+                  const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy) : 0;
+                  
                   return (
                     <div key={roundNum} className="bg-background/50 rounded-lg p-2 border border-border/30 text-left">
                       <div className="flex items-center gap-3">
@@ -834,6 +875,13 @@ export default function DuelArena() {
                               {attackerId === 1 ? player1Name : player2Name} - {attackHistory.accuracy}%
                             </p>
                           </div>
+                          <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
+                            <span className="text-xs font-bold" style={{
+                              color: attackerId === 1 ? player1Color : player2Color
+                            }}>
+                              {attackPoints > 0 ? attackPoints : "—"}
+                            </span>
+                          </div>
                         </div>
                         
                         {/* Defense */}
@@ -853,6 +901,13 @@ export default function DuelArena() {
                               <p className="text-xs text-muted-foreground">
                                 {defenderId === 1 ? player1Name : player2Name} - {defenseHistory.accuracy}%
                               </p>
+                            </div>
+                            <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
+                              <span className="text-xs font-bold" style={{
+                                color: defenderId === 1 ? player1Color : player2Color
+                              }}>
+                                {defensePoints > 0 ? defensePoints : "—"}
+                              </span>
                             </div>
                           </div>
                         )}
