@@ -4,6 +4,21 @@
 
 Wizard Duel Arena is a magical spell-casting game where two players compete by drawing gesture patterns to cast attack and counter spells. The application uses gesture recognition to match player drawings against predefined spell patterns, determining successful casts. The duel consists of 10 rounds with alternating attacker/defender roles: odd rounds have Player 1 attacking while Player 2 defends, and even rounds reverse the roles. The game supports multiple concurrent rooms, allowing players to create or join existing duels. Users can join as active players or spectators, with a system for selecting Hogwarts houses, which influences in-game visuals. The project aims to provide an engaging and visually rich spell-dueling experience.
 
+## Recent Changes (October 11, 2025)
+
+- **Accuracy Multipliers System**: Implemented point multipliers based on gesture accuracy:
+  - 0-60% accuracy: 1x base points
+  - 61-80% accuracy: 1.5x base points  
+  - 81-100% accuracy: 2x base points (only if spell pattern > 5 points, otherwise 1.5x)
+  - Applied consistently in both auto-complete (recognize-gesture) and manual (complete-round) paths
+  - Works with existing complexity-based scoring system (attack: 1/3/4 pts, defense: 2/4/5 pts)
+- **Round Count Display Fix**: Fixed bug where final results showed "9 из 10" instead of "10 из 10"
+  - Auto-complete path now consistently increments currentRound after each round, even when game completes
+  - Both auto and manual completion paths now use identical round advancement logic
+- **Results Dialog UI Update**: Enhanced final results dialog styling:
+  - "Дуэль завершена!" title now uses Angst Bold Serif font with golden gradient and glow effect (matching "Добро пожаловать")
+  - Replaced trophy icon with crossed wands image from home screen for thematic consistency
+
 ## Recent Changes (October 10, 2025)
 
 - **10-Round Duel System**: Extended game from 5 to 10 rounds with alternating attacker/defender roles:

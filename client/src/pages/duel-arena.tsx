@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import duelIconPath from "@assets/image_1760081444104.png";
 import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
@@ -730,8 +731,10 @@ export default function DuelArena() {
       <div className="relative z-10 min-h-screen p-4 md:p-8 flex items-center justify-center">
         <Card className="spell-card border-border/20 max-w-2xl w-full">
           <CardContent className="p-12 text-center">
-            <Trophy className="w-20 h-20 mx-auto mb-6 text-primary pulse-glow" />
-            <h1 className="text-4xl md:text-5xl font-decorative decorative-text mb-4">
+            <div className="flex justify-center mb-6">
+              <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-angst mb-4 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
               Дуэль завершена!
             </h1>
             
