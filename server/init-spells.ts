@@ -172,8 +172,24 @@ export async function initializeSpells() {
     type: "counter",
     color: "#E5E5E5",
     colorName: "Бесцветный",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    description: "Округлый треугольник",
+    gesturePattern: [
+      { x: 97.50, y: 277.66 },
+      { x: 131.41, y: 189.70 },
+      { x: 158.96, y: 119.22 },
+      { x: 176.98, y: 87.96 },
+      { x: 207.71, y: 76.30 },
+      { x: 240.04, y: 85.31 },
+      { x: 259.64, y: 120.28 },
+      { x: 295.15, y: 199.77 },
+      { x: 324.29, y: 262.29 },
+      { x: 327.99, y: 289.32 },
+      { x: 317.40, y: 310.51 },
+      { x: 290.38, y: 325.88 },
+      { x: 225.73, y: 326.94 },
+      { x: 125.05, y: 325.88 },
+      { x: 101.74, y: 318.46 },
+      { x: 95.38, y: 303.62 }], 
     counters: [alarteSpell.id, immobulusSpell.id, flippendoSpell.id],
   };
 
