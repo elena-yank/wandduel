@@ -33,8 +33,23 @@ export async function initializeSpells() {
     type: "attack",
     color: "#FFD700",
     colorName: "Золотой",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    description: "Перо",
+    gesturePattern: [
+      { x: 178.57, y: 357.14 },
+      { x: 174.86, y: 321.65 },
+      { x: 170.09, y: 289.33 },
+      { x: 164.79, y: 259.64 },
+      { x: 152.60, y: 215.15 },
+      { x: 145.18, y: 164.29 },
+      { x: 149.42, y: 119.27 },
+      { x: 164.77, y: 87.51 },
+      { x: 190.20, y: 71.08 },
+      { x: 233.94, y: 69.53 },
+      { x: 256.70, y: 86.90 },
+      { x: 264.12, y: 111.88 },
+      { x: 264.65, y: 139.45 },
+      { x: 255.12, y: 163.22 },
+      { x: 224.67, y: 163.22 } ]
   };
 
   const alarteSpell = await storage.createSpell(alarte);
@@ -46,8 +61,17 @@ export async function initializeSpells() {
     type: "attack",
     color: "#FFFACD",
     colorName: "Бело-жёлтый",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas - point at center
+    description: "Обратная молния",
+    gesturePattern: [
+      { x: 63.12, y: 46.28 },
+      { x: 156.10, y: 101.88 },
+      { x: 261.84, y: 164.96 },
+      { x: 353.00, y: 218.43 },
+      { x: 159.75, y: 201.32 },
+      { x: 44.89, y: 191.70 },
+      { x: 221.73, y: 288.99 },
+      { x: 354.82, y: 362.78 }
+    ],
   };
 
   const baubelliusSpell = await storage.createSpell(baubellius);
@@ -59,8 +83,24 @@ export async function initializeSpells() {
     type: "attack",
     color: "#EF4444",
     colorName: "Красный",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    description: "Лысина",
+    gesturePattern: [
+      { x: 74.18, y: 298.92 },
+      { x: 128.74, y: 298.92 },
+      { x: 120.52, y: 267.84 },
+      { x: 116.63, y: 234.56 },
+      { x: 120.93, y: 208.00 },
+      { x: 138.13, y: 175.49 },
+      { x: 174.67, y: 154.04 },
+      { x: 206.84, y: 146.38 },
+      { x: 238.01, y: 154.04 },
+      { x: 277.77, y: 176.54 },
+      { x: 294.97, y: 207.69 },
+      { x: 298.73, y: 236.28 },
+      { x: 292.20, y: 272.22 },
+      { x: 284.52, y: 298.06 },
+      { x: 343.34, y: 298.09 }
+    ],
   };
 
   const calvorioSpell = await storage.createSpell(calvorio);
@@ -530,8 +570,34 @@ export async function initializeSpells() {
     type: "counter",
     color: "#D1D5DB",
     colorName: "Бесцветный",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    description: "Ромб",
+    gesturePattern: [
+      { x: 74.19, y: 223.61 },
+      { x: 119.38, y: 209.84 },
+      { x: 153.57, y: 187.05 },
+      { x: 179.83, y: 158.44 },
+      { x: 195.09, y: 121.36 },
+      { x: 202.02, y: 85.88 },
+      { x: 206.90, y: 55.68 },
+      { x: 215.44, y: 92.76 },
+      { x: 222.77, y: 120.84 },
+      { x: 234.38, y: 156.33 },
+      { x: 257.60, y: 186.00 },
+      { x: 287.52, y: 205.07 },
+      { x: 323.54, y: 219.38 },
+      { x: 291.81, y: 231.03 },
+      { x: 265.94, y: 246.38 },
+      { x: 241.52, y: 275.52 },
+      { x: 228.70, y: 303.57 },
+      { x: 223.82, y: 337.47 },
+      { x: 219.55, y: 373.02 },
+      { x: 212.84, y: 340.80 },
+      { x: 204.29, y: 309.03 },
+      { x: 189.00, y: 280.40 },
+      { x: 164.96, y: 251.79 },
+      { x: 136.26, y: 238.55 },
+      { x: 105.73, y: 234.30 }
+    ],
     counters: [mucusAdNosemSpell.id],
   };
 
@@ -564,9 +630,32 @@ export async function initializeSpells() {
     name: "випЕра эванЕско",
     type: "counter",
     color: "#FF4500",
-    colorName: "Пламенный шар",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    colorName: "Пламенный",
+    description: "Шар",
+    gesturePattern: [
+      { x: 76.30, y: 167.97 },
+      { x: 97.96, y: 132.47 },
+      { x: 127.10, y: 101.75 },
+      { x: 163.66, y: 83.20 },
+      { x: 207.11, y: 76.31 },
+      { x: 243.13, y: 81.60 },
+      { x: 282.35, y: 98.56 },
+      { x: 310.95, y: 127.69 },
+      { x: 330.03, y: 158.43 },
+      { x: 341.14, y: 198.17 },
+      { x: 341.14, y: 236.85 },
+      { x: 331.19, y: 271.83 },
+      { x: 308.87, y: 307.85 },
+      { x: 279.20, y: 333.29 },
+      { x: 244.23, y: 348.65 },
+      { x: 207.66, y: 353.96 },
+      { x: 168.43, y: 348.65 },
+      { x: 132.82, y: 331.68 },
+      { x: 110.03, y: 311.02 },
+      { x: 85.65, y: 277.63 },
+      { x: 72.96, y: 245.84 },
+      { x: 69.79, y: 215.12 }
+    ],
     counters: [serpensortiaSpell.id],
   };
 
@@ -614,8 +703,29 @@ export async function initializeSpells() {
     type: "counter",
     color: "#22C55E",
     colorName: "Зелёный",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    description: "Л с закорючкой",
+    gesturePattern: [
+      { x: 44.26, y: 265.19 },
+      { x: 54.13, y: 283.82 },
+      { x: 73.77, y: 295.39 },
+      { x: 101.15, y: 302.42 },
+      { x: 130.56, y: 296.30 },
+      { x: 147.94, y: 274.23 },
+      { x: 158.04, y: 246.22 },
+      { x: 162.18, y: 213.37 },
+      { x: 168.70, y: 186.64 },
+      { x: 177.27, y: 211.84 },
+      { x: 189.65, y: 242.00 },
+      { x: 206.10, y: 269.56 },
+      { x: 234.81, y: 292.33 },
+      { x: 270.83, y: 303.12 },
+      { x: 312.47, y: 295.34 },
+      { x: 336.67, y: 274.38 },
+      { x: 350.74, y: 241.42 },
+      { x: 348.49, y: 201.88 },
+      { x: 328.83, y: 174.33 },
+      { x: 310.80, y: 149.10 }
+    ],
     counters: [slagulusEructoSpell.id],
   };
 
