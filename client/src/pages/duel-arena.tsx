@@ -27,6 +27,14 @@ const houseIcons: Record<string, string> = {
   hufflepuff: hufflepuffIcon,
 };
 
+// House colors matching player-card.tsx
+const houseColors = {
+  gryffindor: "#EF4444", // red-500
+  ravenclaw: "#3B82F6", // blue-500
+  slytherin: "#10B981", // green-500
+  hufflepuff: "#EAB308" // yellow-500
+};
+
 type RecognitionResult = {
   recognized: boolean;
   spell?: Spell;
@@ -943,14 +951,24 @@ export default function DuelArena() {
               </span>
             </div>
             
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-grow justify-center">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">Player 1 Score</p>
+                <p
+                  className="text-xs mb-1 font-medium"
+                  style={{ color: player1?.house && houseColors[player1.house as keyof typeof houseColors] || undefined }}
+                >
+                  {player1Name}
+                </p>
                 <p className="text-2xl font-bold text-primary">{session?.player1Score || 0}</p>
               </div>
               <Separator orientation="vertical" className="h-12" />
               <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">Player 2 Score</p>
+                <p
+                  className="text-xs mb-1 font-medium"
+                  style={{ color: player2?.house && houseColors[player2.house as keyof typeof houseColors] || undefined }}
+                >
+                  {player2Name}
+                </p>
                 <p className="text-2xl font-bold text-accent">{session?.player2Score || 0}</p>
               </div>
             </div>

@@ -202,17 +202,33 @@ export class MemStorage implements IStorage {
 
   async createGameSession(insertSession: InsertGameSession): Promise<GameSession> {
     const id = randomUUID();
-    const session: GameSession = { 
-      currentRound: 1,
-      currentPlayer: 1,
-      currentPhase: "attack",
-      player1Score: 0,
-      player2Score: 0,
-      lastAttackSpellId: null,
-      lastAttackAccuracy: null,
-      gameStatus: "active",
-      ...insertSession, 
-      id, 
+    const session: GameSession = {
+      currentRound: insertSession.currentRound ?? 1,
+      currentPlayer: insertSession.currentPlayer ?? 1,
+      currentPhase: insertSession.currentPhase ?? "attack",
+      player1Score: insertSession.player1Score ?? "0",
+      player2Score: insertSession.player2Score ?? "0",
+      lastAttackSpellId: insertSession.lastAttackSpellId ?? null,
+      lastAttackAccuracy: insertSession.lastAttackAccuracy ?? null,
+      gameStatus: insertSession.gameStatus ?? "active",
+      pendingAttackPlayerId: insertSession.pendingAttackPlayerId ?? null,
+      pendingAttackSpellId: insertSession.pendingAttackSpellId ?? null,
+      pendingAttackGesture: insertSession.pendingAttackGesture ?? null,
+      pendingAttackAccuracy: insertSession.pendingAttackAccuracy ?? null,
+      pendingCounterPlayerId: insertSession.pendingCounterPlayerId ?? null,
+      pendingCounterSpellId: insertSession.pendingCounterSpellId ?? null,
+      pendingCounterGesture: insertSession.pendingCounterGesture ?? null,
+      pendingCounterAccuracy: insertSession.pendingCounterAccuracy ?? null,
+      lastCompletedRoundNumber: insertSession.lastCompletedRoundNumber ?? null,
+      lastCompletedAttackSpellId: insertSession.lastCompletedAttackSpellId ?? null,
+      lastCompletedAttackAccuracy: insertSession.lastCompletedAttackAccuracy ?? null,
+      lastCompletedAttackGesture: insertSession.lastCompletedAttackGesture ?? null,
+      lastCompletedCounterSpellId: insertSession.lastCompletedCounterSpellId ?? null,
+      lastCompletedCounterAccuracy: insertSession.lastCompletedCounterAccuracy ?? null,
+      lastCompletedCounterGesture: insertSession.lastCompletedCounterGesture ?? null,
+      lastCompletedCounterSuccess: insertSession.lastCompletedCounterSuccess ?? null,
+      ...insertSession,
+      id,
       createdAt: new Date().toISOString()
     };
     this.gameSessions.set(id, session);

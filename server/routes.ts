@@ -38,8 +38,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return 0;
   }
 
-  // Normalize to 0-100 space WITH centering - but use strict penalties elsewhere
-  const normalizeGestureStrict = (gesture: Point[]) => {
+  // Normalize to 0-100 space with more lenient centering
+  const normalizeGesture = (gesture: Point[]) => {
     const minX = Math.min(...gesture.map(p => p.x));
     const maxX = Math.max(...gesture.map(p => p.x));
     const minY = Math.min(...gesture.map(p => p.y));
@@ -51,9 +51,10 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     // Scale to fit in 100x100 space while preserving aspect ratio
     const scale = Math.max(width, height);
     
-    // Center the gesture in 100x100 space for position invariance
-    const offsetX = (100 - (width / scale * 100)) / 2;
-    const offsetY = (100 - (height / scale * 100)) / 2;
+    // More lenient centering - only center if gesture is significantly smaller than canvas
+    const shouldCenter = (width / scale < 0.7) || (height / scale < 0.7);
+    const offsetX = shouldCenter ? (100 - (width / scale * 100)) / 2 : 0;
+    const offsetY = shouldCenter ? (100 - (height / scale * 100)) / 2 : 0;
     
     return gesture.map(p => ({
       x: ((p.x - minX) / scale) * 100 + offsetX,
@@ -61,8 +62,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     }));
   };
 
-  const normalizedDrawn = normalizeGestureStrict(drawnGesture);
-  const normalizedTarget = normalizeGestureStrict(targetPattern);
+  const normalizedDrawn = normalizeGesture(drawnGesture);
+  const normalizedTarget = normalizeGesture(targetPattern);
   
   // Calculate aspect ratio difference penalty (stricter)
   const getAspectRatio = (gesture: Point[]) => {
@@ -78,8 +79,8 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   const drawnAspectRatio = getAspectRatio(drawnGesture);
   const targetAspectRatio = getAspectRatio(targetPattern);
   const aspectRatioDiff = Math.abs(drawnAspectRatio - targetAspectRatio) / Math.max(drawnAspectRatio, targetAspectRatio);
-  // Multiplicative penalty - max 10% reduction
-  const aspectRatioPenaltyFactor = Math.min(0.10, aspectRatioDiff * 0.15);
+  // Even more lenient penalty - max 3% reduction for reasonable differences
+  const aspectRatioPenaltyFactor = Math.min(0.03, aspectRatioDiff * 0.03);
 
   // Penalty for point count mismatch (both too many or too few)
   const targetPointCount = (targetPattern as Point[]).length;
@@ -98,13 +99,13 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     // Complex patterns: apply STRICT penalties for incomplete gestures
     // Penalty for too many points (scribbling/filling)
     if (pointCountRatio > 5) {
-      pointCountPenaltyFactor = Math.min(0.15, (pointCountRatio - 5) * 0.04); // Up to 15% penalty
+      pointCountPenaltyFactor = Math.min(0.10, (pointCountRatio - 5) * 0.03); // Up to 10% penalty
     }
     
     // STRICT penalty for too few points (insufficient detail - incomplete gesture)
     if (pointCountRatio < 0.5) {
-      // Heavily penalize incomplete gestures: 30-60% penalty
-      pointCountPenaltyFactor = Math.min(0.60, (0.5 - pointCountRatio) * 1.2); 
+      // More lenient penalty for incomplete gestures: 20-40% penalty
+      pointCountPenaltyFactor = Math.min(0.40, (0.5 - pointCountRatio) * 0.8);
     }
   }
   
@@ -139,7 +140,21 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
     return resampled;
   };
 
-  const sampleCount = 64;
+  // Use adaptive resampling based on gesture complexity
+  const getAdaptiveSampleCount = (gesture: Point[]) => {
+    // For very simple gestures, use fewer points
+    if (gesture.length <= 5) return Math.max(16, gesture.length * 2);
+    // For medium complexity gestures, use standard count
+    if (gesture.length <= 20) return 32;
+    // For complex gestures, use more points but not too many
+    return Math.min(64, Math.max(32, gesture.length));
+  };
+  
+  const sampleCount = Math.max(
+    getAdaptiveSampleCount(normalizedDrawn),
+    getAdaptiveSampleCount(normalizedTarget)
+  );
+  
   const resampledDrawn = resampleGesture(normalizedDrawn, sampleCount);
   const resampledTarget = resampleGesture(normalizedTarget, sampleCount);
 
@@ -163,9 +178,11 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
   
   const totalDistance = bestDistance;
 
-  // Use stricter similarity calculation
+  // Use more lenient similarity calculation
   const maxPossibleDistance = sampleCount * Math.sqrt(100 * 100 + 100 * 100);
-  let baseSimilarity = Math.max(0, 1 - (totalDistance / maxPossibleDistance));
+  // Add a small buffer to make the calculation more forgiving
+  const bufferedMaxDistance = maxPossibleDistance * 1.2;
+  let baseSimilarity = Math.max(0, 1 - (totalDistance / bufferedMaxDistance));
   
   console.log(`[Gesture Debug] Base similarity before penalties: ${(baseSimilarity * 100).toFixed(1)}%`);
   
@@ -503,8 +520,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get best match
       const bestMatch = spellMatches[0];
 
-      // Require minimum 52% accuracy for recognition (balanced threshold)
-      if (!bestMatch || bestMatch.accuracy < 52) {
+      // Require minimum 50% accuracy for recognition (more lenient threshold)
+      if (!bestMatch || bestMatch.accuracy < 50) {
         // Save pending attempt data (will be saved to history when round completes)
         if (spellType === "attack") {
           await storage.updateGameSession(sessionId, {
@@ -540,8 +557,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find all successful matches (>= 52% accuracy) for attack spells (balanced threshold)
-      const successfulMatches = spellMatches.filter(m => m.accuracy >= 52);
+      // Find all successful matches (>= 50% accuracy) for attack spells (more lenient threshold)
+      const successfulMatches = spellMatches.filter(m => m.accuracy >= 50);
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
@@ -593,9 +610,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pendingAttackSpellId: selectedSpell.id,
           pendingAttackGesture: gesture,
           pendingAttackAccuracy: selectedAccuracy,
-          currentPhase: selectedAccuracy >= 52 ? "counter" : session.currentPhase,
-          lastAttackSpellId: selectedAccuracy >= 52 ? selectedSpell.id : session.lastAttackSpellId,
-          lastAttackAccuracy: selectedAccuracy >= 52 ? selectedAccuracy : session.lastAttackAccuracy,
+          currentPhase: selectedAccuracy >= 50 ? "counter" : session.currentPhase,
+          lastAttackSpellId: selectedAccuracy >= 50 ? selectedSpell.id : session.lastAttackSpellId,
+          lastAttackAccuracy: selectedAccuracy >= 50 ? selectedAccuracy : session.lastAttackAccuracy,
           // Clear lastCompleted data when new attack starts (so previous round dialog data is removed)
           lastCompletedRoundNumber: null,
           lastCompletedAttackSpellId: null,
@@ -628,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               spellId: session.pendingAttackSpellId,
               drawnGesture: session.pendingAttackGesture as Point[] || [],
               accuracy: session.pendingAttackAccuracy || 0,
-              successful: (session.pendingAttackAccuracy || 0) >= 52,
+              successful: (session.pendingAttackAccuracy || 0) >= 50,
               roundNumber: currentRound
             });
           }
@@ -640,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             spellId: selectedSpell.id,
             drawnGesture: gesture,
             accuracy: selectedAccuracy,
-            successful: selectedAccuracy >= 52 && isValidCounter,
+            successful: selectedAccuracy >= 50 && isValidCounter,
             roundNumber: currentRound
           });
 
@@ -752,9 +769,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pendingAttackSpellId: spellId,
         pendingAttackGesture: gesture,
         pendingAttackAccuracy: accuracy,
-        currentPhase: accuracy >= 52 ? "counter" : session.currentPhase,
-        lastAttackSpellId: accuracy >= 52 ? spellId : session.lastAttackSpellId,
-        lastAttackAccuracy: accuracy >= 52 ? accuracy : session.lastAttackAccuracy
+        currentPhase: accuracy >= 50 ? "counter" : session.currentPhase,
+        lastAttackSpellId: accuracy >= 50 ? spellId : session.lastAttackSpellId,
+        lastAttackAccuracy: accuracy >= 50 ? accuracy : session.lastAttackAccuracy
       });
       
       res.json({ success: true });
@@ -796,7 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           spellId: session.pendingAttackSpellId,
           drawnGesture: session.pendingAttackGesture,
           accuracy: session.pendingAttackAccuracy ?? 0,
-          successful: (session.pendingAttackAccuracy ?? 0) >= 52
+          successful: (session.pendingAttackAccuracy ?? 0) >= 50
         });
         await storage.createGestureAttempt(attackAttemptData);
         console.log("Attack attempt saved!");
@@ -814,7 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           spellId: session.pendingCounterSpellId,
           drawnGesture: session.pendingCounterGesture,
           accuracy: session.pendingCounterAccuracy ?? 0,
-          successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= 52
+          successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= 50
         });
         await storage.createGestureAttempt(counterAttemptData);
         console.log("Counter attempt saved!");
