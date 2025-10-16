@@ -644,7 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             roundNumber: currentRound
           });
 
-          // Update scores based on spell complexity
+          // Update scores - only 1 point per round to player with higher accuracy
           const updatedSession = await storage.getGameSession(sessionId);
           if (!updatedSession) {
             throw new Error("Session not found");
@@ -653,90 +653,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let player1Score = Number(updatedSession.player1Score) || 0;
           let player2Score = Number(updatedSession.player2Score) || 0;
 
-          // Determine who is attacker and defender in current round
-          // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
-          // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
-          const isOddRound = currentRound % 2 === 1;
-          const attackerPlayerId = isOddRound ? 1 : 2;
-          const defenderPlayerId = isOddRound ? 2 : 1;
-
-          // Helper function to calculate accuracy bonus
-          const getAccuracyBonus = (accuracy: number, patternPoints: number): number => {
-            // 1-point spells get no accuracy bonus
-            if (patternPoints === 1) {
-              return 0;
-            }
-            
-            // Accuracy bonuses for 2+ point spells
-            if (accuracy < 56) {
-              return 0.5;
-            } else if (accuracy >= 56 && accuracy <= 65) {
-              return 1;
-            } else if (accuracy >= 66 && accuracy <= 75) {
-              return 2;
-            } else if (accuracy >= 76 && accuracy <= 85) {
-              return 3;
-            } else if (accuracy >= 86 && accuracy <= 90) {
-              return 4;
-            } else if (accuracy > 90) {
-              return 5;
-            }
-            return 0.5; // Default for edge cases
-          };
-
-          // Award attacker points if attack was successful (>= 52%)
-          const attackSuccessful = (session.pendingAttackAccuracy || 0) >= 52;
-          if (attackSuccessful && session.pendingAttackSpellId) {
-            const attackSpell = await storage.getSpellById(session.pendingAttackSpellId);
-            if (attackSpell && attackSpell.gesturePattern) {
-              const patternPoints = (attackSpell.gesturePattern as any[]).length;
-              let baseAttackPoints = 0;
-              
-              if (patternPoints === 1) {
-                baseAttackPoints = 1;
-              } else if (patternPoints >= 2 && patternPoints <= 5) {
-                baseAttackPoints = 2;
-              } else if (patternPoints >= 6) {
-                baseAttackPoints = 3;
-              }
-              
-              const accuracyBonus = getAccuracyBonus(session.pendingAttackAccuracy || 0, patternPoints);
-              const attackPoints = baseAttackPoints + accuracyBonus;
-              
-              if (attackerPlayerId === 1) {
-                player1Score += attackPoints;
-              } else {
-                player2Score += attackPoints;
-              }
-            }
-          }
-
-          // Award defender points if counter was successful (>= 52% AND valid counter)
+          // Compare accuracies and award 1 point to player with higher accuracy
+          const attackAccuracy = session.pendingAttackAccuracy || 0;
+          const counterAccuracy = selectedAccuracy;
           const counterSuccessful = selectedAccuracy >= 52 && isValidCounter;
-          if (counterSuccessful) {
-            const counterSpell = selectedSpell;
-            if (counterSpell && counterSpell.gesturePattern) {
-              const patternPoints = (counterSpell.gesturePattern as any[]).length;
-              let baseDefensePoints = 0;
-              
-              if (patternPoints === 1) {
-                baseDefensePoints = 1;
-              } else if (patternPoints >= 2 && patternPoints <= 5) {
-                baseDefensePoints = 2;
-              } else if (patternPoints >= 6) {
-                baseDefensePoints = 3;
-              }
-              
-              const accuracyBonus = getAccuracyBonus(selectedAccuracy, patternPoints);
-              const defensePoints = baseDefensePoints + accuracyBonus;
-              
-              if (defenderPlayerId === 1) {
-                player1Score += defensePoints;
-              } else {
-                player2Score += defensePoints;
-              }
+          
+          // Award 1 point to player with higher accuracy
+          if (attackAccuracy > counterAccuracy) {
+            // Attack player has higher accuracy
+            if (session.pendingAttackPlayerId === 1) {
+              player1Score += 1;
+            } else {
+              player2Score += 1;
+            }
+          } else if (counterAccuracy > attackAccuracy) {
+            // Counter player has higher accuracy
+            if (playerId === 1) {
+              player1Score += 1;
+            } else {
+              player2Score += 1;
             }
           }
+          // If accuracies are equal, no points are awarded
 
           // Determine if game is complete (after 10 rounds)
           const nextRound = currentRound + 1;
@@ -885,98 +823,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log("===============================================");
 
-      // Helper function to calculate accuracy bonus
-      const getAccuracyBonus = (accuracy: number, patternPoints: number): number => {
-        // 1-point spells get no accuracy bonus
-        if (patternPoints === 1) {
-          return 0;
+      // Update scores - only 1 point per round to player with higher accuracy
+      let player1Score = Number(session.player1Score) || 0;
+      let player2Score = Number(session.player2Score) || 0;
+
+      // Compare accuracies and award 1 point to player with higher accuracy
+      const attackAccuracy = session.pendingAttackAccuracy || 0;
+      const counterAccuracy = session.pendingCounterAccuracy || 0;
+      
+      // Award 1 point to player with higher accuracy
+      if (attackAccuracy > counterAccuracy) {
+        // Attack player has higher accuracy
+        if (session.pendingAttackPlayerId === 1) {
+          player1Score += 1;
+        } else {
+          player2Score += 1;
         }
-        
-        // Accuracy bonuses for 2+ point spells
-        if (accuracy < 56) {
-          return 0.5;
-        } else if (accuracy >= 56 && accuracy <= 65) {
-          return 1;
-        } else if (accuracy >= 66 && accuracy <= 75) {
-          return 2;
-        } else if (accuracy >= 76 && accuracy <= 85) {
-          return 3;
-        } else if (accuracy >= 86 && accuracy <= 90) {
-          return 4;
-        } else if (accuracy > 90) {
-          return 5;
-        }
-        return 0.5; // Default for edge cases
-      };
-
-      // Award points based on spell complexity (pattern point count)
-      let player1ScoreIncrease = 0;
-      let player2ScoreIncrease = 0;
-
-      // Determine who is attacker and defender in current round
-      // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
-      // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
-      const isOddRound = currentRound % 2 === 1;
-      const attackerPlayerId = isOddRound ? 1 : 2;
-      const defenderPlayerId = isOddRound ? 2 : 1;
-
-      // Get attack spell and calculate attacker points
-      if (session.pendingAttackSpellId && session.pendingAttackAccuracy && session.pendingAttackAccuracy >= 52) {
-        const attackSpell = await storage.getSpellById(session.pendingAttackSpellId);
-        if (attackSpell && attackSpell.gesturePattern) {
-          const patternPoints = (attackSpell.gesturePattern as any[]).length;
-          let baseAttackPoints = 0;
-          
-          if (patternPoints === 1) {
-            baseAttackPoints = 1;
-          } else if (patternPoints >= 2 && patternPoints <= 5) {
-            baseAttackPoints = 2;
-          } else if (patternPoints >= 6) {
-            baseAttackPoints = 3;
-          }
-          
-          const accuracyBonus = getAccuracyBonus(session.pendingAttackAccuracy, patternPoints);
-          const attackPoints = baseAttackPoints + accuracyBonus;
-          
-          if (attackerPlayerId === 1) {
-            player1ScoreIncrease = attackPoints;
-          } else {
-            player2ScoreIncrease = attackPoints;
-          }
+      } else if (counterAccuracy > attackAccuracy) {
+        // Counter player has higher accuracy
+        if (session.pendingCounterPlayerId === 1) {
+          player1Score += 1;
+        } else {
+          player2Score += 1;
         }
       }
-
-      // Get counter spell and calculate defender points (only if valid counter and successful)
-      if (counterSuccess && session.pendingCounterSpellId && session.pendingCounterAccuracy && session.pendingCounterAccuracy >= 52) {
-        const counterSpell = await storage.getSpellById(session.pendingCounterSpellId);
-        if (counterSpell && counterSpell.gesturePattern) {
-          const patternPoints = (counterSpell.gesturePattern as any[]).length;
-          let baseDefensePoints = 0;
-          
-          if (patternPoints === 1) {
-            baseDefensePoints = 1;
-          } else if (patternPoints >= 2 && patternPoints <= 5) {
-            baseDefensePoints = 2;
-          } else if (patternPoints >= 6) {
-            baseDefensePoints = 3;
-          }
-          
-          const accuracyBonus = getAccuracyBonus(session.pendingCounterAccuracy, patternPoints);
-          const defensePoints = baseDefensePoints + accuracyBonus;
-          
-          if (defenderPlayerId === 1) {
-            player1ScoreIncrease = defensePoints;
-          } else {
-            player2ScoreIncrease = defensePoints;
-          }
-        }
-      }
+      // If accuracies are equal, no points are awarded
 
       // Update game session
-      const player1Score = Number(session.player1Score) || 0;
-      const player2Score = Number(session.player2Score) || 0;
-      
-      // Game ends after 10 rounds
       const nextRound = currentRound + 1;
       const isGameComplete = nextRound > 10;
       
@@ -989,8 +862,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentRound: nextRound,
         currentPlayer: nextAttacker,
         currentPhase: "attack" as const,
-        player1Score: (player1Score + player1ScoreIncrease).toString(),
-        player2Score: (player2Score + player2ScoreIncrease).toString(),
+        player1Score: player1Score.toString(),
+        player2Score: player2Score.toString(),
         lastAttackSpellId: null,
         lastAttackAccuracy: null,
         gameStatus: isGameComplete ? "completed" as const : session.gameStatus,
@@ -1010,8 +883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         session: updatedSession,
         pointsAwarded: {
-          player1: player1ScoreIncrease,
-          player2: player2ScoreIncrease
+          player1: 0, // Not used in new system, but kept for compatibility
+          player2: 0  // Not used in new system, but kept for compatibility
         }
       });
 

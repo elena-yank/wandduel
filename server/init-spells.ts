@@ -7,8 +7,11 @@ export async function initializeSpells() {
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
+  
+  // If we have the expected number of spells, check if they need to be updated
   if (existingSpells.length >= EXPECTED_SPELL_COUNT) {
-    console.log(`Spells already initialized (${existingSpells.length} spells found). Skipping initialization.`);
+    console.log(`Spells already initialized (${existingSpells.length} spells found). Checking for updates...`);
+    await updateExistingSpells(existingSpells);
     return;
   }
 
@@ -630,7 +633,7 @@ export async function initializeSpells() {
     name: "випЕра эванЕско",
     type: "counter",
     color: "#FF4500",
-    colorName: "Пламенный",
+    colorName: "Пламенный шар",
     description: "Шар",
     gesturePattern: [
       { x: 76.30, y: 167.97 },
@@ -703,28 +706,27 @@ export async function initializeSpells() {
     type: "counter",
     color: "#22C55E",
     colorName: "Зелёный",
-    description: "Л с закорючкой",
+    description: "Поток",
     gesturePattern: [
-      { x: 44.26, y: 265.19 },
-      { x: 54.13, y: 283.82 },
-      { x: 73.77, y: 295.39 },
-      { x: 101.15, y: 302.42 },
-      { x: 130.56, y: 296.30 },
-      { x: 147.94, y: 274.23 },
-      { x: 158.04, y: 246.22 },
-      { x: 162.18, y: 213.37 },
-      { x: 168.70, y: 186.64 },
-      { x: 177.27, y: 211.84 },
-      { x: 189.65, y: 242.00 },
-      { x: 206.10, y: 269.56 },
-      { x: 234.81, y: 292.33 },
-      { x: 270.83, y: 303.12 },
-      { x: 312.47, y: 295.34 },
-      { x: 336.67, y: 274.38 },
-      { x: 350.74, y: 241.42 },
-      { x: 348.49, y: 201.88 },
-      { x: 328.83, y: 174.33 },
-      { x: 310.80, y: 149.10 }
+      { x: 235.27, y: 323.23 },
+      { x: 243.22, y: 295.68 },
+      { x: 250.44, y: 265.59 },
+      { x: 257.64, y: 233.79 },
+      { x: 265.27, y: 199.07 },
+      { x: 269.93, y: 169.99 },
+      { x: 264.42, y: 159.82 },
+      { x: 252.52, y: 159.40 },
+      { x: 236.89, y: 171.69 },
+      { x: 211.88, y: 192.88 },
+      { x: 182.62, y: 219.58 },
+      { x: 158.87, y: 244.92 },
+      { x: 157.28, y: 260.29 },
+      { x: 169.96, y: 261.88 },
+      { x: 199.63, y: 247.34 },
+      { x: 211.05, y: 244.16 },
+      { x: 213.70, y: 258.04 },
+      { x: 196.32, y: 285.47 },
+      { x: 174.27, y: 318.54 }
     ],
     counters: [slagulusEructoSpell.id],
   };
@@ -838,8 +840,26 @@ export async function initializeSpells() {
     type: "counter",
     color: "#8B00FF",
     colorName: "Фиолетовый",
-    description: "Точка в центре",
-    gesturePattern: [{ x: 200, y: 200 }], // Center of 400x400 canvas
+    description: "Круги",
+    gesturePattern: [
+      { x: 179.63, y: 333.76 },
+      { x: 176.45, y: 287.13 },
+      { x: 133.53, y: 260.09 },
+      { x: 100.68, y: 224.59 },
+      { x: 94.85, y: 179.00 },
+      { x: 96.44, y: 131.31 },
+      { x: 126.33, y: 93.16 },
+      { x: 171.29, y: 63.48 },
+      // Правый круг (зеркало левого)
+      { x: 228.71, y: 63.48 },
+      { x: 273.67, y: 93.16 },
+      { x: 303.56, y: 131.31 },
+      { x: 305.15, y: 179.00 },
+      { x: 299.32, y: 224.59 },
+      { x: 266.47, y: 260.09 },
+      { x: 223.55, y: 287.13 },
+      { x: 220.37, y: 333.76 }
+    ],
     counters: [engorgioSpell.id],
   };
 
@@ -847,4 +867,96 @@ export async function initializeSpells() {
   console.log("Created spell:", reducioSpell.name);
 
   console.log("Spells initialized successfully!");
+}
+
+async function updateExistingSpells(existingSpells: any[]) {
+  console.log("Updating existing spells...");
+  console.log(`Total existing spells: ${existingSpells.length}`);
+  
+  // Create a map of existing spells by name for easy lookup
+  const spellMap = new Map(existingSpells.map(spell => [spell.name, spell]));
+  console.log(`Spell map created with ${spellMap.size} spells`);
+  
+  // Define the spells that need to be updated with their new patterns
+  const spellsToUpdate = [
+    {
+      name: "вомитАре вИридис",
+      description: "Поток",
+      gesturePattern: [
+        { x: 235.27, y: 323.23 },
+        { x: 243.22, y: 295.68 },
+        { x: 250.44, y: 265.59 },
+        { x: 257.64, y: 233.79 },
+        { x: 265.27, y: 199.07 },
+        { x: 269.93, y: 169.99 },
+        { x: 264.42, y: 159.82 },
+        { x: 252.52, y: 159.40 },
+        { x: 236.89, y: 171.69 },
+        { x: 211.88, y: 192.88 },
+        { x: 182.62, y: 219.58 },
+        { x: 158.87, y: 244.92 },
+        { x: 157.28, y: 260.29 },
+        { x: 169.96, y: 261.88 },
+        { x: 199.63, y: 247.34 },
+        { x: 211.05, y: 244.16 },
+        { x: 213.70, y: 258.04 },
+        { x: 196.32, y: 285.47 },
+        { x: 174.27, y: 318.54 }
+      ]
+    },
+    {
+      name: "редУцио",
+      description: "Круги",
+      gesturePattern: [
+        { x: 179.63, y: 333.76 },
+        { x: 176.45, y: 287.13 },
+        { x: 133.53, y: 260.09 },
+        { x: 100.68, y: 224.59 },
+        { x: 94.85, y: 179.00 },
+        { x: 96.44, y: 131.31 },
+        { x: 126.33, y: 93.16 },
+        { x: 171.29, y: 63.48 },
+        // Правый круг (зеркало левого)
+        { x: 228.71, y: 63.48 },
+        { x: 273.67, y: 93.16 },
+        { x: 303.56, y: 131.31 },
+        { x: 305.15, y: 179.00 },
+        { x: 299.32, y: 224.59 },
+        { x: 266.47, y: 260.09 },
+        { x: 223.55, y: 287.13 },
+        { x: 220.37, y: 333.76 }
+      ]
+    }
+  ];
+
+  // Update spells that need to be updated
+  for (const spellData of spellsToUpdate) {
+    const existingSpell = spellMap.get(spellData.name);
+    if (existingSpell) {
+      console.log(`Found spell to update: ${spellData.name}`);
+      console.log(`Current description: ${existingSpell.description}`);
+      console.log(`Expected description: ${spellData.description}`);
+      console.log(`Current gesture pattern length: ${existingSpell.gesturePattern.length}`);
+      console.log(`Expected gesture pattern length: ${spellData.gesturePattern.length}`);
+      
+      // Check if the spell needs to be updated by comparing description and gesture pattern length
+      const needsUpdate = existingSpell.description !== spellData.description ||
+                          existingSpell.gesturePattern.length !== spellData.gesturePattern.length;
+      
+      if (needsUpdate) {
+        console.log(`Spell needs update: ${spellData.name}`);
+        await storage.updateSpell(existingSpell.id, {
+          description: spellData.description,
+          gesturePattern: spellData.gesturePattern
+        });
+        console.log(`Updated spell: ${spellData.name}`);
+      } else {
+        console.log(`Spell is already up to date: ${spellData.name}`);
+      }
+    } else {
+      console.log(`Spell not found: ${spellData.name}`);
+    }
+  }
+  
+  console.log("Finished checking and updating spells.");
 }

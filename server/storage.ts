@@ -339,6 +339,13 @@ export class PostgresStorage implements IStorage {
     await this.db.delete(spells);
   }
 
+  async updateSpell(id: string, updates: Partial<InsertSpell>): Promise<Spell> {
+    console.log(`Updating spell ${id} with updates:`, updates);
+    const result = await this.db.update(spells).set(updates).where(eq(spells.id, id)).returning();
+    console.log(`Update result:`, result[0]);
+    return result[0];
+  }
+
   // Game Rooms
   async createGameRoom(room: InsertGameRoom): Promise<GameRoom> {
     const result = await this.db.insert(gameRooms).values(room).returning();
