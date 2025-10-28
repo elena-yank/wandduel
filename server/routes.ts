@@ -487,24 +487,12 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       const spellType = session.currentPhase === "attack" ? "attack" : "counter";
       let availableSpells = await storage.getSpellsByType(spellType);
 
-      // If it's attack phase, filter out spells already used by this player
+      // If it's attack phase, get used spells for this player (but don't filter them out)
+      let usedSpellIds: string[] = [];
       if (spellType === "attack") {
-        const usedSpellIds = playerId === 1
+        usedSpellIds = playerId === 1
           ? (session.player1UsedAttackSpells as string[] || [])
           : (session.player2UsedAttackSpells as string[] || []);
-        
-        availableSpells = availableSpells.filter((spell: any) =>
-          !usedSpellIds.includes(spell.id)
-        );
-        
-        // If no spells are available, return an error
-        if (availableSpells.length === 0) {
-          return res.json({
-            recognized: false,
-            message: "Вы уже использовали все доступные атакующие заклинания!",
-            accuracy: 0
-          });
-        }
       }
 
       // If it's counter phase, filter by spells that can counter the last attack
@@ -544,6 +532,22 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       // Get best match
       const bestMatch = spellMatches[0];
 
+      // Special case: if this is an attack spell and the best match is a spell the player has already used,
+      // provide a specific error message
+      if (spellType === "attack" && bestMatch) {
+        const usedSpellIds = playerId === 1
+          ? (session.player1UsedAttackSpells as string[] || [])
+          : (session.player2UsedAttackSpells as string[] || []);
+        
+        if (usedSpellIds.includes(bestMatch.spell.id)) {
+          return res.json({
+            recognized: false,
+            message: "Это заклинание уже было использовано. Пожалуйста, используйте другое заклинание.",
+            accuracy: bestMatch.accuracy
+          });
+        }
+      }
+
       // Require minimum 50% accuracy for recognition (more lenient threshold)
       if (!bestMatch || bestMatch.accuracy < 50) {
         // Save pending attempt data (will be saved to history when round completes)
@@ -572,6 +576,21 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             message: "Неверная защита! Вы использовали неправильное движение.",
             accuracy: bestMatch?.accuracy || 0
           });
+        }
+        
+        // Check if the best match is a spell that has already been used
+        if (bestMatch && spellType === "attack") {
+          const usedSpellIds = playerId === 1
+            ? (session.player1UsedAttackSpells as string[] || [])
+            : (session.player2UsedAttackSpells as string[] || []);
+          
+          if (usedSpellIds.includes(bestMatch.spell.id)) {
+            return res.json({
+              recognized: false,
+              message: "Это заклинание уже было использовано. Пожалуйста, используйте другое заклинание.",
+              accuracy: bestMatch.accuracy
+            });
+          }
         }
         
         return res.json({
