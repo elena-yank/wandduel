@@ -14,6 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import GesturePreview from "@/components/gesture-preview";
+import SpellChoiceDialog from "@/components/spell-choice-dialog";
+import RoundCompleteDialog from "@/components/round-complete-dialog";
 import duelIconPath from "@assets/image_1760081444104.png";
 import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
@@ -56,61 +59,7 @@ function calculatePoints(spell: Spell | undefined, accuracy: number, isPointWinn
 }
 
 // Component to display a small preview of drawn gesture
-function GesturePreview({ gesture, className = "" }: { gesture: Point[]; className?: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !gesture || gesture.length === 0) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Normalize gesture to fit in the small canvas
-    const minX = Math.min(...gesture.map(p => p.x));
-    const maxX = Math.max(...gesture.map(p => p.x));
-    const minY = Math.min(...gesture.map(p => p.y));
-    const maxY = Math.max(...gesture.map(p => p.y));
-    
-    const width = maxX - minX || 1;
-    const height = maxY - minY || 1;
-    const scale = Math.min(canvas.width / width, canvas.height / height) * 0.8;
-    
-    const offsetX = (canvas.width - width * scale) / 2;
-    const offsetY = (canvas.height - height * scale) / 2;
-
-    // Draw gesture
-    ctx.strokeStyle = 'rgb(147, 51, 234)'; // Purple color
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.beginPath();
-    gesture.forEach((point, index) => {
-      const x = (point.x - minX) * scale + offsetX;
-      const y = (point.y - minY) * scale + offsetY;
-      
-      if (index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    });
-    ctx.stroke();
-  }, [gesture]);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      width={80} 
-      height={80} 
-      className={`bg-background/50 rounded border border-primary/20 ${className}`}
-    />
-  );
-}
+// GesturePreview moved to '@/components/gesture-preview'
 
 export default function DuelArena() {
   const [, setLocation] = useLocation();
@@ -1387,139 +1336,33 @@ export default function DuelArena() {
       </div>
 
       {/* Spell Choice Dialog */}
-      <Dialog open={showSpellChoice} onOpenChange={setShowSpellChoice}>
-        <DialogContent className="sm:max-w-sm" data-testid="dialog-spell-choice">
-          <DialogHeader>
-            <DialogTitle className="font-decorative text-xl decorative-text">
-              Выберите заклинание
-            </DialogTitle>
-            <DialogDescription className="text-sm">
-              Несколько заклинаний соответствуют вашему движению. Выберите нужное:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-2 py-3">
-            {spellChoices?.map((choice, index) => (
-              <Button
-                key={choice.spell.id}
-                onClick={() => handleSpellChoice(choice)}
-                variant="outline"
-                className="h-auto flex flex-col items-start p-3 text-left hover:bg-primary/10 transition-colors"
-                data-testid={`button-spell-choice-${index}`}
-              >
-                <div className="flex items-center gap-2 w-full">
-                  <div 
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: choice.spell.color }}
-                  />
-                  <div className="flex-1">
-                    <p className="font-serif font-semibold text-sm text-foreground">
-                      {choice.spell.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {choice.spell.colorName} • {choice.accuracy.toFixed(0)}% точность
-                    </p>
-                  </div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SpellChoiceDialog
+        open={showSpellChoice}
+        onOpenChange={setShowSpellChoice}
+        choices={spellChoices || undefined}
+        onSelect={handleSpellChoice}
+      />
 
       {/* Round Complete Dialog */}
-      <Dialog open={showRoundComplete} onOpenChange={(open) => {
-        if (!open) {
-          // Mark this round as dismissed when dialog is closed
+      <RoundCompleteDialog
+        open={showRoundComplete}
+        onOpenChange={(open) => {
+          if (!open) {
+            const completedRound = session?.lastCompletedRoundNumber || 1;
+            const roundKey = `${completedRound}`;
+            dismissedDialogForRound.current = roundKey;
+          }
+          setShowRoundComplete(open);
+        }}
+        session={session}
+        allSpells={allSpells}
+        onContinue={() => {
           const completedRound = session?.lastCompletedRoundNumber || 1;
           const roundKey = `${completedRound}`;
           dismissedDialogForRound.current = roundKey;
-        }
-        setShowRoundComplete(open);
-      }}>
-        <DialogContent className="sm:max-w-xs" data-testid="dialog-round-complete">
-          <DialogHeader>
-            <DialogTitle className="font-decorative text-lg decorative-text">
-              {session?.isBonusRound ? "БОНУСНЫЙ РАУНД ЗАВЕРШЕН" : "Раунд завершен"}
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              {session?.isBonusRound ? "Результаты бонусного раунда" : "Результаты раунда"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <div className="bg-primary/10 rounded-lg p-2 border border-primary/20">
-              <p className="text-xs text-muted-foreground mb-1">Атакующий</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-serif font-bold text-foreground text-sm">
-                    {session?.lastCompletedAttackSpellId ?
-                      allSpells.find(s => s.id === session.lastCompletedAttackSpellId)?.name :
-                      "Неизвестно"}
-                  </p>
-                  <p className="text-xs text-primary">
-                    Точность: {session?.lastCompletedAttackAccuracy || 0}%
-                  </p>
-                </div>
-                {(() => {
-                  const attackGesture = session?.lastCompletedAttackGesture as Point[] | undefined;
-                  
-                  return attackGesture && attackGesture.length > 0 ? (
-                    <div className="flex items-center justify-center">
-                      <GesturePreview gesture={attackGesture} className="flex-shrink-0 w-12 h-12" />
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            </div>
-            
-            <div className={`rounded-lg p-2 border ${
-              session?.lastCompletedCounterSuccess
-                ? 'bg-green-500/10 border-green-500/20'
-                : 'bg-red-500/10 border-red-500/20'
-            }`}>
-              <p className="text-xs text-muted-foreground mb-1">Защищающийся</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-serif font-bold text-foreground text-sm">
-                    {session?.lastCompletedCounterSpellId ?
-                      allSpells.find(s => s.id === session.lastCompletedCounterSpellId)?.name :
-                      "Не выполнено"}
-                  </p>
-                  <p className={`text-xs ${session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    Точность: {session?.lastCompletedCounterAccuracy || 0}%
-                  </p>
-                  <p className={`text-xs font-semibold mt-1 ${session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {session?.lastCompletedCounterSuccess ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
-                  </p>
-                </div>
-                {(() => {
-                  const counterGesture = session?.lastCompletedCounterGesture as Point[] | undefined;
-                  
-                  return counterGesture && counterGesture.length > 0 ? (
-                    <div className="flex items-center justify-center">
-                      <GesturePreview gesture={counterGesture} className="flex-shrink-0 w-12 h-12" />
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            </div>
-          </div>
-          <Button
-            onClick={() => {
-              // Mark this round as dismissed for this player using round number
-              const completedRound = session?.lastCompletedRoundNumber || 1;
-              const roundKey = `${completedRound}`;
-              dismissedDialogForRound.current = roundKey;
-              
-              // Just close the dialog - data will be cleared when next attack starts
-              setShowRoundComplete(false);
-            }}
-            className="w-full glow-primary text-sm py-2"
-            data-testid="button-continue-next-round"
-          >
-            Следующий раунд
-          </Button>
-        </DialogContent>
-      </Dialog>
+          setShowRoundComplete(false);
+        }}
+      />
 
       {/* Scroll to Canvas Button */}
       {showScrollToCanvas && (

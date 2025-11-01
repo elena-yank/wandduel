@@ -1,9 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, insertSessionParticipantSchema, insertGameRoomSchema, type Point, type GameSession } from "@shared/schema";
+import { ATTACK_SUCCESS_THRESHOLD, COUNTER_SUCCESS_THRESHOLD, TOTAL_ROUNDS } from "@shared/config";
 import { z } from "zod";
 import type { IStorage } from "./storage";
 import { evaluateDrawing } from "@shared/gesture-recognition";
+import { awardPointForRound, calculateBonusRoundOutcome, nextRoundState } from "./utils/rounds";
 
 // Gesture recognition function with improved accuracy calculation
 function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[]): number {
@@ -338,15 +340,17 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         };
       }).sort((a: any, b: any) => b.accuracy - a.accuracy);
 
-      // Log gesture recognition details
-      console.log('\n=== GESTURE RECOGNITION DEBUG ===');
-      console.log('Player gesture points:', gesture.length);
-      console.log('Phase:', session.currentPhase);
-      console.log('Spell matches:');
-      spellMatches.forEach((match: any) => {
-        console.log(`  - ${match.spell.name}: ${match.accuracy}% (pattern: ${(match.spell.gesturePattern as Point[]).length} points)`);
-      });
-      console.log('================================\n');
+      // Log gesture recognition details (gated by env)
+      if (process.env.DEBUG_GESTURES === '1') {
+        console.log('\n=== GESTURE RECOGNITION DEBUG ===');
+        console.log('Player gesture points:', gesture.length);
+        console.log('Phase:', session.currentPhase);
+        console.log('Spell matches:');
+        spellMatches.forEach((match: any) => {
+          console.log(`  - ${match.spell.name}: ${match.accuracy}% (pattern: ${(match.spell.gesturePattern as Point[]).length} points)`);
+        });
+        console.log('================================\n');
+      }
 
       // Get best match
       const bestMatch = spellMatches[0];
@@ -420,7 +424,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       }
 
       // Find all successful matches (>= 50% accuracy) for attack spells (more lenient threshold)
-      const successfulMatches = spellMatches.filter((m: any) => m.accuracy >= 50);
+      const successfulMatches = spellMatches.filter((m: any) => m.accuracy >= ATTACK_SUCCESS_THRESHOLD);
       
       // If multiple successful attack spells match, return them all for user to choose
       if (spellType === "attack" && successfulMatches.length > 1) {
@@ -483,9 +487,9 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           pendingAttackSpellId: selectedSpell.id,
           pendingAttackGesture: gesture,
           pendingAttackAccuracy: selectedAccuracy,
-          currentPhase: selectedAccuracy >= 50 ? "counter" : session.currentPhase,
-          lastAttackSpellId: selectedAccuracy >= 50 ? selectedSpell.id : session.lastAttackSpellId,
-          lastAttackAccuracy: selectedAccuracy >= 50 ? selectedAccuracy : session.lastAttackAccuracy,
+          currentPhase: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
+          lastAttackSpellId: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? selectedSpell.id : session.lastAttackSpellId,
+          lastAttackAccuracy: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? selectedAccuracy : session.lastAttackAccuracy,
           // Clear lastCompleted data when new attack starts (so previous round dialog data is removed)
           lastCompletedRoundNumber: null,
           lastCompletedAttackSpellId: null,
@@ -515,7 +519,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
 
         // Auto-complete round after counter spell is cast
-        if (selectedAccuracy >= 52) {
+          if (selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD) {
           // Save both attack and counter attempts to history
           const currentRound = session.currentRound || 1;
           const attemptIsBonusRound = session.isBonusRound || false;
@@ -528,7 +532,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
               spellId: session.pendingAttackSpellId,
               drawnGesture: session.pendingAttackGesture as Point[] || [],
               accuracy: session.pendingAttackAccuracy || 0,
-              successful: (session.pendingAttackAccuracy || 0) >= 50,
+              successful: (session.pendingAttackAccuracy || 0) >= ATTACK_SUCCESS_THRESHOLD,
               roundNumber: currentRound,
               isBonusRound: attemptIsBonusRound
             });
@@ -541,7 +545,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             spellId: selectedSpell.id,
             drawnGesture: gesture,
             accuracy: selectedAccuracy,
-            successful: selectedAccuracy >= 50 && isValidCounter,
+            successful: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD && isValidCounter,
             roundNumber: currentRound,
             isBonusRound: attemptIsBonusRound
           });
@@ -558,62 +562,27 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           // Compare accuracies and award 1 point to player with higher accuracy
           const attackAccuracy = session.pendingAttackAccuracy || 0;
           const counterAccuracy = selectedAccuracy;
-          const counterSuccessful = selectedAccuracy >= 52 && isValidCounter;
+          const counterSuccessful = selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && isValidCounter;
           
           // Award 1 point to player with higher accuracy
-          if (attackAccuracy > counterAccuracy) {
-            // Attack player has higher accuracy
-            if (session.pendingAttackPlayerId === 1) {
-              player1Score += 1;
-            } else {
-              player2Score += 1;
-            }
-          } else if (counterAccuracy > attackAccuracy) {
-            // Counter player has higher accuracy
-            if (playerId === 1) {
-              player1Score += 1;
-            } else {
-              player2Score += 1;
-            }
-          }
-          // If accuracies are equal, no points are awarded
+          const award = awardPointForRound({
+            session,
+            attackAccuracy,
+            counterAccuracy,
+            playerId,
+            pendingAttackPlayerId: session.pendingAttackPlayerId ?? null,
+          });
+          player1Score += award.p1;
+          player2Score += award.p2;
 
-          // Check if scores are equal after 10 rounds to trigger bonus round
-          const nextRound = currentRound + 1;
-          let isGameComplete = nextRound > 10;
+          // Determine next round and bonus/winner state via utils
+          const transition = nextRoundState(session, player1Score, player2Score, TOTAL_ROUNDS);
+          const bonusOutcome = calculateBonusRoundOutcome(session, attackAccuracy, counterAccuracy);
+          const nextRound = transition.nextRound;
+          const isBonusRound = session.isBonusRound || transition.isBonusRound;
+          const bonusRoundWinner = bonusOutcome.bonusRoundWinner;
+          const isGameComplete = bonusOutcome.isGameComplete || transition.isGameComplete;
           let gameStatus: "active" | "completed" | "paused" = isGameComplete ? "completed" : "active";
-          let isBonusRound = false;
-          let bonusRoundWinner = null;
-          
-          // If we're at the end of round 10, check for tie
-          if (currentRound === 10 && player1Score === player2Score) {
-            // Scores are tied, start bonus round
-            isGameComplete = false; // Don't complete game yet
-            gameStatus = "active";
-            isBonusRound = true;
-            // Keep same round number for bonus round
-          }
-          
-          // If this is a bonus round, check if we have a winner
-          if (session.isBonusRound) {
-            // Determine winner based on higher accuracy in the bonus round
-            if (attackAccuracy > counterAccuracy) {
-              bonusRoundWinner = session.pendingAttackPlayerId;
-            } else if (counterAccuracy > attackAccuracy) {
-              bonusRoundWinner = playerId;
-            }
-            // If accuracies are equal, continue with another bonus round
-            if (attackAccuracy === counterAccuracy) {
-              isGameComplete = false; // Don't complete game yet
-              gameStatus = "active";
-              isBonusRound = true; // Continue with bonus round
-              // Keep same round number for bonus round
-            } else {
-              // Complete the game since bonus round is over with a winner
-              isGameComplete = true;
-              gameStatus = "completed";
-            }
-          }
           
           // Advance to next round or complete game
           await storage.updateGameSession(sessionId, {
@@ -654,7 +623,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         accuracy: selectedAccuracy,
         isValidCounter,
         wrongDefenseUsed,
-        successful: selectedAccuracy >= 52 && (spellType === "attack" || isValidCounter)
+            successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && (spellType === "attack" || isValidCounter)
       });
 
     } catch (error) {
@@ -697,9 +666,9 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         pendingAttackSpellId: spellId,
         pendingAttackGesture: gesture,
         pendingAttackAccuracy: accuracy,
-        currentPhase: accuracy >= 50 ? "counter" : session.currentPhase,
-        lastAttackSpellId: accuracy >= 50 ? spellId : session.lastAttackSpellId,
-        lastAttackAccuracy: accuracy >= 50 ? accuracy : session.lastAttackAccuracy
+      currentPhase: accuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
+      lastAttackSpellId: accuracy >= ATTACK_SUCCESS_THRESHOLD ? spellId : session.lastAttackSpellId,
+      lastAttackAccuracy: accuracy >= ATTACK_SUCCESS_THRESHOLD ? accuracy : session.lastAttackAccuracy
       };
       
       // Update player's used attack spells
@@ -752,7 +721,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           spellId: session.pendingAttackSpellId,
           drawnGesture: session.pendingAttackGesture,
           accuracy: session.pendingAttackAccuracy ?? 0,
-          successful: (session.pendingAttackAccuracy ?? 0) >= 50,
+    successful: (session.pendingAttackAccuracy ?? 0) >= ATTACK_SUCCESS_THRESHOLD,
           isBonusRound: session.isBonusRound || false
         });
         await storage.createGestureAttempt(attackAttemptData);
@@ -771,7 +740,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           spellId: session.pendingCounterSpellId,
           drawnGesture: session.pendingCounterGesture,
           accuracy: session.pendingCounterAccuracy ?? 0,
-          successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= 50,
+    successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= ATTACK_SUCCESS_THRESHOLD,
           isBonusRound: session.isBonusRound || false
         });
         await storage.createGestureAttempt(counterAttemptData);
@@ -852,7 +821,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       let bonusRoundWinner = null;
       
       // If we're at the end of round 10, check for tie
-      if (currentRound === 10 && player1Score === player2Score) {
+  if (currentRound === TOTAL_ROUNDS && player1Score === player2Score) {
         // Scores are tied, start bonus round
         isGameComplete = false; // Don't complete game yet
         gameStatus = "active";

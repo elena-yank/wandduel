@@ -1,4 +1,5 @@
 import { type Point } from "./schema";
+import { DTW_SCALE_FACTOR } from "./config";
 
 /**
  * Normalize gesture to a standard coordinate space
@@ -220,8 +221,8 @@ export function evaluateDrawing(userPoints: Point[], referencePoints: Point[]): 
   
   // Step 4: Convert distance to score (0-100)
   // Empirically determined scaleFactor for human-friendly scoring
-  const scaleFactor = 8;
-  const score = Math.max(0, 100 - dtwDistance * scaleFactor);
+  // Centralized in shared/config to avoid magic numbers and enable tuning
+  const score = Math.max(0, 100 - dtwDistance * DTW_SCALE_FACTOR);
   
   return { score: Math.round(score), valid: true };
 }
