@@ -21,9 +21,12 @@ RUN npm install
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/migrations ./migrations
 
-EXPOSE 8081
+# App listens on 5000; expose matching port
+EXPOSE 5000
 
+# Production defaults; use DATABASE_URL to enable Postgres
 ENV NODE_ENV=production
+ENV PORT=5000
 ENV FORCE_MEMORY_STORAGE=true
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

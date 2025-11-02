@@ -116,10 +116,12 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  // In development on Windows, bind to 127.0.0.1 to avoid ENOTSUP issues.
+  // In production (including Docker), bind to 0.0.0.0 so the container is reachable.
+  const host = app.get("env") === "development" ? "127.0.0.1" : "0.0.0.0";
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
   }, () => {
     log(`serving on port ${port}`);
   });

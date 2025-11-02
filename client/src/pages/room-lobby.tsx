@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Wand2, Copy, Check } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import duelIconPath from "@assets/image_1760081444104.png";
 import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
@@ -33,7 +32,6 @@ export default function RoomLobby() {
   const [createdRoomId, setCreatedRoomId] = useState("");
   const [showRoomDialog, setShowRoomDialog] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
 
   const createRoomMutation = useMutation({
     mutationFn: async () => {
@@ -54,11 +52,8 @@ export default function RoomLobby() {
       setShowRoomDialog(true);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Ошибка",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост
+      console.warn(error.message);
     },
   });
 
@@ -87,11 +82,8 @@ export default function RoomLobby() {
       setLocation(`/rooms/${data.roomId}/role-selection`);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Ошибка",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост
+      console.warn(error.message);
     },
   });
 
@@ -107,10 +99,7 @@ export default function RoomLobby() {
     await navigator.clipboard.writeText(createdRoomId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({
-      title: "Скопировано!",
-      description: "ID комнаты скопирован в буфер обмена",
-    });
+    // Убраны всплывающие оповещения: не показываем тост
   };
 
   const handleEnterRoom = () => {

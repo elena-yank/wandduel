@@ -422,83 +422,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         }
       }
 
-      // Require minimum 50% accuracy for recognition (more lenient threshold)
-      if (!bestMatch || bestMatch.accuracy < 50) {
-        // Save pending attempt data (will be saved to history when round completes)
-        if (spellType === "attack") {
-          await storage.updateGameSession(sessionId, {
-            pendingAttackPlayerId: playerId,
-            pendingAttackSpellId: bestMatch?.spell.id || null,
-            pendingAttackGesture: gesture,
-            pendingAttackAccuracy: bestMatch?.accuracy || 0
-          });
-        } else {
-          await storage.updateGameSession(sessionId, {
-            pendingCounterPlayerId: playerId,
-            pendingCounterSpellId: bestMatch?.spell.id || null,
-            pendingCounterGesture: gesture,
-            pendingCounterAccuracy: bestMatch?.accuracy || 0
-          });
-        }
-        
-        // If in counter phase and no spell matched, it's wrong defense
-        if (spellType === "counter") {
-          return res.json({
-            recognized: false,
-            wrongDefenseUsed: true,
-            spell: bestMatch?.spell || null,
-            message: "Неверная защита! Вы использовали неправильное движение.",
-            accuracy: bestMatch?.accuracy || 0
-          });
-        }
-        
-        // Check if the best match is a spell that has already been used
-        if (bestMatch && spellType === "attack") {
-          const usedSpellIds = playerId === 1
-            ? (session.player1UsedAttackSpells as string[] || [])
-            : (session.player2UsedAttackSpells as string[] || []);
-          
-          if (usedSpellIds.includes(bestMatch.spell.id)) {
-            return res.json({
-              recognized: false,
-              message: "Это заклинание уже было использовано. Пожалуйста, используйте другое заклинание.",
-              accuracy: bestMatch.accuracy
-            });
-          }
-        }
-        
+      // If no match at all, return not recognized
+      if (!bestMatch) {
         return res.json({
           recognized: false,
-          message: "Жест не распознан. Попробуйте нарисовать точнее.",
-          accuracy: bestMatch?.accuracy || 0
+          message: "Жест не распознан.",
+          accuracy: 0
         });
       }
 
-      // Find all successful matches (>= 50% accuracy) for attack spells (more lenient threshold)
-      const successfulMatches = spellMatches.filter((m: any) => m.accuracy >= ATTACK_SUCCESS_THRESHOLD);
-      
-      // If multiple successful attack spells match, return them all for user to choose
-      if (spellType === "attack" && successfulMatches.length > 1) {
-        // Save pending data with first match as default (will be updated when user chooses)
-        const firstMatch = successfulMatches[0];
-        await storage.updateGameSession(sessionId, {
-          pendingAttackPlayerId: playerId,
-          pendingAttackSpellId: firstMatch.spell.id,
-          pendingAttackGesture: gesture,
-          pendingAttackAccuracy: firstMatch.accuracy
-        });
-        
-        return res.json({
-          recognized: true,
-          multipleMatches: true,
-          matches: successfulMatches.map((m: any) => ({
-            spell: m.spell,
-            accuracy: m.accuracy
-          })),
-          gesture, // Return gesture so frontend can pass it to save-spell-attempt
-          message: "Multiple spells match this gesture. Please choose one."
-        });
-      }
+      // Do not present multiple-match selection; proceed with best match automatically
 
       // Single match or counter spell - proceed normally
       const selectedSpell = bestMatch.spell;
@@ -538,14 +471,13 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           pendingAttackSpellId: selectedSpell.id,
           pendingAttackGesture: gesture,
           pendingAttackAccuracy: selectedAccuracy,
-          currentPhase: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
-          lastAttackSpellId: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? selectedSpell.id : session.lastAttackSpellId,
-          lastAttackAccuracy: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? selectedAccuracy : session.lastAttackAccuracy,
+          // Always pass turn to defender regardless of accuracy
+          currentPhase: "counter",
+          lastAttackSpellId: selectedSpell.id,
+          lastAttackAccuracy: selectedAccuracy,
           // Update timer fields when switching to counter phase
-          ...(selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? {
-            roundStartTime: new Date().toISOString(),
-            currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1)
-          } : {}),
+          roundStartTime: new Date().toISOString(),
+          currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1),
           // Clear lastCompleted data when new attack starts (so previous round dialog data is removed)
           lastCompletedRoundNumber: null,
           lastCompletedAttackSpellId: null,
@@ -565,34 +497,42 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         }
         
         await storage.updateGameSession(sessionId, updateData);
+
+        // Record the attack attempt immediately (single attempt regardless of accuracy)
+        await storage.createGestureAttempt({
+          sessionId,
+          playerId,
+          spellId: selectedSpell.id,
+          drawnGesture: gesture,
+          accuracy: selectedAccuracy,
+          successful: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD,
+          roundNumber: session.currentRound || 1,
+          isBonusRound: session.isBonusRound || false
+        });
       } else {
-        // Counter spell - save pending data first
+        // Counter spell
+        // If accuracy is below 50%, treat as "needs redraw" and do NOT record or auto-complete
+        if (selectedAccuracy < 50) {
+          return res.json({
+            recognized: false,
+            message: "Попробуйте перерисовать жест точнее",
+            accuracy: selectedAccuracy
+          });
+        }
+
+        // Save pending data first
         await storage.updateGameSession(sessionId, {
           pendingCounterPlayerId: playerId,
           pendingCounterSpellId: selectedSpell.id,
           pendingCounterGesture: gesture,
           pendingCounterAccuracy: selectedAccuracy
         });
-
-        // Auto-complete round after counter spell is cast
-          if (selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD) {
-          // Save both attack and counter attempts to history
+        
+        // Auto-complete round after counter spell is cast (single attempt only)
           const currentRound = session.currentRound || 1;
           const attemptIsBonusRound = session.isBonusRound || false;
           
-          // Save attack attempt from pending data
-          if (session.pendingAttackSpellId && session.pendingAttackPlayerId) {
-            await storage.createGestureAttempt({
-              sessionId,
-              playerId: session.pendingAttackPlayerId,
-              spellId: session.pendingAttackSpellId,
-              drawnGesture: session.pendingAttackGesture as Point[] || [],
-              accuracy: session.pendingAttackAccuracy || 0,
-              successful: (session.pendingAttackAccuracy || 0) >= ATTACK_SUCCESS_THRESHOLD,
-              roundNumber: currentRound,
-              isBonusRound: attemptIsBonusRound
-            });
-          }
+          // Attack attempt already recorded during attack phase
 
           // Save counter attempt
           await storage.createGestureAttempt({
@@ -601,7 +541,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             spellId: selectedSpell.id,
             drawnGesture: gesture,
             accuracy: selectedAccuracy,
-            successful: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD && isValidCounter,
+            successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && isValidCounter,
             roundNumber: currentRound,
             isBonusRound: attemptIsBonusRound
           });
@@ -670,7 +610,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             lastAttackSpellId: null,
             lastAttackAccuracy: null
           });
-        }
+        
       }
 
       res.json({
@@ -679,7 +619,9 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         accuracy: selectedAccuracy,
         isValidCounter,
         wrongDefenseUsed,
-            successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && (spellType === "attack" || isValidCounter)
+        successful: spellType === "attack"
+          ? (selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD)
+          : (selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && isValidCounter)
       });
 
       // Broadcast gesture recognition via WebSocket
@@ -690,7 +632,9 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           spell: selectedSpell,
           accuracy: selectedAccuracy,
           phase: spellType,
-          successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && (spellType === "attack" || isValidCounter)
+          successful: spellType === "attack"
+            ? (selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD)
+            : (selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && isValidCounter)
         });
       }
 
@@ -734,14 +678,22 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         pendingAttackSpellId: spellId,
         pendingAttackGesture: gesture,
         pendingAttackAccuracy: accuracy,
-        currentPhase: accuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
-        lastAttackSpellId: accuracy >= ATTACK_SUCCESS_THRESHOLD ? spellId : session.lastAttackSpellId,
-        lastAttackAccuracy: accuracy >= ATTACK_SUCCESS_THRESHOLD ? accuracy : session.lastAttackAccuracy,
+        // Always pass turn to defender regardless of accuracy
+        currentPhase: "counter",
+        lastAttackSpellId: spellId,
+        lastAttackAccuracy: accuracy,
         // Update timer fields when switching to counter phase
-        ...(accuracy >= ATTACK_SUCCESS_THRESHOLD ? {
-          roundStartTime: new Date().toISOString(),
-          currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1)
-        } : {})
+        roundStartTime: new Date().toISOString(),
+        currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1),
+        // Clear lastCompleted data when new attack starts
+        lastCompletedRoundNumber: null,
+        lastCompletedAttackSpellId: null,
+        lastCompletedAttackAccuracy: null,
+        lastCompletedAttackGesture: null,
+        lastCompletedCounterSpellId: null,
+        lastCompletedCounterAccuracy: null,
+        lastCompletedCounterGesture: null,
+        lastCompletedCounterSuccess: null
       };
       
       // Update player's used attack spells
@@ -751,9 +703,19 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         updateData.player2UsedAttackSpells = updatedUsedSpells;
       }
       
-      // Save pending attempt data (will be saved to history when round completes)
-      // This is always attack phase (multiple matches only happen for attack spells)
+      // Save pending attempt data and immediately record attempt
       await storage.updateGameSession(sessionId, updateData);
+
+      await storage.createGestureAttempt({
+        sessionId,
+        playerId,
+        spellId,
+        drawnGesture: gesture,
+        accuracy,
+        successful: accuracy >= ATTACK_SUCCESS_THRESHOLD,
+        roundNumber: session.currentRound || 1,
+        isBonusRound: session.isBonusRound || false
+      });
       
       // Broadcast that an attack was selected/saved so other clients refresh session
       const wsServer = (global as any).wsServer;

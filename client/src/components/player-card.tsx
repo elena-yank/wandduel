@@ -314,7 +314,7 @@ export default function PlayerCard({
                       className={cn(
                         "px-2 py-1 rounded text-xs border transition-all flex items-center gap-1",
                         round.spell || !round.successful ? "opacity-100" : "opacity-30 border-dashed",
-                        !round.successful ? "border-destructive/50" : round.spell ? (
+                        (!round.successful && round.accuracy >= 50) ? "border-destructive/50" : round.spell ? (
                           !houseTheme && (player === 1 ? "border-primary/30" : "border-accent/30")
                         ) : "border-border/30",
                         round.spell && onSpellClick && "cursor-pointer hover:scale-105 hover:shadow-md"
@@ -322,17 +322,15 @@ export default function PlayerCard({
                       style={houseTheme && round.spell && round.successful ? {
                         borderColor: houseTheme.borderColor + "4D"
                       } : undefined}
-                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)${!round.successful ? " - Неверная защита" : ""}\n\nКликните, чтобы открыть в гримуаре` : !round.successful ? "Неверная защита" : `Раунд ${round.roundNumber}`}
+                      title={round.spell ? `${round.spell.name} (${round.accuracy}%)\n\nКликните, чтобы открыть в гримуаре` : `Раунд ${round.roundNumber}`}
                     >
                       {round.spell ? (
                         <>
-                          {!round.successful && (
-                            <X className="w-3 h-3 text-destructive" />
-                          )}
+                          {null}
                           <span 
                             className={cn(
                               "font-serif font-semibold",
-                              round.successful ? (
+                              (round.successful || round.accuracy < 50) ? (
                                 !houseTheme && (player === 1 ? "text-primary" : "text-accent")
                               ) : "text-destructive"
                             )}
@@ -354,8 +352,6 @@ export default function PlayerCard({
                             </span>
                           )}
                         </>
-                      ) : !round.successful ? (
-                        <span className="text-destructive text-lg">❌</span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}

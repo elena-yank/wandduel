@@ -36,5 +36,10 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    hmr: {
+      clientPort: parseInt(process.env.PORT || '5000', 10),
+      host: '127.0.0.1',
+      protocol: 'ws'
+    },
   },
 });

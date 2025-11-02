@@ -3,13 +3,11 @@ import { useLocation, useRoute } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function RoleSelection() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/rooms/:roomId/role-selection");
-  const { toast } = useToast();
   const [isJoining, setIsJoining] = useState(false);
 
   const roomId = params?.roomId;
@@ -27,11 +25,8 @@ export default function RoleSelection() {
 
   const handleJoin = async (role: "player" | "spectator") => {
     if (!roomId) {
-      toast({
-        title: "Ошибка",
-        description: "ID комнаты не найден",
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост
+      console.warn("ID комнаты не найден");
       return;
     }
 
@@ -61,11 +56,8 @@ export default function RoleSelection() {
         const error = await joinRes.json();
         
         if (error.canJoinAsSpectator) {
-          toast({
-            title: "Игра заполнена",
-            description: error.message,
-            variant: "destructive",
-          });
+          // Убраны всплывающие оповещения: не показываем тост
+          console.warn(error.message);
           setIsJoining(false);
           return;
         }
@@ -86,11 +78,8 @@ export default function RoleSelection() {
       // Redirect to arena for this room
       setLocation(`/rooms/${roomId}/arena`);
     } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: error instanceof Error ? error.message : "Не удалось присоединиться к игре",
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост
+      console.warn(error instanceof Error ? error.message : "Не удалось присоединиться к игре");
     } finally {
       setIsJoining(false);
     }

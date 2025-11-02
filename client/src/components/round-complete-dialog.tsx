@@ -24,6 +24,7 @@ export default function RoundCompleteDialog({
   const counterSpellName = session?.lastCompletedCounterSpellId
     ? allSpells.find(s => s.id === session.lastCompletedCounterSpellId)?.name
     : "Не выполнено";
+  const isLowCounterAccuracy = (session?.lastCompletedCounterAccuracy || 0) < 50;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,9 +58,11 @@ export default function RoundCompleteDialog({
           </div>
           
           <div className={`rounded-lg p-2 border ${
-            session?.lastCompletedCounterSuccess
-              ? 'bg-green-500/10 border-green-500/20'
-              : 'bg-red-500/10 border-red-500/20'
+            isLowCounterAccuracy
+              ? 'bg-muted/10 border-border/20'
+              : (session?.lastCompletedCounterSuccess
+                  ? 'bg-green-500/10 border-green-500/20'
+                  : 'bg-red-500/10 border-red-500/20')
           }`}>
             <p className="text-xs text-muted-foreground mb-1">Защищающийся</p>
             <div className="flex items-center gap-2">
@@ -67,12 +70,10 @@ export default function RoundCompleteDialog({
                 <p className="font-serif font-bold text-foreground text-sm">
                   {counterSpellName}
                 </p>
-                <p className={`text-xs ${session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <p className={`text-xs ${isLowCounterAccuracy ? 'text-muted-foreground' : (session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}`}>
                   Точность: {session?.lastCompletedCounterAccuracy || 0}%
                 </p>
-                <p className={`text-xs font-semibold mt-1 ${session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {session?.lastCompletedCounterSuccess ? '✓ Правильная защита' : '✗ Неудачная попытка защиты'}
-                </p>
+                {null}
               </div>
               {counterGesture && counterGesture.length > 0 ? (
                 <div className="flex items-center justify-center">

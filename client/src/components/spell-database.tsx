@@ -53,7 +53,7 @@ const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({
       className={`bg-background/50 rounded-lg p-4 border transition-all ${
         isCounter ? "border-accent/20 hover:border-accent/40" : "border-destructive/20 hover:border-destructive/40"
       } ${
-        highlightedSpellId === spell.id ? "ring-4 ring-[#FFD700] shadow-2xl shadow-[#FFD700]/50 scale-105" : ""
+        highlightedSpellId === spell.id ? "ring-1 ring-[#FFD700] shadow-2xl shadow-[#FFD700]/50 scale-105" : ""
       }`}
       data-testid={`spell-card-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
     >

@@ -12,7 +12,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { cn } from "@/lib/utils";
 import GesturePreview from "@/components/gesture-preview";
@@ -23,6 +22,7 @@ import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_176008
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
+import { useToast } from "@/hooks/use-toast";
 
 const houseIcons: Record<string, string> = {
   gryffindor: gryffindorIcon,
@@ -77,6 +77,18 @@ export default function DuelArena() {
   const [pendingGesture, setPendingGesture] = useState<Point[] | null>(null);
   const [showSpellChoice, setShowSpellChoice] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
+  // Snapshot of last completed round data to keep dialog content stable while open
+  const [lastCompletedSnapshot, setLastCompletedSnapshot] = useState<{
+    lastCompletedRoundNumber?: number | null;
+    lastCompletedAttackSpellId?: string | null;
+    lastCompletedAttackAccuracy?: number | null;
+    lastCompletedAttackGesture?: Point[] | null;
+    lastCompletedCounterSpellId?: string | null;
+    lastCompletedCounterAccuracy?: number | null;
+    lastCompletedCounterGesture?: Point[] | null;
+    lastCompletedCounterSuccess?: boolean | null;
+    isBonusRound?: boolean | null;
+  } | null>(null);
   const [showScrollToCanvas, setShowScrollToCanvas] = useState(false);
   const [highlightSpellId, setHighlightSpellId] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -84,10 +96,10 @@ export default function DuelArena() {
   const [serverTime, setServerTime] = useState<number>(Date.now());
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [isTimerActive, setIsTimerActive] = useState(false);
-  const { toast } = useToast();
   const canvasRef = useRef<GestureCanvasRef>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const spellDatabaseRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   const roundCompleteShownForRound = useRef<string | null>(null);
   const dismissedDialogForRound = useRef<string | null>(null); // Track when user dismisses dialog
   const previousRoundRef = useRef<number | null>(null); // Track previous round number
@@ -104,18 +116,9 @@ export default function DuelArena() {
       
       // Handle real-time updates
       if (message.type === 'session_update') {
-        // Query invalidation is handled in the hook, but we can add custom logic here
-        if (message.updateType === 'round_completed') {
-          toast({
-            title: "Раунд завершен",
-            description: "Результаты раунда обновлены",
-          });
-        } else if (message.updateType === 'gesture_recognized') {
-          toast({
-            title: "Жест распознан",
-            description: `Игрок ${message.data?.playerId} использовал заклинание`,
-          });
-        }
+        // Убраны всплывающие оповещения: не показываем тосты на событиях
+        // При необходимости можно добавить ненавязчивое логирование
+        // console.log('Session update:', message.updateType)
       }
     },
     onConnect: () => {
@@ -251,18 +254,12 @@ export default function DuelArena() {
         return;
       }
 
-      // Handle wrong defense used - show toast and set counter result
-      if (result.wrongDefenseUsed) {
-        const description = result.spell?.name 
-          ? `Вы использовали ${result.spell.name}, но это не защищает от данной атаки.`
-          : "Вы использовали неправильное заклинание.";
-          
+      // Handle wrong defense used - show toast, but suppress for very low accuracy (<50%)
+      if (result.wrongDefenseUsed && (result.accuracy ?? 0) >= 50) {
         toast({
-          title: "Неверная защита!",
-          description,
-          variant: "destructive",
+          title: "Неверное заклинание",
+          description: "Использована неверная защита против текущей атаки",
         });
-        
         // Set failed counter result
         setCounterResult({
           recognized: true,
@@ -292,22 +289,26 @@ export default function DuelArena() {
         // Clear canvas after successful recognition
         canvasRef.current?.clearCanvas();
       } else {
-        toast({
-          title: "Spell Recognition",
-          description: result.message || "Try drawing the gesture more precisely",
-          variant: "destructive",
-        });
+        // Show essential failure toasts only for needed cases
+        const msg = result.message || "";
+        const isDuplicateAttack = msg.includes("уже было использовано");
+        const isRetryHint = msg.includes("Попробуйте перерисовать жест точнее");
+
+        // Skip hint-only message to reduce noise
+        if (!isRetryHint) {
+          toast({
+            title: isDuplicateAttack ? "Атака уже использована" : "Заклинание не опознано",
+            description: msg || "Попробуйте другое заклинание или перерисуйте жест",
+          });
+        }
         
         // Clear canvas after failed recognition
         canvasRef.current?.clearCanvas();
       }
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to recognize gesture",
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост ошибки
+      console.warn("Failed to recognize gesture");
     },
   });
 
@@ -331,11 +332,8 @@ export default function DuelArena() {
       setShowRoundComplete(false);
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to complete round",
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост ошибки
+      console.warn("Failed to complete round");
     },
   });
 
@@ -566,17 +564,14 @@ export default function DuelArena() {
         const sessionData = await res.json();
         setCurrentSessionId(sessionData.id);
       } catch (error) {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось загрузить сессию",
-          variant: "destructive",
-        });
+        // Убраны всплывающие оповещения: не показываем тост ошибки
+        console.warn("Не удалось загрузить сессию");
         setLocation("/");
       }
     };
 
     fetchSession();
-  }, [roomId, setLocation, toast]);
+  }, [roomId, setLocation]);
 
   // Track scroll position to show/hide scroll-to-canvas button
   useEffect(() => {
@@ -612,11 +607,7 @@ export default function DuelArena() {
   const handleGestureComplete = (gesture: Point[]) => {
     // Check if user is spectator
     if (userRole === "spectator") {
-      toast({
-        title: "Наблюдатель",
-        description: "Наблюдатели не могут рисовать заклинания",
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещания: просто игнорируем попытку рисовать
       return;
     }
 
@@ -630,22 +621,14 @@ export default function DuelArena() {
         const attacker = isOddRound ? 1 : 2;
         const activePlayerRole = activePlayer === attacker ? "Атакующий" : "Защищающийся";
         
-        toast({
-          title: "Не ваш ход",
-          description: `Сейчас ходит ${activePlayerRole}`,
-          variant: "destructive",
-        });
+        // Убраны всплывающие оповещения: не показываем тост, просто выходим
         return;
       }
     }
 
     setLastGesture(gesture);
     if (gesture.length < 1) {
-      toast({
-        title: "Invalid Gesture",
-        description: "Please draw a gesture to cast a spell",
-        variant: "destructive",
-      });
+      // Убраны всплывающие оповещения: не показываем тост
       return;
     }
 
@@ -659,9 +642,21 @@ export default function DuelArena() {
     // Show dialog if we have lastCompletedRoundNumber and haven't shown/dismissed this round yet
     if (session?.lastCompletedRoundNumber && !showRoundComplete) {
       const roundKey = `${session.lastCompletedRoundNumber}`;
-      
+
       // Only show if we haven't shown for this round AND user hasn't dismissed it
       if (roundCompleteShownForRound.current !== roundKey && dismissedDialogForRound.current !== roundKey) {
+        // Take a snapshot of the last completed data so the dialog doesn't change
+        setLastCompletedSnapshot({
+          lastCompletedRoundNumber: session.lastCompletedRoundNumber,
+          lastCompletedAttackSpellId: session.lastCompletedAttackSpellId,
+          lastCompletedAttackAccuracy: session.lastCompletedAttackAccuracy,
+          lastCompletedAttackGesture: session.lastCompletedAttackGesture as Point[] | null,
+          lastCompletedCounterSpellId: session.lastCompletedCounterSpellId,
+          lastCompletedCounterAccuracy: session.lastCompletedCounterAccuracy,
+          lastCompletedCounterGesture: session.lastCompletedCounterGesture as Point[] | null,
+          lastCompletedCounterSuccess: session.lastCompletedCounterSuccess,
+          isBonusRound: session.isBonusRound ?? null,
+        });
         setShowRoundComplete(true);
         roundCompleteShownForRound.current = roundKey;
       }
@@ -1055,17 +1050,25 @@ export default function DuelArena() {
                             <div className="flex items-center gap-2 flex-1">
                               <GesturePreview gesture={defenseHistory?.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <p className={cn(
-                                  "text-xs font-semibold truncate",
-                                  !defenseHistory?.successful && "text-destructive"
-                                )} style={defenseHistory?.successful ? {
-                                  color: defenderId === 1 ? player1Color : player2Color
-                                } : undefined}>
-                                  {defenseHistory?.spell?.name || "Unknown"}
-                                  {!defenseHistory?.successful && " ❌"}
-                                </p>
+                                {(() => {
+                                  const lowAcc = (defenseHistory?.accuracy ?? 0) < 50;
+                                  return (
+                                    <p
+                                      className={cn(
+                                        "text-xs font-semibold truncate",
+                                        (!defenseHistory?.successful && !lowAcc) && "text-destructive"
+                                      )}
+                                      style={(defenseHistory?.successful || lowAcc) ? {
+                                        color: defenderId === 1 ? player1Color : player2Color
+                                      } : undefined}
+                                    >
+                                      {defenseHistory?.spell?.name || "Unknown"}
+                                      {(!defenseHistory?.successful && !lowAcc) && " ❌"}
+                                    </p>
+                                  );
+                                })()}
                                 <p className="text-xs text-muted-foreground">
-                                  {defenderId === 1 ? player1Name : player2Name} - {defenseHistory?.accuracy}%
+                                  {defenderId === 1 ? player1Name : player2Name} - {defenseHistory?.accuracy != null ? defenseHistory.accuracy : "—"}%
                                 </p>
                               </div>
                               <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
@@ -1235,16 +1238,6 @@ export default function DuelArena() {
             <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-serif font-bold text-foreground">Примени свое заклинание</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-muted/20 hover:bg-muted/40"
-                  disabled={userRole === "spectator"}
-                  onClick={() => canvasRef.current?.clearCanvas()}
-                  data-testid="button-clear-canvas"
-                >
-                  Стереть
-                </Button>
               </div>
               
               {/* Show waiting message for Player 1 when Player 2 hasn't joined yet */}
@@ -1272,31 +1265,34 @@ export default function DuelArena() {
                 </div>
               )}
               
-              {userRole === "player" && actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer() && (
-                <div className="text-center text-sm text-muted-foreground mt-2">
-                  {(() => {
-                    const currentPlayer = getCurrentPlayer();
-                    const currentRound = session?.currentRound || 1;
-                    const isOddRound = currentRound % 2 === 1;
-                    const isBonusRound = session?.isBonusRound || false;
-                    const attacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
-                    const currentPlayerRole = currentPlayer === attacker ? "Атакующий" : "Защищающийся";
-                    return `Сейчас ходит ${currentPlayerRole}`;
-                  })()}
-                </div>
-              )}
-              
-              <div className="mt-4">
-                <Button
-                  onClick={() => handleGestureComplete(lastGesture)}
-                  disabled={lastGesture.length < 3 || recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer())}
-                  className="w-full glow-primary"
-                  data-testid="button-recognize-spell"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {recognizeGestureMutation.isPending ? "Recognizing..." : "Опознать заклинание"}
-                </Button>
+              <div className="text-center text-sm text-muted-foreground mt-2">
+                {(() => {
+                  // Единый статус по фазе: в фазе атаки — атакующий, в фазе защиты — защищающийся
+                  const phase = roundPhase; // синхронизируется с session.currentPhase
+                  const currentRound = session?.currentRound || 1;
+                  const isOddRound = currentRound % 2 === 1;
+                  const isBonusRound = session?.isBonusRound || false;
+                  const attacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+                  const defender = isBonusRound ? 2 : (isOddRound ? 2 : 1);
+                  const active = phase === "counter" ? defender : attacker;
+                  const actionText = phase === "counter" ? "защищайся!" : "атакуй!";
+                  const name = active === 1 ? player1Name : player2Name;
+                  const house = active === 1 ? player1?.house : player2?.house;
+                  const color = house ? houseColors[house as keyof typeof houseColors] : undefined;
+                  return (
+                    <>
+                      <span
+                        className="wave-underline"
+                        key={`${phase}-${active}-${currentRound}-${isBonusRound ? 1 : 0}`}
+                        style={color ? ({ color, ['--house-color' as any]: color } as any) : undefined}
+                      >
+                        {name}
+                      </span>, {actionText}
+                    </>
+                  );
+                })()}
               </div>
+
             </CardContent>
           </Card>
         </div>
@@ -1397,16 +1393,20 @@ export default function DuelArena() {
             const completedRound = session?.lastCompletedRoundNumber || 1;
             const roundKey = `${completedRound}`;
             dismissedDialogForRound.current = roundKey;
+            // Clear snapshot once dialog is dismissed
+            setLastCompletedSnapshot(null);
           }
           setShowRoundComplete(open);
         }}
-        session={session}
+        session={lastCompletedSnapshot ? { ...session, ...lastCompletedSnapshot } as any : session}
         allSpells={allSpells}
         onContinue={() => {
           const completedRound = session?.lastCompletedRoundNumber || 1;
           const roundKey = `${completedRound}`;
           dismissedDialogForRound.current = roundKey;
           setShowRoundComplete(false);
+          // Clear snapshot when user continues
+          setLastCompletedSnapshot(null);
         }}
       />
 

@@ -342,3 +342,86 @@
     padding-top: 0.5rem !important;
   }
 }
+
+/* Sparkle (пыльца) вокруг имени активного игрока */
+@keyframes spark1 {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.7); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(10px, -8px) scale(0.1); }
+}
+
+@keyframes spark2 {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.7); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-12px, 6px) scale(0.1); }
+}
+
+.sparkle {
+  position: relative;
+}
+
+.sparkle::before,
+.sparkle::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--house-color, #ffffff);
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px var(--house-color, #ffffff));
+}
+
+.sparkle::before {
+  top: -0.35em;
+  left: -0.25em;
+  animation: spark1 750ms ease-out;
+}
+
+.sparkle::after {
+  bottom: -0.35em;
+  right: -0.35em;
+  animation: spark2 820ms ease-out 60ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle::before,
+  .sparkle::after { animation: none !important; }
+}
+
+/* Волна‑подчёркивание под именем (градиент слева направо) */
+@keyframes underlineWave {
+  0%   { opacity: 0; background-position: -120% 0; }
+  10%  { opacity: 1; }
+  100% { opacity: 0; background-position: 120% 0; }
+}
+
+.wave-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.wave-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2em;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--house-color, #ffffff) 40%, black 0%) 18%,
+    var(--house-color, #ffffff) 50%,
+    color-mix(in oklab, var(--house-color, #ffffff) 40%, black 0%) 82%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: underlineWave 900ms ease-out;
+  filter: drop-shadow(0 0 2px var(--house-color, #ffffff));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-underline::after { animation: none !important; }
+}
