@@ -24,7 +24,8 @@ export default function RoundCompleteDialog({
   const counterSpellName = session?.lastCompletedCounterSpellId
     ? allSpells.find(s => s.id === session.lastCompletedCounterSpellId)?.name
     : "Не выполнено";
-  const isLowCounterAccuracy = (session?.lastCompletedCounterAccuracy || 0) < 50;
+  // Align low accuracy threshold with success logic (57%)
+  const isLowCounterAccuracy = (session?.lastCompletedCounterAccuracy || 0) < 57;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +49,11 @@ export default function RoundCompleteDialog({
                 <p className="text-xs text-primary">
                   Точность: {session?.lastCompletedAttackAccuracy || 0}%
                 </p>
+                {typeof session?.lastCompletedAttackTimeSpent === 'number' ? (
+                  <p className="text-xs text-muted-foreground">
+                    Время: {session?.lastCompletedAttackTimeSpent} сек
+                  </p>
+                ) : null}
               </div>
               {attackGesture && attackGesture.length > 0 ? (
                 <div className="flex items-center justify-center">
@@ -73,7 +79,11 @@ export default function RoundCompleteDialog({
                 <p className={`text-xs ${isLowCounterAccuracy ? 'text-muted-foreground' : (session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}`}>
                   Точность: {session?.lastCompletedCounterAccuracy || 0}%
                 </p>
-                {null}
+                {typeof session?.lastCompletedCounterTimeSpent === 'number' ? (
+                  <p className="text-xs text-muted-foreground">
+                    Время: {session?.lastCompletedCounterTimeSpent} сек
+                  </p>
+                ) : null}
               </div>
               {counterGesture && counterGesture.length > 0 ? (
                 <div className="flex items-center justify-center">

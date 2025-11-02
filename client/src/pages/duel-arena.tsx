@@ -217,6 +217,7 @@ export default function DuelArena() {
     successful: boolean;
     drawnGesture: Point[];
     isBonusRound?: boolean;
+    timeSpentSeconds?: number;
   }>>({
     queryKey: ["/api/sessions", currentSessionId, "spell-history"],
     queryFn: async () => {
@@ -803,7 +804,8 @@ export default function DuelArena() {
             accuracy: rawAccuracy,
             successful: rawAccuracy >= 57,
             drawnGesture: (session.pendingAttackGesture as Point[]) || [],
-            isBonusRound: session.isBonusRound || false
+            isBonusRound: session.isBonusRound || false,
+            timeSpentSeconds: session.pendingAttackTimeSpent || undefined
           }
         ];
       }
@@ -823,7 +825,8 @@ export default function DuelArena() {
             accuracy: rawAccuracy,
             successful: rawAccuracy >= 57,
             drawnGesture: (session.pendingCounterGesture as Point[]) || [],
-            isBonusRound: session.isBonusRound || false
+            isBonusRound: session.isBonusRound || false,
+            timeSpentSeconds: session.pendingCounterTimeSpent || undefined
           }
         ];
       }
@@ -1054,6 +1057,9 @@ export default function DuelArena() {
                               <p className="text-xs text-muted-foreground">
                                 {attackerId === 1 ? player1Name : player2Name} - {attackHistory?.accuracy}%
                               </p>
+                              {typeof attackHistory?.timeSpentSeconds === 'number' && (
+                                <p className="text-[11px] text-muted-foreground">Время: {attackHistory.timeSpentSeconds} сек</p>
+                              )}
                             </div>
                             <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
                               <span className="text-xs font-bold" style={{
@@ -1070,7 +1076,8 @@ export default function DuelArena() {
                               <GesturePreview gesture={defenseHistory?.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
                                 {(() => {
-                                  const lowAcc = (defenseHistory?.accuracy ?? 0) < 50;
+                                  // Consider low accuracy if below the success threshold (57%)
+                                  const lowAcc = (defenseHistory?.accuracy ?? 0) < 57;
                                   return (
                                     <p
                                       className={cn(
@@ -1089,6 +1096,9 @@ export default function DuelArena() {
                                 <p className="text-xs text-muted-foreground">
                                   {defenderId === 1 ? player1Name : player2Name} - {defenseHistory?.accuracy != null ? defenseHistory.accuracy : "—"}%
                                 </p>
+                                {typeof defenseHistory?.timeSpentSeconds === 'number' && (
+                                  <p className="text-[11px] text-muted-foreground">Время: {defenseHistory.timeSpentSeconds} сек</p>
+                                )}
                               </div>
                               <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
                                 <span className="text-xs font-bold" style={{

@@ -348,7 +348,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             accuracy: attempt.accuracy,
             successful: attempt.successful,
             drawnGesture: attempt.drawnGesture,
-            isBonusRound: attempt.isBonusRound || false
+            isBonusRound: attempt.isBonusRound || false,
+            timeSpentSeconds: attempt.timeSpentSeconds ?? null
           };
         })
       );
@@ -491,6 +492,10 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
 
       // Save pending attempt data (will be saved to history when round completes)
       if (spellType === "attack") {
+        // Compute time spent in attack phase
+        const now = new Date();
+        const attackStart = new Date(session.roundStartTime || now);
+        const attackTimeSpent = Math.max(0, Math.floor((now.getTime() - attackStart.getTime()) / 1000));
         // Update used spells for this player
         const usedSpellIds = playerId === 1
           ? (session.player1UsedAttackSpells as string[] || [])
@@ -507,6 +512,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           pendingAttackSpellId: selectedSpell.id,
           pendingAttackGesture: gesture,
           pendingAttackAccuracy: selectedAccuracy,
+          pendingAttackTimeSpent: attackTimeSpent,
           // Always pass turn to defender regardless of accuracy
           currentPhase: "counter",
           lastAttackSpellId: selectedSpell.id,
@@ -543,7 +549,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           accuracy: selectedAccuracy,
           successful: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD,
           roundNumber: session.currentRound || 1,
-          isBonusRound: session.isBonusRound || false
+          isBonusRound: session.isBonusRound || false,
+          timeSpentSeconds: attackTimeSpent
         });
       } else {
         // Counter spell
@@ -556,12 +563,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           });
         }
 
-        // Save pending data first
+        // Compute time spent in counter phase and save pending data first
+        const now = new Date();
+        const counterStart = new Date(session.roundStartTime || now);
+        const counterTimeSpent = Math.max(0, Math.floor((now.getTime() - counterStart.getTime()) / 1000));
         await storage.updateGameSession(sessionId, {
           pendingCounterPlayerId: playerId,
           pendingCounterSpellId: selectedSpell.id,
           pendingCounterGesture: gesture,
-          pendingCounterAccuracy: selectedAccuracy
+          pendingCounterAccuracy: selectedAccuracy,
+          pendingCounterTimeSpent: counterTimeSpent
         });
         
         // Auto-complete round after counter spell is cast (single attempt only)
@@ -579,7 +590,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             accuracy: selectedAccuracy,
             successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && isValidCounter,
             roundNumber: currentRound,
-            isBonusRound: attemptIsBonusRound
+            isBonusRound: attemptIsBonusRound,
+            timeSpentSeconds: counterTimeSpent
           });
 
           // Update scores - only 1 point per round to player with higher accuracy
@@ -637,19 +649,23 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             lastCompletedAttackSpellId: session.pendingAttackSpellId,
             lastCompletedAttackAccuracy: session.pendingAttackAccuracy,
             lastCompletedAttackGesture: session.pendingAttackGesture,
+            lastCompletedAttackTimeSpent: session.pendingAttackTimeSpent ?? null,
             lastCompletedCounterSpellId: selectedSpell.id,
             lastCompletedCounterAccuracy: selectedAccuracy,
             lastCompletedCounterGesture: gesture,
             lastCompletedCounterSuccess: counterSuccessful,
+            lastCompletedCounterTimeSpent: counterTimeSpent,
             // Clear pending data
             pendingAttackPlayerId: null,
             pendingAttackSpellId: null,
             pendingAttackGesture: null,
             pendingAttackAccuracy: null,
+            pendingAttackTimeSpent: null,
             pendingCounterPlayerId: null,
             pendingCounterSpellId: null,
             pendingCounterGesture: null,
             pendingCounterAccuracy: null,
+            pendingCounterTimeSpent: null,
             lastAttackSpellId: null,
             lastAttackAccuracy: null
           });
@@ -716,11 +732,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         updatedUsedSpells.push(spellId);
       }
       
+      // Compute time spent in attack phase up to this saved attempt
+      const now = new Date();
+      const attackStart = new Date(session.roundStartTime || now);
+      const attackTimeSpent = Math.max(0, Math.floor((now.getTime() - attackStart.getTime()) / 1000));
       const updateData: Partial<GameSession> = {
         pendingAttackPlayerId: playerId,
         pendingAttackSpellId: spellId,
         pendingAttackGesture: gesture,
         pendingAttackAccuracy: accuracy,
+        pendingAttackTimeSpent: attackTimeSpent,
         // Always pass turn to defender regardless of accuracy
         currentPhase: "counter",
         lastAttackSpellId: spellId,
@@ -757,7 +778,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         accuracy,
         successful: accuracy >= ATTACK_SUCCESS_THRESHOLD,
         roundNumber: session.currentRound || 1,
-        isBonusRound: session.isBonusRound || false
+        isBonusRound: session.isBonusRound || false,
+        timeSpentSeconds: attackTimeSpent
       });
       
       // Broadcast that an attack was selected/saved so other clients refresh session
@@ -902,7 +924,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           drawnGesture: session.pendingAttackGesture,
           accuracy: session.pendingAttackAccuracy ?? 0,
     successful: (session.pendingAttackAccuracy ?? 0) >= ATTACK_SUCCESS_THRESHOLD,
-          isBonusRound: session.isBonusRound || false
+          isBonusRound: session.isBonusRound || false,
+          timeSpentSeconds: session.pendingAttackTimeSpent ?? null
         });
         await storage.createGestureAttempt(attackAttemptData);
         console.log("Attack attempt saved!");
@@ -921,7 +944,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           drawnGesture: session.pendingCounterGesture,
           accuracy: session.pendingCounterAccuracy ?? 0,
     successful: counterSuccess && (session.pendingCounterAccuracy ?? 0) >= ATTACK_SUCCESS_THRESHOLD,
-          isBonusRound: session.isBonusRound || false
+          isBonusRound: session.isBonusRound || false,
+          timeSpentSeconds: session.pendingCounterTimeSpent ?? null
         });
         await storage.createGestureAttempt(counterAttemptData);
         console.log("Counter attempt saved!");
@@ -1058,10 +1082,12 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         pendingAttackSpellId: null,
         pendingAttackGesture: null,
         pendingAttackAccuracy: null,
+        pendingAttackTimeSpent: null,
         pendingCounterPlayerId: null,
         pendingCounterSpellId: null,
         pendingCounterGesture: null,
-        pendingCounterAccuracy: null
+        pendingCounterAccuracy: null,
+        pendingCounterTimeSpent: null
       };
 
       const updatedSession = await storage.updateGameSession(sessionId, updates);

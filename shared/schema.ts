@@ -44,19 +44,23 @@ export const gameSessions = pgTable("game_sessions", {
   pendingAttackSpellId: varchar("pending_attack_spell_id"),
   pendingAttackGesture: jsonb("pending_attack_gesture"),
   pendingAttackAccuracy: integer("pending_attack_accuracy"),
+  pendingAttackTimeSpent: integer("pending_attack_time_spent"), // seconds
   pendingCounterPlayerId: integer("pending_counter_player_id"),
   pendingCounterSpellId: varchar("pending_counter_spell_id"),
   pendingCounterGesture: jsonb("pending_counter_gesture"),
   pendingCounterAccuracy: integer("pending_counter_accuracy"),
+  pendingCounterTimeSpent: integer("pending_counter_time_spent"), // seconds
   // Last completed round data (for showing round complete dialog)
   lastCompletedRoundNumber: integer("last_completed_round_number"),
   lastCompletedAttackSpellId: varchar("last_completed_attack_spell_id"),
   lastCompletedAttackAccuracy: integer("last_completed_attack_accuracy"),
   lastCompletedAttackGesture: jsonb("last_completed_attack_gesture"),
+  lastCompletedAttackTimeSpent: integer("last_completed_attack_time_spent"), // seconds
   lastCompletedCounterSpellId: varchar("last_completed_counter_spell_id"),
   lastCompletedCounterAccuracy: integer("last_completed_counter_accuracy"),
   lastCompletedCounterGesture: jsonb("last_completed_counter_gesture"),
   lastCompletedCounterSuccess: boolean("last_completed_counter_success"),
+  lastCompletedCounterTimeSpent: integer("last_completed_counter_time_spent"), // seconds
   // Timer synchronization fields
   roundStartTime: text("round_start_time"), // ISO timestamp when current round/phase started
   timeLimit: integer("time_limit").default(60), // Time limit in seconds for current phase
@@ -87,6 +91,7 @@ export const gestureAttempts = pgTable("gesture_attempts", {
   accuracy: integer("accuracy").notNull(), // Percentage 0-100
   successful: boolean("successful").default(false),
   isBonusRound: boolean("is_bonus_round").default(false), // Whether this attempt was in a bonus round
+  timeSpentSeconds: integer("time_spent_seconds"), // seconds spent for this attempt
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
