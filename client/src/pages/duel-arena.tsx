@@ -962,30 +962,31 @@ export default function DuelArena() {
               <div className="space-y-2">
                 {(() => {
                   // Group spell history by round number and bonus round status
-                  const roundsMap = new Map<string, { attack: any; defense: any }>();
-                  
+                  // Store per-player histories; attacker/defender depends on round parity
+                  const roundsMap = new Map<string, { player1: any; player2: any }>();
+
                   spellHistory.forEach(history => {
                     const key = `${history.roundNumber}-${history.isBonusRound ? 'bonus' : 'regular'}`;
                     if (!roundsMap.has(key)) {
-                      roundsMap.set(key, { attack: null, defense: null });
+                      roundsMap.set(key, { player1: null, player2: null });
                     }
-                    
+
                     const round = roundsMap.get(key)!;
                     if (history.playerId === 1) {
-                      round.attack = history;
-                    } else {
-                      round.defense = history;
+                      round.player1 = history;
+                    } else if (history.playerId === 2) {
+                      round.player2 = history;
                     }
                   });
-                  
+
                   // Convert map to array and sort
                   const rounds = Array.from(roundsMap.entries()).map(([key, round]) => {
                     const [roundNum, type] = key.split('-');
                     return {
                       roundNumber: parseInt(roundNum),
                       isBonusRound: type === 'bonus',
-                      attack: round.attack,
-                      defense: round.defense
+                      player1: round.player1,
+                      player2: round.player2
                     };
                   }).sort((a, b) => {
                     // Sort by round number first, then regular rounds before bonus rounds
@@ -994,26 +995,28 @@ export default function DuelArena() {
                     }
                     return a.isBonusRound ? 1 : -1;
                   });
-                  
-                  return rounds.map(({ roundNumber, isBonusRound, attack: attackHistory, defense: defenseHistory }) => {
-                    if (!attackHistory) return null;
-                    
+
+                  return rounds.map(({ roundNumber, isBonusRound, player1, player2 }) => {
+                    // Without attacker history, skip round
+                    if (!player1 && !player2) return null;
+
                     const isOddRound = roundNumber % 2 === 1;
                     // In bonus rounds, Player 1 always attacks, Player 2 always defends
                     const attackerId = isBonusRound ? 1 : (isOddRound ? 1 : 2);
                     const defenderId = isBonusRound ? 2 : (isOddRound ? 2 : 1);
-                    
-                    // Calculate points for attack and defense
-                    // Determine point winner based on higher accuracy
-                    const attackAccuracy = attackHistory.accuracy || 0;
+
+                    const attackHistory = attackerId === 1 ? player1 : player2;
+                    const defenseHistory = defenderId === 1 ? player1 : player2;
+                    if (!attackHistory) return null;
+
+                    // Determine accuracies
+                    const attackAccuracy = attackHistory?.accuracy || 0;
                     const defenseAccuracy = defenseHistory?.accuracy || 0;
-                    
-                    // For attack points: 1 point if attacker had higher accuracy
-                    const attackPoints = attackHistory.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackAccuracy > defenseAccuracy) : 0;
-                    
-                    // For defense points: 1 point if defender had higher accuracy
+
+                    // Points calculation
+                    const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackAccuracy > defenseAccuracy) : 0;
                     const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseAccuracy > attackAccuracy) : 0;
-                    
+
                     return (
                       <div key={`${roundNumber}-${isBonusRound ? 'bonus' : 'regular'}`} className="bg-background/50 rounded-lg p-2 border border-border/30 text-left">
                         <div className="flex items-center gap-3">
@@ -1024,18 +1027,18 @@ export default function DuelArena() {
                               `Раунд ${roundNumber}`
                             )}
                           </div>
-                          
+
                           {/* Attack */}
                           <div className="flex items-center gap-2 flex-1">
-                            <GesturePreview gesture={attackHistory.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
+                            <GesturePreview gesture={attackHistory?.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold truncate" style={{
                                 color: attackerId === 1 ? player1Color : player2Color
                               }}>
-                                {attackHistory.spell?.name || "Unknown"}
+                                {attackHistory?.spell?.name || "Unknown"}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {attackerId === 1 ? player1Name : player2Name} - {attackHistory.accuracy}%
+                                {attackerId === 1 ? player1Name : player2Name} - {attackHistory?.accuracy}%
                               </p>
                             </div>
                             <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
@@ -1046,23 +1049,23 @@ export default function DuelArena() {
                               </span>
                             </div>
                           </div>
-                          
+
                           {/* Defense */}
                           {defenseHistory && (
                             <div className="flex items-center gap-2 flex-1">
-                              <GesturePreview gesture={defenseHistory.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
+                              <GesturePreview gesture={defenseHistory?.drawnGesture || []} className="w-10 h-10 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className={cn(
                                   "text-xs font-semibold truncate",
-                                  !defenseHistory.successful && "text-destructive"
-                                )} style={defenseHistory.successful ? {
+                                  !defenseHistory?.successful && "text-destructive"
+                                )} style={defenseHistory?.successful ? {
                                   color: defenderId === 1 ? player1Color : player2Color
                                 } : undefined}>
-                                  {defenseHistory.spell?.name || "Unknown"}
-                                  {!defenseHistory.successful && " ❌"}
+                                  {defenseHistory?.spell?.name || "Unknown"}
+                                  {!defenseHistory?.successful && " ❌"}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {defenderId === 1 ? player1Name : player2Name} - {defenseHistory.accuracy}%
+                                  {defenderId === 1 ? player1Name : player2Name} - {defenseHistory?.accuracy}%
                                 </p>
                               </div>
                               <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
