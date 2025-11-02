@@ -278,6 +278,42 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
     }
   });
 
+  // Remove participant from session
+  app.delete("/api/sessions/:sessionId/participants/:participantId", async (req, res) => {
+    try {
+      const { sessionId, participantId } = req.params as { sessionId: string; participantId: string };
+
+      // Ensure session exists
+      const session = await storage.getGameSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      // Find participant in session
+      const participants = await storage.getSessionParticipants(sessionId);
+      const participant = participants.find((p: any) => p.id === participantId);
+      if (!participant) {
+        return res.status(404).json({ message: "Participant not found" });
+      }
+
+      await storage.removeParticipant(participantId);
+
+      // Broadcast leave event via WebSocket so clients refresh lists
+      const wsServer = (global as any).wsServer;
+      if (wsServer) {
+        wsServer.broadcastSessionUpdate(sessionId, 'participant_left', {
+          participantId,
+          role: participant.role,
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to remove participant:', error);
+      res.status(500).json({ message: "Failed to remove participant" });
+    }
+  });
+
   // Get game session
   app.get("/api/sessions/:id", async (req, res) => {
     try {

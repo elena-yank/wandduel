@@ -14,6 +14,7 @@ import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_176008
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
+import { GAME_VERSION } from "@shared/config";
 
 const houses = [
   { id: "gryffindor", name: "Гриффиндор", icon: gryffindorIcon, color: "#EF4444", shadowColor: "239, 68, 68" },
@@ -109,7 +110,8 @@ export default function RoomLobby() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
         <Card className="spell-card border-border/20 w-full max-w-2xl">
           <CardContent className="p-8">
             <div className="text-center mb-8">

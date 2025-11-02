@@ -72,14 +72,17 @@ export function useWebSocket(options: UseWebSocketOptions) {
                 queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId, "spell-history"] });
              } else if (message.updateType === 'gesture_recognized') {
                 queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
-              } else if (message.updateType === 'player_joined' || message.updateType === 'spectator_joined') {
-                // Invalidate participants query to show new player/spectator
-                queryClient.invalidateQueries({ queryKey: ['/api/sessions', sessionId, 'participants'] });
-                queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
-              } else if (message.updateType === 'attack_saved') {
-                // Player selected which attack to use from multiple matches
-                queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
-              }
+             } else if (message.updateType === 'player_joined' || message.updateType === 'spectator_joined') {
+               // Invalidate participants query to show new player/spectator
+               queryClient.invalidateQueries({ queryKey: ['/api/sessions', sessionId, 'participants'] });
+               queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
+             } else if (message.updateType === 'participant_left') {
+               // Invalidate participants list after someone leaves
+               queryClient.invalidateQueries({ queryKey: ['/api/sessions', sessionId, 'participants'] });
+             } else if (message.updateType === 'attack_saved') {
+               // Player selected which attack to use from multiple matches
+               queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionId] });
+             }
              break;
            
             case 'server_time':

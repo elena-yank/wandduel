@@ -23,6 +23,7 @@ import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_17600830
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
 import { useToast } from "@/hooks/use-toast";
+import { GAME_VERSION } from "@shared/config";
 
 const houseIcons: Record<string, string> = {
   gryffindor: gryffindorIcon,
@@ -289,19 +290,24 @@ export default function DuelArena() {
         // Clear canvas after successful recognition
         canvasRef.current?.clearCanvas();
       } else {
-        // Show essential failure toasts only for needed cases
+        // Failure handling: show "not recognized" only when it was NOT recognized
         const msg = result.message || "";
         const isDuplicateAttack = msg.includes("уже было использовано");
-        const isRetryHint = msg.includes("Попробуйте перерисовать жест точнее");
 
-        // Skip hint-only message to reduce noise
-        if (!isRetryHint) {
+        if (isDuplicateAttack) {
+          // Explicit duplicate-attack case keeps its own message
           toast({
-            title: isDuplicateAttack ? "Атака уже использована" : "Заклинание не опознано",
+            title: "Атака уже использована",
+            description: msg || undefined,
+          });
+        } else if (!result.recognized) {
+          // Spell was not recognized by the system
+          toast({
+            title: "Заклинание не опознано",
             description: msg || "Попробуйте другое заклинание или перерисуйте жест",
           });
         }
-        
+
         // Clear canvas after failed recognition
         canvasRef.current?.clearCanvas();
       }
@@ -663,15 +669,27 @@ export default function DuelArena() {
     }
   }, [session?.lastCompletedRoundNumber, showRoundComplete]);
 
-  const handleLeave = () => {
-    if (roomId) {
-      // Clear room-scoped localStorage keys
-      localStorage.removeItem(`userRole:${roomId}`);
-      localStorage.removeItem(`currentSessionId:${roomId}`);
-      localStorage.removeItem(`participantId:${roomId}`);
-      localStorage.removeItem(`playerNumber:${roomId}`);
+  const handleLeave = async () => {
+    try {
+      const participantId = roomId ? localStorage.getItem(`participantId:${roomId}`) : null;
+      const sessionIdToUse = currentSessionId;
+      if (participantId && sessionIdToUse) {
+        await apiRequest("DELETE", `/api/sessions/${sessionIdToUse}/participants/${participantId}`);
+        // Ensure participants list refreshes quickly
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions", sessionIdToUse, "participants"] });
+      }
+    } catch (err) {
+      console.error("Failed to leave session:", err);
+    } finally {
+      if (roomId) {
+        // Clear room-scoped localStorage keys
+        localStorage.removeItem(`userRole:${roomId}`);
+        localStorage.removeItem(`currentSessionId:${roomId}`);
+        localStorage.removeItem(`participantId:${roomId}`);
+        localStorage.removeItem(`playerNumber:${roomId}`);
+      }
+      setLocation("/");
     }
-    setLocation("/");
   };
 
   const handleSpellChoice = async (choice: { spell: Spell; accuracy: number }) => {
@@ -867,6 +885,7 @@ export default function DuelArena() {
 
     return (
       <div className="relative z-10 min-h-screen p-4 md:p-8 flex items-center justify-center">
+        <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
         <Card className="spell-card border-border/20 max-w-2xl w-full">
           <CardContent className="p-12 text-center">
             <div className="flex justify-center mb-6">
@@ -1107,6 +1126,7 @@ export default function DuelArena() {
     <div className="relative z-10 min-h-screen p-4 md:p-8">
       {/* Header */}
       <header className="text-center mb-8 md:mb-12 relative">
+        <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-angst mb-4 tracking-wider bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
           МАГИЧЕСКАЯ ДУЭЛЬ
         </h1>
@@ -1183,7 +1203,21 @@ export default function DuelArena() {
                 <Separator orientation="vertical" className="h-6" />
                 <div className="flex items-center gap-2">
                   <Eye className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground">Наблюдатели: {spectators.length}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {`Наблюдатели (${spectators.length}): `}
+                    {spectators.length > 0 ? (
+                      spectators.map((s, i) => (
+                        <span
+                          key={s.id}
+                          style={{ color: s.house ? (houseColors as any)[s.house] : undefined }}
+                        >
+                          {s.userName}{i < spectators.length - 1 ? ', ' : ''}
+                        </span>
+                      ))
+                    ) : (
+                      '—'
+                    )}
+                  </span>
                 </div>
               </div>
               

@@ -7,3 +7,6 @@ export const COUNTER_SUCCESS_THRESHOLD = 52; // slightly stricter counter thresh
 
 // Rounds and scoring
 export const TOTAL_ROUNDS = 10;
+
+// Game version
+export const GAME_VERSION = "0.1.0";
