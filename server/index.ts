@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeSpells } from "./init-spells";
 import { initializeDatabase } from "./init-database";
+import { GameWebSocketServer } from "./websocket";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -52,24 +53,40 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Create database pool
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL environment variable is not set");
-    process.exit(1);
+  let storage;
+  
+  // Force in-memory storage if FORCE_MEMORY_STORAGE is set, or if DATABASE_URL is not set
+  if (process.env.FORCE_MEMORY_STORAGE === "true" || !process.env.DATABASE_URL) {
+    // Use in-memory storage
+    console.log("Using in-memory storage");
+    const { MemStorage } = await import("./storage");
+    storage = new MemStorage();
+  } else {
+    // Use PostgreSQL storage when DATABASE_URL is provided and FORCE_MEMORY_STORAGE is not set
+    console.log("Using PostgreSQL storage");
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    
+    const { createPostgresStorage } = await import("./storage");
+    storage = createPostgresStorage(pool);
+    
+    try {
+      // Initialize database
+      await initializeDatabase(pool);
+    } catch (error) {
+      console.error("Failed to initialize database:", error);
+      process.exit(1);
+    }
   }
-  
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  
-  // Create storage instance with the pool
-  const { createPostgresStorage } = await import("./storage");
-  const storage = createPostgresStorage(pool);
   
   const server = await registerRoutes(app, storage);
   
+  // Initialize WebSocket server
+  const wsServer = new GameWebSocketServer(server);
+  
+  // Make WebSocket server available globally for broadcasting updates
+  (global as any).wsServer = wsServer;
+  
   try {
-    // Initialize database
-    await initializeDatabase(pool);
-    
     // Initialize spells
     await initializeSpells(storage);
   } catch (error) {

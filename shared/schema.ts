@@ -57,6 +57,10 @@ export const gameSessions = pgTable("game_sessions", {
   lastCompletedCounterAccuracy: integer("last_completed_counter_accuracy"),
   lastCompletedCounterGesture: jsonb("last_completed_counter_gesture"),
   lastCompletedCounterSuccess: boolean("last_completed_counter_success"),
+  // Timer synchronization fields
+  roundStartTime: text("round_start_time"), // ISO timestamp when current round/phase started
+  timeLimit: integer("time_limit").default(60), // Time limit in seconds for current phase
+  currentPlayerTurn: integer("current_player_turn"), // Which player's turn it is (1 or 2)
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 

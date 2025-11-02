@@ -19,6 +19,11 @@ function calculateGestureAccuracy(drawnGesture: Point[], targetPattern: Point[])
 }
 
 export async function registerRoutes(app: Express, storage: IStorage): Promise<Server> {
+  // WebSocket test page
+  app.get("/websocket-test", (req, res) => {
+    res.sendFile(require('path').join(process.cwd(), 'websocket-test.html'));
+  });
+
   // Get all spells
   app.get("/api/spells", async (_req, res) => {
     try {
@@ -134,7 +139,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
   app.post("/api/sessions", async (req, res) => {
     try {
       const sessionData = insertGameSessionSchema.parse(req.body || {});
-      const session = await storage.createGameSession(sessionData);
+      
+      // Initialize timer fields for new session
+      const sessionWithTimer = {
+        ...sessionData,
+        roundStartTime: new Date().toISOString(),
+        timeLimit: 60,
+        currentPlayerTurn: 1 // Player 1 starts first
+      };
+      
+      const session = await storage.createGameSession(sessionWithTimer);
       res.json(session);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -193,6 +207,26 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
 
         const participant = await storage.addParticipant(participantData);
+        
+        // If this is the second player joining, initialize the timer for the game to start
+        if (playerNumber === 2) {
+          await storage.updateGameSession(sessionId, {
+            roundStartTime: new Date().toISOString(),
+            timeLimit: 60,
+            currentPlayerTurn: 1 // Player 1 starts first
+          });
+        }
+        
+        // Broadcast player join event via WebSocket
+        const wsServer = (global as any).wsServer;
+        if (wsServer) {
+          wsServer.broadcastSessionUpdate(sessionId, 'player_joined', {
+            participant,
+            playerCount: players.length + 1,
+            gameReady: playerNumber === 2
+          });
+        }
+        
         return res.json(participant);
       }
 
@@ -207,6 +241,15 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       });
 
       const participant = await storage.addParticipant(participantData);
+      
+      // Broadcast spectator join event via WebSocket
+      const wsServer = (global as any).wsServer;
+      if (wsServer) {
+        wsServer.broadcastSessionUpdate(sessionId, 'spectator_joined', {
+          participant
+        });
+      }
+      
       res.json(participant);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -214,6 +257,14 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       }
       res.status(500).json({ message: "Failed to join session" });
     }
+  });
+
+  // Get server time for synchronization
+  app.get("/api/server-time", (req, res) => {
+    res.json({ 
+      serverTime: new Date().toISOString(),
+      timestamp: Date.now()
+    });
   });
 
   // Get session participants
@@ -490,6 +541,11 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           currentPhase: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
           lastAttackSpellId: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? selectedSpell.id : session.lastAttackSpellId,
           lastAttackAccuracy: selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? selectedAccuracy : session.lastAttackAccuracy,
+          // Update timer fields when switching to counter phase
+          ...(selectedAccuracy >= ATTACK_SUCCESS_THRESHOLD ? {
+            roundStartTime: new Date().toISOString(),
+            currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1)
+          } : {}),
           // Clear lastCompleted data when new attack starts (so previous round dialog data is removed)
           lastCompletedRoundNumber: null,
           lastCompletedAttackSpellId: null,
@@ -626,6 +682,18 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && (spellType === "attack" || isValidCounter)
       });
 
+      // Broadcast gesture recognition via WebSocket
+      const wsServer = (global as any).wsServer;
+      if (wsServer) {
+        wsServer.broadcastSessionUpdate(sessionId, 'gesture_recognized', {
+          playerId,
+          spell: selectedSpell,
+          accuracy: selectedAccuracy,
+          phase: spellType,
+          successful: selectedAccuracy >= COUNTER_SUCCESS_THRESHOLD && (spellType === "attack" || isValidCounter)
+        });
+      }
+
     } catch (error) {
       console.error("Gesture recognition error:", error);
       res.status(500).json({ message: "Failed to recognize gesture" });
@@ -666,9 +734,14 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         pendingAttackSpellId: spellId,
         pendingAttackGesture: gesture,
         pendingAttackAccuracy: accuracy,
-      currentPhase: accuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
-      lastAttackSpellId: accuracy >= ATTACK_SUCCESS_THRESHOLD ? spellId : session.lastAttackSpellId,
-      lastAttackAccuracy: accuracy >= ATTACK_SUCCESS_THRESHOLD ? accuracy : session.lastAttackAccuracy
+        currentPhase: accuracy >= ATTACK_SUCCESS_THRESHOLD ? "counter" : session.currentPhase,
+        lastAttackSpellId: accuracy >= ATTACK_SUCCESS_THRESHOLD ? spellId : session.lastAttackSpellId,
+        lastAttackAccuracy: accuracy >= ATTACK_SUCCESS_THRESHOLD ? accuracy : session.lastAttackAccuracy,
+        // Update timer fields when switching to counter phase
+        ...(accuracy >= ATTACK_SUCCESS_THRESHOLD ? {
+          roundStartTime: new Date().toISOString(),
+          currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1)
+        } : {})
       };
       
       // Update player's used attack spells
@@ -682,10 +755,112 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       // This is always attack phase (multiple matches only happen for attack spells)
       await storage.updateGameSession(sessionId, updateData);
       
+      // Broadcast that an attack was selected/saved so other clients refresh session
+      const wsServer = (global as any).wsServer;
+      if (wsServer) {
+        wsServer.broadcastSessionUpdate(sessionId, 'attack_saved', {
+          playerId,
+          spellId,
+          accuracy,
+          gesture,
+        });
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error("Save spell attempt error:", error);
       res.status(500).json({ message: "Failed to save spell attempt" });
+    }
+  });
+
+  // Check for timeout and handle it
+  app.post("/api/sessions/:sessionId/check-timeout", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await storage.getGameSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: "Game session not found" });
+      }
+
+      // Don't process timeouts for completed games
+      if (session.gameStatus === "completed") {
+        return res.json({ 
+          timeout: false, 
+          timeElapsed: 0,
+          timeRemaining: 0,
+          message: "Game is already completed"
+        });
+      }
+
+      // Calculate time elapsed since round start
+      const now = new Date();
+      const roundStartTime = new Date(session.roundStartTime || now);
+      const timeElapsed = Math.floor((now.getTime() - roundStartTime.getTime()) / 1000);
+      const timeLimit = session.timeLimit || 60;
+      
+      if (timeElapsed >= timeLimit) {
+        // Timeout occurred - determine winner based on current phase
+        const currentRound = session.currentRound || 1;
+        const isOddRound = currentRound % 2 === 1;
+        const isBonusRound = session.isBonusRound || false;
+        
+        let player1Accuracy = 0;
+        let player2Accuracy = 0;
+        
+        if (session.currentPhase === "attack") {
+          // Attacker timed out, defender wins
+          const attacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+          if (attacker === 1) {
+            player2Accuracy = 100; // Player 2 wins
+          } else {
+            player1Accuracy = 100; // Player 1 wins
+          }
+        } else {
+          // Defender timed out, attacker wins
+          const attacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+          if (attacker === 1) {
+            player1Accuracy = 100; // Player 1 wins
+          } else {
+            player2Accuracy = 100; // Player 2 wins
+          }
+        }
+        
+        // Complete the round due to timeout
+        const completeRoundResponse = await fetch(`http://localhost:${process.env.PORT || 5000}/api/sessions/${sessionId}/complete-round`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            attackSpellId: null,
+            counterSuccess: false,
+            player1Accuracy,
+            player2Accuracy
+          })
+        });
+        
+        if (completeRoundResponse.ok) {
+          const result = await completeRoundResponse.json();
+          return res.json({ 
+            timeout: true, 
+            timeElapsed,
+            session: result.session,
+            message: "Round completed due to timeout"
+          });
+        } else {
+          return res.status(500).json({ message: "Failed to complete round after timeout" });
+        }
+      }
+      
+      // No timeout yet
+      res.json({ 
+        timeout: false, 
+        timeElapsed,
+        timeRemaining: Math.max(0, timeLimit - timeElapsed)
+      });
+      
+    } catch (error) {
+      console.error("Check timeout error:", error);
+      res.status(500).json({ message: "Failed to check timeout" });
     }
   });
 
@@ -869,6 +1044,10 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         gameStatus,
         isBonusRound,
         bonusRoundWinner,
+        // Update timer fields for new round
+        roundStartTime: new Date().toISOString(),
+        timeLimit: 60,
+        currentPlayerTurn: nextAttacker,
         // Clear pending attempt data
         pendingAttackPlayerId: null,
         pendingAttackSpellId: null,
@@ -881,6 +1060,18 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       };
 
       const updatedSession = await storage.updateGameSession(sessionId, updates);
+      
+      // Broadcast session update via WebSocket
+      const wsServer = (global as any).wsServer;
+      if (wsServer) {
+        wsServer.broadcastSessionUpdate(sessionId, 'round_completed', {
+          session: updatedSession,
+          pointsAwarded: {
+            player1: 0,
+            player2: 0
+          }
+        });
+      }
       
       res.json({
         session: updatedSession,

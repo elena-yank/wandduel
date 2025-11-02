@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BookOpen, Sparkles, Trophy, Info, Users, Eye, LogOut, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWebSocket } from "@/hooks/use-websocket";
 import { cn } from "@/lib/utils";
 import GesturePreview from "@/components/gesture-preview";
 import SpellChoiceDialog from "@/components/spell-choice-dialog";
@@ -79,11 +80,10 @@ export default function DuelArena() {
   const [showScrollToCanvas, setShowScrollToCanvas] = useState(false);
   const [highlightSpellId, setHighlightSpellId] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  // Timer states
-  const [player1TimeLeft, setPlayer1TimeLeft] = useState<number | null>(null);
-  const [player2TimeLeft, setPlayer2TimeLeft] = useState<number | null>(null);
-  const [player1TimerActive, setPlayer1TimerActive] = useState(false);
-  const [player2TimerActive, setPlayer2TimerActive] = useState(false);
+  // Timer states - now synchronized with server
+  const [serverTime, setServerTime] = useState<number>(Date.now());
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [isTimerActive, setIsTimerActive] = useState(false);
   const { toast } = useToast();
   const canvasRef = useRef<GestureCanvasRef>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -91,26 +91,106 @@ export default function DuelArena() {
   const roundCompleteShownForRound = useRef<string | null>(null);
   const dismissedDialogForRound = useRef<string | null>(null); // Track when user dismisses dialog
   const previousRoundRef = useRef<number | null>(null); // Track previous round number
-  
-  // Refs to store current timer states for use in interval callback
-  const player1TimeLeftRef = useRef<number | null>(player1TimeLeft);
-  const player2TimeLeftRef = useRef<number | null>(player2TimeLeft);
-  const player1TimerActiveRef = useRef<boolean>(player1TimerActive);
-  const player2TimerActiveRef = useRef<boolean>(player2TimerActive);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const roomId = params?.roomId;
+
+  // Initialize WebSocket connection only when we have sessionId and userId
+  const { isConnected: wsConnected, connectionError: wsError } = useWebSocket({
+    sessionId: currentSessionId || undefined,
+    userId: userId || undefined,
+    onMessage: (message) => {
+      console.log('WebSocket message in DuelArena:', message);
+      
+      // Handle real-time updates
+      if (message.type === 'session_update') {
+        // Query invalidation is handled in the hook, but we can add custom logic here
+        if (message.updateType === 'round_completed') {
+          toast({
+            title: "Раунд завершен",
+            description: "Результаты раунда обновлены",
+          });
+        } else if (message.updateType === 'gesture_recognized') {
+          toast({
+            title: "Жест распознан",
+            description: `Игрок ${message.data?.playerId} использовал заклинание`,
+          });
+        }
+      }
+    },
+    onConnect: () => {
+      console.log('WebSocket connected in DuelArena');
+    },
+    onDisconnect: () => {
+      console.log('WebSocket disconnected in DuelArena');
+    }
+  });
+
+  // Server time synchronization functions
+  const syncServerTime = async () => {
+    try {
+      const res = await fetch('/api/server-time');
+      const data = await res.json();
+      setServerTime(data.timestamp);
+    } catch (error) {
+      console.error('Failed to sync server time:', error);
+    }
+  };
+
+  const calculateTimeRemaining = (session: GameSession | undefined, currentServerTime?: number) => {
+    if (!session?.roundStartTime || !session?.timeLimit) return null;
+    
+    const roundStartTime = new Date(session.roundStartTime).getTime();
+    const timeLimit = session.timeLimit * 1000; // Convert to milliseconds
+    const currentTime = currentServerTime || serverTime;
+    const elapsed = currentTime - roundStartTime;
+    const remaining = Math.max(0, timeLimit - elapsed);
+    
+    return Math.ceil(remaining / 1000); // Convert back to seconds
+  };
+
+  const checkTimeout = async () => {
+    if (!currentSessionId) return;
+    
+    try {
+      const res = await fetch(`/api/sessions/${currentSessionId}/check-timeout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (data.timeout) {
+        // Server handled the timeout, refresh session data
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+      }
+    } catch (error) {
+      console.error('Failed to check timeout:', error);
+    }
+  };
 
   // Fetch spells
   const { data: allSpells = [] } = useQuery<Spell[]>({
     queryKey: ["/api/spells"],
+    staleTime: Infinity, // Заклинания никогда не меняются
+    gcTime: Infinity, // Держать в кэше навсегда
   });
 
   // Fetch current session
   const { data: session, isLoading: sessionLoading } = useQuery<GameSession>({
     queryKey: ["/api/sessions", currentSessionId],
     enabled: !!currentSessionId,
-    refetchInterval: 2000, // Refresh every 2 seconds to see updates from other players
+    refetchInterval: wsConnected ? false : (data) => {
+      // Если WebSocket подключен, отключаем polling
+      // Иначе используем адаптивные интервалы как fallback
+      if (data?.gameStatus === "active" && (data?.currentPhase === "attack" || data?.currentPhase === "counter")) {
+        return 3000; // 3 секунды во время активной фазы
+      }
+      return 8000; // 8 секунд в остальное время
+    },
   });
+
+  // Debug WebSocket connection status
+  console.log('WebSocket status - sessionId:', currentSessionId, 'userId:', userId, 'wsConnected:', wsConnected, 'wsError:', wsError);
 
   // Fetch session participants
   const { data: participants = [] } = useQuery<SessionParticipant[]>({
@@ -121,7 +201,7 @@ export default function DuelArena() {
       return res.json();
     },
     enabled: !!currentSessionId,
-    refetchInterval: 3000, // Refresh every 3 seconds
+    refetchInterval: wsConnected ? false : 10000, // Отключаем polling если WebSocket активен
   });
 
   // Fetch spell history
@@ -141,7 +221,13 @@ export default function DuelArena() {
       return res.json();
     },
     enabled: !!currentSessionId,
-    refetchInterval: 3000, // Refresh every 3 seconds
+    refetchInterval: wsConnected ? false : (data) => {
+      // История заклинаний обновляется только после завершения раундов
+      if (session?.gameStatus === "completed") {
+        return false; // Не обновлять после завершения игры
+      }
+      return 5000; // 5 секунд во время игры
+    },
   });
 
   // Recognize gesture mutation
@@ -282,121 +368,78 @@ export default function DuelArena() {
   }, [session?.currentPhase]);
 
   // Timer effect - handles countdown logic
+  // Timer synchronization effect
   useEffect(() => {
-    // Clear any existing timers
-    let timer: NodeJS.Timeout | null = null;
+    // Sync server time initially and periodically
+    syncServerTime();
     
-    // Calculate current player within the effect
-    const currentRound = session?.currentRound || 1;
-    const isOddRound = currentRound % 2 === 1;
-    const isBonusRound = session?.isBonusRound || false;
-    let currentPlayer = 1;
-    
-    if (roundPhase === "attack") {
-      currentPlayer = isBonusRound ? 1 : (isOddRound ? 1 : 2);
-    } else {
-      currentPlayer = isBonusRound ? 2 : (isOddRound ? 2 : 1);
-    }
-    
-    // Update previous round ref
-    if (session?.currentRound) {
-      previousRoundRef.current = session.currentRound;
-    }
-    
-    // Reset timers when round changes
-    if (session?.currentRound && previousRoundRef.current !== session.currentRound) {
-      // Reset both timers to 60 seconds when round changes
-      setPlayer1TimeLeft(60);
-      setPlayer2TimeLeft(60);
-    }
-    
-    // Start timer for current player if it's their turn and they can draw
-    if (roundPhase === "attack" || roundPhase === "counter") {
-      if (currentPlayer === 1) {
-        // Activate Player 1 timer and deactivate Player 2 timer
-        // Only start Player 1's timer if both players have joined
-        if (!player1TimerActive && players.length >= 2) {
-          setPlayer1TimerActive(true);
-          setPlayer1TimeLeft(60); // Start with 60 seconds
-        }
-        if (player2TimerActive) {
-          setPlayer2TimerActive(false);
-        }
-      } else if (currentPlayer === 2) {
-        // Activate Player 2 timer and deactivate Player 1 timer
-        if (!player2TimerActive) {
-          setPlayer2TimerActive(true);
-          setPlayer2TimeLeft(60); // Start with 60 seconds
-        }
-        if (player1TimerActive) {
-          setPlayer1TimerActive(false);
-        }
+    // Адаптивная синхронизация времени с учетом WebSocket
+    const getSyncInterval = () => {
+      // Если WebSocket подключен, синхронизируем реже
+      if (wsConnected) {
+        return 60000; // 1 минута при активном WebSocket
       }
       
-      // Start the countdown for the active player
-      // Always start timer interval when in attack or counter phase
-      timer = setInterval(() => {
-        // Update time for current player only if their timer is active and time is > 0
-        if (currentPlayer === 1 && player1TimerActiveRef.current && player1TimeLeftRef.current !== null && player1TimeLeftRef.current > 0) {
-          setPlayer1TimeLeft(prev => (prev !== null ? prev - 1 : null));
-          player1TimeLeftRef.current = player1TimeLeftRef.current !== null ? player1TimeLeftRef.current - 1 : null;
-        } else if (currentPlayer === 2 && player2TimerActiveRef.current && player2TimeLeftRef.current !== null && player2TimeLeftRef.current > 0) {
-          setPlayer2TimeLeft(prev => (prev !== null ? prev - 1 : null));
-          player2TimeLeftRef.current = player2TimeLeftRef.current !== null ? player2TimeLeftRef.current - 1 : null;
-        }
+      // Fallback интервалы без WebSocket
+      if (session?.gameStatus === "active" && (session?.currentPhase === "attack" || session?.currentPhase === "counter")) {
+        return 15000; // 15 секунд во время активной фазы
+      }
+      return 30000; // 30 секунд в остальное время
+    };
+    
+    const syncInterval = setInterval(syncServerTime, getSyncInterval());
+    
+    return () => clearInterval(syncInterval);
+  }, [session?.gameStatus, session?.currentPhase]);
+
+  // Timer management effect
+  useEffect(() => {
+    // Clear existing timer
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    // Calculate current time remaining
+    const remaining = calculateTimeRemaining(session);
+    setTimeRemaining(remaining);
+
+    // Determine if timer should be active
+    const shouldBeActive = (roundPhase === "attack" || roundPhase === "counter") && 
+                          players.length >= 2 && 
+                          remaining !== null && 
+                          remaining > 0 &&
+                          session?.gameStatus !== "completed";
+    
+    setIsTimerActive(shouldBeActive);
+
+    if (shouldBeActive) {
+      // Start timer interval
+      timerIntervalRef.current = setInterval(() => {
+        // Update server time
+        const newServerTime = Date.now();
+        setServerTime(newServerTime);
         
-        // Check if timer has expired for either player
-        if (currentPlayer === 1 && player1TimerActiveRef.current && player1TimeLeftRef.current === 1) {
-          // Player 1's timer expired, Player 2 wins the round
-          toast({
-            title: "Время вышло!",
-            description: `${player2Name} побеждает в этом раунде!`,
-            variant: "default",
-          });
-          
-          // Complete round with Player 2 as winner
-          completeRoundMutation.mutate({
-            attackSpellId: null,
-            counterSuccess: false,
-            player1Accuracy: 0,
-            player2Accuracy: 100
-          });
-        } else if (currentPlayer === 2 && player2TimerActiveRef.current && player2TimeLeftRef.current === 1) {
-          // Player 2's timer expired, Player 1 wins the round
-          toast({
-            title: "Время вышло!",
-            description: `${player1Name} побеждает в этом раунде!`,
-            variant: "default",
-          });
-          
-          // Complete round with Player 1 as winner
-          completeRoundMutation.mutate({
-            attackSpellId: null,
-            counterSuccess: false,
-            player1Accuracy: 100,
-            player2Accuracy: 0
-          });
+        // Check for timeout
+        checkTimeout();
+        
+        // Recalculate remaining time with current server time
+        const newRemaining = calculateTimeRemaining(session, newServerTime);
+        setTimeRemaining(newRemaining);
+        
+        if (newRemaining !== null && newRemaining <= 0) {
+          setIsTimerActive(false);
         }
       }, 1000);
-    } else {
-      // Round is complete, stop all timers
-      setPlayer1TimerActive(false);
-      setPlayer2TimerActive(false);
     }
-    
-    // Cleanup function to clear timer
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [roundPhase, session?.currentRound, session?.isBonusRound, players]);
 
-  // Update timer state refs when timer states change
-  useEffect(() => {
-    player1TimeLeftRef.current = player1TimeLeft;
-    player2TimeLeftRef.current = player2TimeLeft;
-    player1TimerActiveRef.current = player1TimerActive;
-    player2TimerActiveRef.current = player2TimerActive;
-  }, [player1TimeLeft, player2TimeLeft, player1TimerActive, player2TimerActive]);
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [roundPhase, session?.currentRound, session?.roundStartTime, session?.timeLimit, session?.gameStatus, players.length]);
   
   // Reset dialog tracking when round number changes
   useEffect(() => {
@@ -1178,8 +1221,8 @@ export default function DuelArena() {
           showColorPalette={userRole === "player" && actualPlayerNumber === 1 && getCurrentPlayer() === 1}
           currentRound={session?.currentRound || 1}
           isBonusRound={session?.isBonusRound || false}
-          timeLeft={player1TimeLeft}
-          isTimerActive={player1TimerActive && getCurrentPlayer() === 1}
+          timeLeft={timeRemaining || 0}
+          isTimerActive={isTimerActive && getCurrentPlayer() === 1}
           data-testid="player-card-1"
         />
 
@@ -1275,8 +1318,8 @@ export default function DuelArena() {
           showColorPalette={userRole === "player" && actualPlayerNumber === 2 && getCurrentPlayer() === 2}
           currentRound={session?.currentRound || 1}
           isBonusRound={session?.isBonusRound || false}
-          timeLeft={player2TimeLeft}
-          isTimerActive={player2TimerActive && getCurrentPlayer() === 2}
+          timeLeft={timeRemaining || 0}
+          isTimerActive={isTimerActive && getCurrentPlayer() === 2}
           data-testid="player-card-2"
         />
       </div>

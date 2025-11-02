@@ -24,6 +24,7 @@ COPY --from=builder /app/migrations ./migrations
 EXPOSE 8081
 
 ENV NODE_ENV=production
+ENV FORCE_MEMORY_STORAGE=true
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 RUN chown -R appuser:appgroup /app
