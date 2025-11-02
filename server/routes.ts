@@ -579,16 +579,23 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           const bonusRoundWinner = bonusOutcome.bonusRoundWinner;
           const isGameComplete = bonusOutcome.isGameComplete || transition.isGameComplete;
           let gameStatus: "active" | "completed" | "paused" = isGameComplete ? "completed" : "active";
+          // Determine who attacks next
+          const nextAttacker = isBonusRound ? 1 : (nextRound % 2 === 1 ? 1 : 2);
           
           // Advance to next round or complete game
           await storage.updateGameSession(sessionId, {
             currentRound: isBonusRound ? (session.isBonusRound ? currentRound + 1 : 11) : nextRound, // For bonus rounds, start at 11 and increment
             currentPhase: isGameComplete ? null : "attack",
+            currentPlayer: isGameComplete ? (updatedSession.currentPlayer ?? null) : nextAttacker,
             player1Score: player1Score.toString(),
             player2Score: player2Score.toString(),
             gameStatus,
             isBonusRound,
             bonusRoundWinner,
+            // Reset timer for the new attack phase/round
+            roundStartTime: isGameComplete ? (updatedSession.roundStartTime ?? null) : new Date().toISOString(),
+            timeLimit: isGameComplete ? (updatedSession.timeLimit ?? 60) : 60,
+            currentPlayerTurn: isGameComplete ? (updatedSession.currentPlayerTurn ?? null) : nextAttacker,
             // Save last completed round data for dialog display
             lastCompletedRoundNumber: session.isBonusRound ? currentRound : currentRound,
             lastCompletedAttackSpellId: session.pendingAttackSpellId,

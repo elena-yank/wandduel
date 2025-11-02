@@ -736,9 +736,9 @@ export default function DuelArena() {
     // Set highlight
     setHighlightSpellId(spellId);
     
-    // Scroll to spell database
+    // Scroll to spell database instantly to avoid long animation
     if (spellDatabaseRef.current) {
-      spellDatabaseRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      spellDatabaseRef.current.scrollIntoView({ behavior: "auto", block: "start" });
     }
   };
 

@@ -26,17 +26,17 @@ const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({
     if (highlightSpellId) {
       setHighlightedSpellId(highlightSpellId);
       
-      // Scroll to the highlighted spell
+      // Scroll to the highlighted spell (instant to avoid long animation)
       const spellElement = document.getElementById(`spell-${highlightSpellId}`);
       if (spellElement) {
-        spellElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        spellElement.scrollIntoView({ behavior: "auto", block: "center" });
       }
       
-      // Remove highlight after 1 second
+      // Remove highlight after 500ms to avoid sticky focus but keep visibility
       const timer = setTimeout(() => {
         setHighlightedSpellId(null);
         onHighlightComplete?.();
-      }, 1000);
+      }, 500);
       
       return () => clearTimeout(timer);
     }
