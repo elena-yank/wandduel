@@ -1224,7 +1224,7 @@ export default function DuelArena() {
         <div
           ref={exportRef}
           // Размещаем контейнер вне экрана, он видим, но не мешает взаимодействию
-          style={{ position: "fixed", left: -10000, top: 0, width: 1920, background: "linear-gradient(135deg, var(--background) 0%, var(--background) 70%, rgba(88, 28, 135, 0.2) 100%)", padding: 24, pointerEvents: "none", opacity: 0.01, visibility: "visible", zIndex: -1 }}
+          style={{ position: "fixed", left: -10000, top: 0, width: 1920, background: "hsl(259, 74%, 12%)", padding: 24, pointerEvents: "none", opacity: 0.01, visibility: "visible", zIndex: -1 }}
         >
           <div>
             {/* Header */}
