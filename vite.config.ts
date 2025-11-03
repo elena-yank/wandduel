@@ -35,11 +35,25 @@ export default defineConfig({
     fs: {
       strict: true,
       deny: ["**/.*"],
+      allow: [
+        path.resolve(import.meta.dirname),
+        path.resolve(import.meta.dirname, "attached_assets"),
+      ],
     },
-    hmr: {
-      clientPort: parseInt(process.env.PORT || '5000', 10),
-      host: '127.0.0.1',
-      protocol: 'ws'
+    // Proxy API and WebSocket to Express on :5000 to avoid CORS in dev
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/ws": {
+        target: "ws://127.0.0.1:5000",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
     },
+    // Use default HMR settings to avoid invalid clientPort issues in preview
   },
 });

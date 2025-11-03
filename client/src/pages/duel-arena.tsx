@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { toPng } from "html-to-image";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, apiUrl } from "@/lib/queryClient";
 import { type GameSession, type Spell, type Point, type SessionParticipant } from "@shared/schema";
 import GestureCanvas, { type GestureCanvasRef } from "@/components/gesture-canvas";
 import PlayerCard from "@/components/player-card";
@@ -105,6 +106,8 @@ export default function DuelArena() {
   const dismissedDialogForRound = useRef<string | null>(null); // Track when user dismisses dialog
   const previousRoundRef = useRef<number | null>(null); // Track previous round number
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const roomId = params?.roomId;
 
@@ -133,7 +136,7 @@ export default function DuelArena() {
   // Server time synchronization functions
   const syncServerTime = async () => {
     try {
-      const res = await fetch('/api/server-time');
+      const res = await fetch(apiUrl('/api/server-time'));
       const data = await res.json();
       setServerTime(data.timestamp);
     } catch (error) {
@@ -157,7 +160,7 @@ export default function DuelArena() {
     if (!currentSessionId) return;
     
     try {
-      const res = await fetch(`/api/sessions/${currentSessionId}/check-timeout`, {
+      const res = await fetch(apiUrl(`/api/sessions/${currentSessionId}/check-timeout`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -201,7 +204,7 @@ export default function DuelArena() {
     queryKey: ["/api/sessions", currentSessionId, "participants"],
     queryFn: async () => {
       if (!currentSessionId) return [];
-      const res = await fetch(`/api/sessions/${currentSessionId}/participants`);
+      const res = await fetch(apiUrl(`/api/sessions/${currentSessionId}/participants`));
       return res.json();
     },
     enabled: !!currentSessionId,
@@ -222,7 +225,7 @@ export default function DuelArena() {
     queryKey: ["/api/sessions", currentSessionId, "spell-history"],
     queryFn: async () => {
       if (!currentSessionId) return [];
-      const res = await fetch(`/api/sessions/${currentSessionId}/spell-history`);
+      const res = await fetch(apiUrl(`/api/sessions/${currentSessionId}/spell-history`));
       return res.json();
     },
     enabled: !!currentSessionId,
@@ -564,7 +567,7 @@ export default function DuelArena() {
     // Get session for this room
     const fetchSession = async () => {
       try {
-        const res = await fetch(`/api/rooms/${roomId}/session`);
+        const res = await fetch(apiUrl(`/api/rooms/${roomId}/session`));
         if (!res.ok) {
           throw new Error("Session not found");
         }
@@ -886,6 +889,73 @@ export default function DuelArena() {
       ? houseColors[player2.house as keyof typeof houseColors] 
       : undefined;
 
+    const handleSaveResults = async () => {
+      if (!exportRef.current) {
+        toast({ title: "Не удалось подготовить экспорт", description: "Попробуйте ещё раз." });
+        return;
+      }
+      try {
+        setExporting(true);
+        const node = exportRef.current;
+
+        // Сохраняем старые стили и делаем оригинальный контейнер видимым для корректного захвата
+        const prevStyle = {
+          position: node.style.position,
+          left: node.style.left,
+          top: node.style.top,
+          opacity: node.style.opacity,
+          visibility: node.style.visibility,
+          zIndex: node.style.zIndex,
+        };
+        Object.assign(node.style, {
+          position: 'fixed',
+          left: '0px',
+          top: '0px',
+          opacity: '1',
+          visibility: 'visible',
+          zIndex: '99999',
+          pointerEvents: 'none'
+        });
+
+        // Убедиться, что изображения декодированы
+        const imgs = Array.from(node.querySelectorAll('img')) as HTMLImageElement[];
+        await Promise.all(imgs.map((img) => (img.decode ? img.decode().catch(() => {}) : Promise.resolve())));
+
+        // Дождаться рефлоу
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+        const naturalWidth = node.scrollWidth || Math.round(node.getBoundingClientRect().width) || 1920;
+        const naturalHeight = node.scrollHeight || Math.round(node.getBoundingClientRect().height) || 1080;
+
+        const maxHeight = 1080;
+        const scale = Math.min(1, maxHeight / Math.max(1, naturalHeight));
+        const targetWidth = Math.max(1, Math.round(naturalWidth * scale));
+        const targetHeight = Math.max(1, Math.round(naturalHeight * scale));
+
+        const dataUrl = await toPng(node, {
+          cacheBust: true,
+          pixelRatio: 2,
+          width: targetWidth,
+          height: targetHeight,
+        });
+
+        // Возвращаем старые стили
+        Object.assign(node.style, prevStyle);
+
+        const link = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        link.download = `duel-results-${date}.png`;
+        link.href = dataUrl;
+        link.click();
+        toast({ title: "Изображение сохранено", description: "Результаты дуэли экспортированы." });
+      } catch (err) {
+        console.error('Export error:', err);
+        toast({ title: "Ошибка экспорта", description: "Не удалось сохранить изображение.", variant: 'destructive' });
+      } finally {
+        setExporting(false);
+      }
+    };
+
     return (
       <div className="relative z-10 min-h-screen p-4 md:p-8 flex items-center justify-center">
         <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
@@ -1057,16 +1127,20 @@ export default function DuelArena() {
                               <p className="text-xs text-muted-foreground">
                                 {attackerId === 1 ? player1Name : player2Name} - {attackHistory?.accuracy}%
                               </p>
-                              {typeof attackHistory?.timeSpentSeconds === 'number' && (
-                                <p className="text-[11px] text-muted-foreground">Время: {attackHistory.timeSpentSeconds} сек</p>
-                              )}
                             </div>
-                            <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
-                              <span className="text-xs font-bold" style={{
-                                color: attackerId === 1 ? player1Color : player2Color
-                              }}>
-                                {attackPoints > 0 ? attackPoints : "—"}
-                              </span>
+                            <div className="flex-shrink-0 w-12 grid grid-rows-2 gap-1">
+                              <div className="h-5 rounded border border-border/50 flex items-center justify-center bg-transparent">
+                                <span className="text-xs font-bold" style={{
+                                  color: attackerId === 1 ? player1Color : player2Color
+                                }}>
+                                  {attackPoints > 0 ? attackPoints : "—"}
+                                </span>
+                              </div>
+                              <div className="h-5 rounded border border-border/50 flex items-center justify-center bg-transparent">
+                                <span className="text-[11px] text-muted-foreground">
+                                  {typeof attackHistory?.timeSpentSeconds === 'number' ? `${attackHistory.timeSpentSeconds} сек.` : "— сек."}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -1096,16 +1170,20 @@ export default function DuelArena() {
                                 <p className="text-xs text-muted-foreground">
                                   {defenderId === 1 ? player1Name : player2Name} - {defenseHistory?.accuracy != null ? defenseHistory.accuracy : "—"}%
                                 </p>
-                                {typeof defenseHistory?.timeSpentSeconds === 'number' && (
-                                  <p className="text-[11px] text-muted-foreground">Время: {defenseHistory.timeSpentSeconds} сек</p>
-                                )}
                               </div>
-                              <div className="flex-shrink-0 w-10 h-10 rounded border border-border/50 flex items-center justify-center bg-background/30">
-                                <span className="text-xs font-bold" style={{
-                                  color: defenderId === 1 ? player1Color : player2Color
-                                }}>
-                                  {defensePoints > 0 ? defensePoints : "—"}
-                                </span>
+                              <div className="flex-shrink-0 w-12 grid grid-rows-2 gap-1">
+                                <div className="h-5 rounded border border-border/50 flex items-center justify-center bg-transparent">
+                                  <span className="text-xs font-bold" style={{
+                                    color: defenderId === 1 ? player1Color : player2Color
+                                  }}>
+                                    {defensePoints > 0 ? defensePoints : "—"}
+                                  </span>
+                                </div>
+                                <div className="h-5 rounded border border-border/50 flex items-center justify-center bg-transparent">
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {typeof defenseHistory?.timeSpentSeconds === 'number' ? `${defenseHistory.timeSpentSeconds} сек.` : "— сек."}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -1115,6 +1193,19 @@ export default function DuelArena() {
                   });
                 })()}
               </div>
+            </div>
+
+            {/* Save Results Button */}
+            <div className="flex flex-col items-center gap-3 mb-2">
+              <Button
+                onClick={handleSaveResults}
+                className="glow-primary"
+                size="lg"
+                disabled={exporting}
+                data-testid="button-save-results"
+              >
+                {exporting ? "Сохранение..." : "Сохранить результаты"}
+              </Button>
             </div>
 
             <Button 
@@ -1128,6 +1219,138 @@ export default function DuelArena() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Hidden export container: full results without scroll, compact grid */}
+        <div
+          ref={exportRef}
+          // Размещаем контейнер вне экрана, он видим, но не мешает взаимодействию
+          style={{ position: "fixed", left: -10000, top: 0, width: 1920, background: "linear-gradient(135deg, var(--background) 0%, var(--background) 70%, rgba(88, 28, 135, 0.2) 100%)", padding: 24, pointerEvents: "none", opacity: 0.01, visibility: "visible", zIndex: -1 }}
+        >
+          <div>
+            {/* Header */}
+            <div className="flex items-center gap-16 mb-24">
+              <div className="flex items-center gap-12">
+                <img src={duelIconPath} alt="Дуэль" style={{ width: 80, height: 80, objectFit: "contain" }} />
+                <div>
+                  <div style={{ fontSize: 42, fontFamily: "serif", fontWeight: 700 }}>Итоги дуэли</div>
+                  <div style={{ fontSize: 22, color: "#9CA3AF" }}>Всего раундов: {(session.currentRound ?? 1) - 1}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-12" style={{ marginLeft: "auto" }}>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-8 mb-4">
+                    {player1?.house && houseIcons[player1.house] && (
+                      <img src={houseIcons[player1.house]} alt={player1?.house || ""} style={{ width: 40, height: 40, objectFit: "contain" }} />
+                    )}
+                    <div style={{ fontSize: 18, fontWeight: 600, color: player1Color || undefined }}>{player1Name}</div>
+                  </div>
+                  <div style={{ fontSize: 48, fontWeight: 800, color: "#22C55E" }}>{session.player1Score ?? 0}</div>
+                </div>
+                <div style={{ width: 2, height: 80, background: "#E5E7EB" }} />
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-8 mb-4">
+                    {player2?.house && houseIcons[player2.house] && (
+                      <img src={houseIcons[player2.house]} alt={player2?.house || ""} style={{ width: 40, height: 40, objectFit: "contain" }} />
+                    )}
+                    <div style={{ fontSize: 18, fontWeight: 600, color: player2Color || undefined }}>{player2Name}</div>
+                  </div>
+                  <div style={{ fontSize: 48, fontWeight: 800, color: "#F59E0B" }}>{session.player2Score ?? 0}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Compact grid of rounds */}
+            <div className="grid gap-16" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+              {(() => {
+                const roundsMap = new Map<string, { player1: any; player2: any }>();
+
+                spellHistory.forEach(history => {
+                  const key = `${history.roundNumber}-${history.isBonusRound ? 'bonus' : 'regular'}`;
+                  if (!roundsMap.has(key)) {
+                    roundsMap.set(key, { player1: null, player2: null });
+                  }
+
+                  const round = roundsMap.get(key)!;
+                  if (history.playerId === 1) {
+                    round.player1 = history;
+                  } else if (history.playerId === 2) {
+                    round.player2 = history;
+                  }
+                });
+
+                const rounds = Array.from(roundsMap.entries()).map(([key, round]) => {
+                  const [roundNum, type] = key.split('-');
+                  return {
+                    roundNumber: parseInt(roundNum),
+                    isBonusRound: type === 'bonus',
+                    player1: round.player1,
+                    player2: round.player2
+                  };
+                }).sort((a, b) => {
+                  if (a.roundNumber !== b.roundNumber) return a.roundNumber - b.roundNumber;
+                  return a.isBonusRound ? 1 : -1;
+                });
+
+                return rounds.map(({ roundNumber, isBonusRound, player1, player2 }) => {
+                  if (!player1 && !player2) return null;
+                  const isOddRound = roundNumber % 2 === 1;
+                  const attackerId = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+                  const defenderId = isBonusRound ? 2 : (isOddRound ? 2 : 1);
+                  const attackHistory = attackerId === 1 ? player1 : player2;
+                  const defenseHistory = defenderId === 1 ? player1 : player2;
+                  if (!attackHistory) return null;
+
+                  const attackAccuracy = attackHistory?.accuracy || 0;
+                  const defenseAccuracy = defenseHistory?.accuracy || 0;
+                  const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackAccuracy > defenseAccuracy) : 0;
+                  const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseAccuracy > attackAccuracy) : 0;
+
+                  return (
+                    <div key={`${roundNumber}-${isBonusRound ? 'bonus' : 'regular'}`} style={{ border: "1px solid #E5E7EB", borderRadius: 12, padding: 16 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: isBonusRound ? "#F59E0B" : "#6B7280", marginBottom: 10 }}>
+                        {isBonusRound ? "БОНУСНЫЙ" : `Раунд ${roundNumber}`}
+                      </div>
+                      {/* Attack */}
+                      <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 56px", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <GesturePreview gesture={attackHistory?.drawnGesture || []} className="w-12 h-12" />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: attackerId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>{attackHistory?.spell?.name || "Unknown"}</div>
+                          <div style={{ fontSize: 12, color: "#6B7280" }}>{attackerId === 1 ? player1Name : player2Name} — {attackHistory?.accuracy}%</div>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div style={{ border: "1px solid #E5E7EB", borderRadius: 6, width: 48, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent" }}>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: attackerId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>{attackPoints > 0 ? attackPoints : "—"}</span>
+                          </div>
+                          <div style={{ border: "1px solid #E5E7EB", borderRadius: 6, width: 48, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent" }}>
+                            <span style={{ fontSize: 12, color: "#6B7280" }}>{typeof attackHistory?.timeSpentSeconds === 'number' ? `${attackHistory.timeSpentSeconds} сек` : '— сек'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Defense */}
+                      {defenseHistory && (
+                        <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 56px", alignItems: "center", gap: 10 }}>
+                          <GesturePreview gesture={defenseHistory?.drawnGesture || []} className="w-12 h-12" />
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: defenderId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>{defenseHistory?.spell?.name || "Unknown"}{(!defenseHistory?.successful && (defenseHistory?.accuracy ?? 0) >= 57) ? " ❌" : ''}</div>
+                            <div style={{ fontSize: 12, color: "#6B7280" }}>{defenderId === 1 ? player1Name : player2Name} — {defenseHistory?.accuracy != null ? defenseHistory.accuracy : "—"}%</div>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div style={{ border: "1px solid #E5E7EB", borderRadius: 6, width: 48, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent" }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color: defenderId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>{defensePoints > 0 ? defensePoints : "—"}</span>
+                            </div>
+                            <div style={{ border: "1px solid #E5E7EB", borderRadius: 6, width: 48, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent" }}>
+                              <span style={{ fontSize: 12, color: "#6B7280" }}>{typeof defenseHistory?.timeSpentSeconds === 'number' ? `${defenseHistory.timeSpentSeconds} сек` : '— сек'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

@@ -22,6 +22,25 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Development CORS: allow requests from local Vite dev servers
+app.use((req, res, next) => {
+  if (app.get("env") === "development") {
+    const origin = req.headers.origin as string | undefined;
+    const isLocalOrigin = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+    if (isLocalOrigin) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+      res.header("Access-Control-Allow-Credentials", "true");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+      }
+    }
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

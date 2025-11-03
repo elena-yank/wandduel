@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiUrl } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,7 +71,7 @@ export default function RoomLobby() {
       }
       
       // Check if room exists
-      const res = await fetch(`/api/rooms/${joinRoomId}`);
+      const res = await fetch(apiUrl(`/api/rooms/${joinRoomId}`));
       if (!res.ok) {
         throw new Error("Комната не найдена");
       }

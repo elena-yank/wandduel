@@ -1,5 +1,17 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Resolve API base URL depending on environment
+export function apiUrl(path: string): string {
+  if (/^https?:/i.test(path)) return path; // absolute URL passed
+  const isDev = import.meta.env.DEV;
+  const explicitDevOrigin = import.meta.env.VITE_API_ORIGIN as string | undefined;
+  // If no explicit origin in dev, return relative path to use Vite proxy
+  if (isDev && !explicitDevOrigin) return path;
+  const devOrigin = explicitDevOrigin || "http://127.0.0.1:5000";
+  const origin = isDev ? devOrigin : window.location.origin;
+  return `${origin}${path}`;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,11 +24,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "same-origin",
   });
 
   await throwIfResNotOk(res);
@@ -29,8 +41,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
+    const res = await fetch(apiUrl(queryKey.join("/") as string), {
+      credentials: "same-origin",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

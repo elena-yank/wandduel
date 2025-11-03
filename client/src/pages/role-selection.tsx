@@ -3,7 +3,7 @@ import { useLocation, useRoute } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Eye } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiUrl } from "@/lib/queryClient";
 
 export default function RoleSelection() {
   const [, setLocation] = useLocation();
@@ -37,7 +37,7 @@ export default function RoleSelection() {
       const userHouse = localStorage.getItem("userHouse") || "gryffindor";
       
       // Get session for this room
-      const sessionRes = await fetch(`/api/rooms/${roomId}/session`);
+      const sessionRes = await fetch(apiUrl(`/api/rooms/${roomId}/session`));
       if (!sessionRes.ok) {
         throw new Error("Сессия комнаты не найдена");
       }
