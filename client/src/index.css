@@ -343,6 +343,126 @@
   }
 }
 
+/* Safe area padding for phone browsers (top/bottom UI bars) */
+.phone-safe-area {
+  /* Reserve space so nothing important sits under address/navigation bars */
+  padding-top: max(env(safe-area-inset-top, 0px), 48px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 76px);
+  min-height: 100dvh;
+  box-sizing: border-box;
+  scroll-padding-top: max(env(safe-area-inset-top, 0px), 48px);
+  scroll-padding-bottom: max(env(safe-area-inset-bottom, 0px), 76px);
+}
+
+@supports not (padding-top: env(safe-area-inset-top)) {
+  /* Fallback for browsers without env() support */
+  .phone-safe-area {
+    padding-top: 48px;
+    padding-bottom: 76px;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    scroll-padding-top: 48px;
+    scroll-padding-bottom: 76px;
+  }
+}
+
+/* Phone: scale down cards and text for short screens */
+@media (max-height: 740px) and (max-width: 900px) {
+  .phone-safe-area .max-w-7xl {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  .phone-safe-area .grid.gap-6 {
+    gap: 0.75rem !important;
+  }
+  .phone-safe-area .mb-8 {
+    margin-bottom: 0.5rem !important;
+  }
+  .phone-safe-area .spell-card {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  .phone-safe-area .text-xl {
+    font-size: 0.9375rem !important;
+    line-height: 1.5rem !important;
+  }
+  .phone-safe-area .text-lg {
+    font-size: 0.875rem !important;
+    line-height: 1.5rem !important;
+  }
+  .phone-safe-area .w-12 {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+  }
+  .phone-safe-area .w-10 {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+  .phone-safe-area .p-6 {
+    padding: 1rem !important; /* reduce card/content padding */
+  }
+}
+
+@media (max-height: 620px) and (max-width: 900px) {
+  .phone-safe-area .grid.gap-6 {
+    gap: 0.5rem !important;
+  }
+  .phone-safe-area {
+    padding-bottom: 88px; /* extra breathing room on very short screens */
+  }
+  .phone-safe-area .spell-card {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+  .phone-safe-area .text-xl,
+  .phone-safe-area .text-lg {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+  }
+  .phone-safe-area .p-6 {
+    padding: 0.75rem !important;
+  }
+}
+
+/* Extremely short phones: height <= 480px */
+@media (max-height: 480px) and (max-width: 1200px) {
+  .phone-safe-area {
+    padding-bottom: 112px; /* keep cards/buttons well above nav bar */
+  }
+  .phone-safe-area header {
+    margin-bottom: 0.5rem !important;
+  }
+  .phone-safe-area .mb-8 {
+    margin-bottom: 0.25rem !important;
+  }
+  .phone-safe-area .p-6 {
+    padding: 0.5rem !important;
+  }
+  .phone-safe-area .text-2xl {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+  }
+  .phone-safe-area .text-xl {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+  }
+  .phone-safe-area .w-12 {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+  .phone-safe-area .canvas-container canvas {
+    max-height: 220px !important;
+  }
+}
+
+/* Very narrow phones: width <= 380px */
+@media (max-width: 380px) {
+  .phone-safe-area .spell-card {
+    font-size: 0.8125rem !important; /* 13px */
+  }
+  .phone-safe-area .grid.gap-6 {
+    gap: 0.5rem !important;
+  }
+}
+
 /* Sparkle (пыльца) вокруг имени активного игрока */
 @keyframes spark1 {
   0%   { opacity: 0; transform: translate(0, 0) scale(0.7); }

@@ -27,10 +27,10 @@ EXPOSE 5000
 # Production defaults; use DATABASE_URL to enable Postgres
 ENV NODE_ENV=production
 ENV PORT=5000
-ENV FORCE_MEMORY_STORAGE=true
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 RUN chown -R appuser:appgroup /app
 USER appuser
 
-CMD [ "node", "dist/index.js" ]
+# Run migrations on container start if DATABASE_URL is set, then start server
+CMD [ "sh", "-c", "if [ -n \"$DATABASE_URL\" ]; then echo 'Running db:push...'; npm run db:push; else echo 'Skipping db:push (no DATABASE_URL)'; fi; node dist/index.js" ]

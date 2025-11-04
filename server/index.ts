@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeSpells } from "./init-spells";
-import { initializeDatabase } from "./init-database";
 import { GameWebSocketServer } from "./websocket";
 import pg from "pg";
 
@@ -87,14 +86,6 @@ app.use((req, res, next) => {
     
     const { createPostgresStorage } = await import("./storage");
     storage = createPostgresStorage(pool);
-    
-    try {
-      // Initialize database
-      await initializeDatabase(pool);
-    } catch (error) {
-      console.error("Failed to initialize database:", error);
-      process.exit(1);
-    }
   }
   
   const server = await registerRoutes(app, storage);

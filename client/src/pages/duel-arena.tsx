@@ -24,6 +24,7 @@ import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_17600830
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
 import { useToast } from "@/hooks/use-toast";
+import { useIsPhone } from "@/hooks/use-phone";
 import { GAME_VERSION } from "@shared/config";
 
 const houseIcons: Record<string, string> = {
@@ -108,6 +109,7 @@ export default function DuelArena() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
+  const isPhone = useIsPhone();
 
   const roomId = params?.roomId;
 
@@ -1356,7 +1358,7 @@ export default function DuelArena() {
   }
 
   return (
-    <div className="relative z-10 min-h-screen p-4 md:p-8">
+    <div className={cn("relative z-10 min-h-[100dvh] p-4 md:p-8", isPhone && "phone-safe-area")}> 
       {/* Header */}
       <header className="text-center mb-8 md:mb-12 relative">
         <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>

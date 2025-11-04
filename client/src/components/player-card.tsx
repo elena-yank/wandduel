@@ -1,8 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { User, X } from "lucide-react";
+import { User, X, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Spell } from "@shared/schema";
 import CompactColorPalette from "@/components/compact-color-palette";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useIsPhone } from "@/hooks/use-phone";
+import { useState } from "react";
 
 interface SpellHistoryItem {
   roundNumber: number;
@@ -95,6 +98,8 @@ export default function PlayerCard({
   ...props
 }: PlayerCardProps) {
   const playerColor = player === 1 ? "primary" : "accent";
+  const isMobile = useIsPhone();
+  const [isColorPopupOpen, setIsColorPopupOpen] = useState(false);
   
   // Determine role based on current round
   // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
@@ -366,34 +371,49 @@ export default function PlayerCard({
             </div>
           </div>
           
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">Точность движения палочкой</p>
-            <div className="bg-background/50 rounded-full h-3 overflow-hidden">
-              <div 
-                className={cn(
-                  "h-full transition-all duration-500",
-                  !houseTheme && "accuracy-bar"
-                )}
-                style={houseTheme ? {
-                  width: `${accuracy}%`,
-                  backgroundImage: houseTheme.barGradient
-                } : { width: `${accuracy}%` }}
-                data-testid={`accuracy-bar-player-${player}`}
-              />
-            </div>
-            <p className="text-right text-xs text-muted-foreground mt-1" data-testid={`text-player-${player}-accuracy`}>
-              {accuracy}%
-            </p>
-          </div>
+          {/* Accuracy block removed per request */}
 
           {/* Color Palette */}
           {showColorPalette && onColorSelect && (
-            <div className="pt-2">
-              <CompactColorPalette
-                selectedColor={selectedColor || null}
-                onColorSelect={onColorSelect}
-              />
-            </div>
+            !isMobile ? (
+              <div className="pt-2">
+                <CompactColorPalette
+                  selectedColor={selectedColor || null}
+                  onColorSelect={onColorSelect}
+                />
+              </div>
+            ) : (
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsColorPopupOpen(true)}
+                  className={cn(
+                    "w-8 h-8 rounded-full border bg-background/60 flex items-center justify-center",
+                    !houseTheme && (player === 1 ? "border-primary/40" : "border-accent/40"),
+                  )}
+                  style={houseTheme ? { borderColor: houseTheme.borderColor + "66", backgroundColor: houseTheme.iconBg } : undefined}
+                  aria-label="Выбор цвета заклинания"
+                  data-testid={`open-color-popup-player-${player}`}
+                >
+                  <Palette className="w-4 h-4" style={houseTheme ? { color: houseTheme.textColor } : undefined} />
+                </button>
+
+                {/* Mobile color picker popup */}
+                <Dialog open={isColorPopupOpen} onOpenChange={setIsColorPopupOpen}>
+                  <DialogContent className="max-w-[18rem] p-4">
+                    <DialogTitle className="text-sm">Выбор цвета заклинания</DialogTitle>
+                    <CompactColorPalette
+                      selectedColor={selectedColor || null}
+                      onColorSelect={(color) => {
+                        onColorSelect?.(color);
+                        setIsColorPopupOpen(false);
+                      }}
+                      className="mt-2"
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )
           )}
         </div>
       </CardContent>
