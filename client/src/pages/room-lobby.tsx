@@ -151,7 +151,7 @@ export default function RoomLobby() {
                             placeholder="Введите ваше имя..."
                             value={joinUserName}
                             onChange={(e) => setJoinUserName(e.target.value)}
-                            className="mt-2 h-12 text-base"
+                            className="mt-2 h-10 text-base"
                             data-testid="input-join-user-name"
                           />
                         </div>
@@ -162,7 +162,7 @@ export default function RoomLobby() {
                             placeholder="Вставьте ID комнаты..."
                             value={joinRoomId}
                             onChange={(e) => setJoinRoomId(e.target.value)}
-                            className="mt-2 h-12 text-base"
+                            className="mt-2 h-10 text-base"
                             data-testid="input-join-room-id"
                           />
                         </div>
@@ -270,10 +270,10 @@ export default function RoomLobby() {
                   <div className="flex justify-center mb-4">
                     <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
                   </div>
-                  <h1 className="text-4xl md:text-5xl font-angst mb-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+                  <h1 className="text-2xl md:text-3xl font-angst mb-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
                     Добро пожаловать!
                   </h1>
-                  <p className="text-lg text-muted-foreground font-serif">
+                  <p className="text-sm text-muted-foreground font-serif">
                     Создайте комнату или присоединитесь к существующей
                   </p>
                 </div>
@@ -295,7 +295,7 @@ export default function RoomLobby() {
                         placeholder="Введите ваше имя..."
                         value={createUserName}
                         onChange={(e) => setCreateUserName(e.target.value)}
-                        className="mt-2 h-12 text-base"
+                        className="mt-2 h-10 text-base"
                         data-testid="input-create-user-name"
                       />
                     </div>
@@ -304,13 +304,13 @@ export default function RoomLobby() {
                       <Label className="text-base font-medium">
                         Ваш факультет
                       </Label>
-                      <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div className="flex justify-center gap-2 mt-2">
                         {houses.map((house) => (
                           <button
                             key={house.id}
                             type="button"
                             onClick={() => setCreateHouse(house.id)}
-                            className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                            className="p-2 rounded-lg border-2 transition-all hover:scale-105"
                             style={{
                               borderColor: createHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
                               backgroundColor: createHouse === house.id ? `${house.color}15` : "transparent",
@@ -321,9 +321,8 @@ export default function RoomLobby() {
                             <img
                               src={house.icon}
                               alt={house.name}
-                              className="w-16 h-16 mx-auto mb-2"
+                              className="w-12 h-12 mx-auto"
                             />
-                            <p className="text-sm font-medium text-center">{house.name}</p>
                           </button>
                         ))}
                       </div>
@@ -332,7 +331,7 @@ export default function RoomLobby() {
                     <Button
                       onClick={handleCreateRoom}
                       disabled={createRoomMutation.isPending}
-                      className="w-full h-14 text-lg"
+                      className="w-full h-12 text-base"
                       data-testid="button-create-room"
                     >
                       <Wand2 className="w-5 h-5 mr-2" />
@@ -360,13 +359,13 @@ export default function RoomLobby() {
                       <Label className="text-base font-medium">
                         Ваш факультет
                       </Label>
-                      <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div className="flex justify-center gap-2 mt-2">
                         {houses.map((house) => (
                           <button
                             key={house.id}
                             type="button"
                             onClick={() => setJoinHouse(house.id)}
-                            className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                            className="p-2 rounded-lg border-2 transition-all hover:scale-105"
                             style={{
                               borderColor: joinHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
                               backgroundColor: joinHouse === house.id ? `${house.color}15` : "transparent",
@@ -377,9 +376,8 @@ export default function RoomLobby() {
                             <img
                               src={house.icon}
                               alt={house.name}
-                              className="w-16 h-16 mx-auto mb-2"
+                              className="w-12 h-12 mx-auto"
                             />
-                            <p className="text-sm font-medium text-center">{house.name}</p>
                           </button>
                         ))}
                       </div>
@@ -403,7 +401,7 @@ export default function RoomLobby() {
                     <Button
                       onClick={handleJoinRoom}
                       disabled={joinRoomMutation.isPending}
-                      className="w-full h-14 text-lg"
+                      className="w-full h-12 text-base"
                       data-testid="button-join-room"
                     >
                       Присоединиться к комнате
