@@ -4,7 +4,7 @@ import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema,
 import { ATTACK_SUCCESS_THRESHOLD, COUNTER_SUCCESS_THRESHOLD, TOTAL_ROUNDS } from "@shared/config";
 import { z } from "zod";
 import type { IStorage } from "./storage";
-import { evaluateDrawing } from "@shared/gesture-recognition";
+import { evaluateDrawing } from "@shared/advanced-gesture-recognition";
 import { awardPointForRound, calculateBonusRoundOutcome, nextRoundState } from "./utils/rounds";
 
 // Gesture recognition function with improved accuracy calculation

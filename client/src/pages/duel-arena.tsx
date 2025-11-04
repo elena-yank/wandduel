@@ -80,6 +80,7 @@ export default function DuelArena() {
   const [pendingGesture, setPendingGesture] = useState<Point[] | null>(null);
   const [showSpellChoice, setShowSpellChoice] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
+  const [canvasCleared, setCanvasCleared] = useState(false);
   // Snapshot of last completed round data to keep dialog content stable while open
   const [lastCompletedSnapshot, setLastCompletedSnapshot] = useState<{
     lastCompletedRoundNumber?: number | null;
@@ -188,13 +189,13 @@ export default function DuelArena() {
   const { data: session, isLoading: sessionLoading } = useQuery<GameSession>({
     queryKey: ["/api/sessions", currentSessionId],
     enabled: !!currentSessionId,
-    refetchInterval: wsConnected ? false : (data) => {
-      // Если WebSocket подключен, отключаем polling
-      // Иначе используем адаптивные интервалы как fallback
-      if (data?.gameStatus === "active" && (data?.currentPhase === "attack" || data?.currentPhase === "counter")) {
-        return 3000; // 3 секунды во время активной фазы
-      }
-      return 8000; // 8 секунд в остальное время
+    refetchInterval: wsConnected ? false : (query) => {
+    // Если WebSocket подключен, отключаем polling
+    // Иначе используем адаптивные интервалы как fallback
+    if (query?.state?.data?.gameStatus === "active" && (query?.state?.data?.currentPhase === "attack" || query?.state?.data?.currentPhase === "counter")) {
+    return 3000; // 3 секунды во время активной фазы
+    }
+    return 8000; // 8 секунд в остальное время
     },
   });
 
@@ -263,6 +264,11 @@ export default function DuelArena() {
 
       // Handle wrong defense used - show toast, but suppress for very low accuracy (<50%)
       if (result.wrongDefenseUsed && (result.accuracy ?? 0) >= 50) {
+        // Show correct gesture for 1 second before clearing
+        if (result.spell && canvasRef.current) {
+          canvasRef.current.showCorrectGesture(result.spell.gesturePattern as Point[]);
+        }
+        
         toast({
           title: "Неверное заклинание",
           description: "Использована неверная защита против текущей атаки",
@@ -279,8 +285,7 @@ export default function DuelArena() {
         // Invalidate spell history to show the failed attempt
         queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
         
-        // Clear canvas after wrong defense
-        canvasRef.current?.clearCanvas();
+        // Clear canvas after showing correct gesture (handled by showCorrectGesture)
         return;
       }
       
@@ -293,8 +298,15 @@ export default function DuelArena() {
         // Invalidate session to get updated phase from server
         queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
         
-        // Clear canvas after successful recognition
-        canvasRef.current?.clearCanvas();
+        // Show reference pattern for 1.5 seconds before clearing canvas (only for the player who drew the spell)
+        if (result.spell && canvasRef.current && actualPlayerNumber === getCurrentPlayer()) {
+          canvasRef.current.showReferencePattern(result.spell.gesturePattern as Point[], () => {
+            setCanvasCleared(true);
+          });
+        } else {
+          // Clear canvas immediately for other players or if conditions not met
+          canvasRef.current?.clearCanvas();
+        }
       } else {
         // Failure handling: show "not recognized" only when it was NOT recognized
         const msg = result.message || "";
@@ -456,6 +468,8 @@ export default function DuelArena() {
     // Reset both round trackers when a new round starts
     roundCompleteShownForRound.current = null;
     dismissedDialogForRound.current = null;
+    // Reset canvas cleared state when a new round starts
+    setCanvasCleared(false);
   }, [session?.currentRound]);
 
   // Load attack spell info when in counter phase
@@ -649,12 +663,12 @@ export default function DuelArena() {
     }
   };
 
-  // Show round complete dialog when a round is completed
+  // Show round complete dialog when a round is completed and canvas has been cleared
   useEffect(() => {
-    // Show dialog if we have lastCompletedRoundNumber and haven't shown/dismissed this round yet
-    if (session?.lastCompletedRoundNumber && !showRoundComplete) {
+    // Show dialog if we have lastCompletedRoundNumber, canvas has been cleared, and haven't shown/dismissed this round yet
+    if (session?.lastCompletedRoundNumber && canvasCleared && !showRoundComplete) {
       const roundKey = `${session.lastCompletedRoundNumber}`;
-
+      
       // Only show if we haven't shown for this round AND user hasn't dismissed it
       if (roundCompleteShownForRound.current !== roundKey && dismissedDialogForRound.current !== roundKey) {
         // Take a snapshot of the last completed data so the dialog doesn't change
@@ -671,9 +685,11 @@ export default function DuelArena() {
         });
         setShowRoundComplete(true);
         roundCompleteShownForRound.current = roundKey;
+        // Reset canvasCleared state
+        setCanvasCleared(false);
       }
     }
-  }, [session?.lastCompletedRoundNumber, showRoundComplete]);
+  }, [session?.lastCompletedRoundNumber, canvasCleared, showRoundComplete]);
 
   const handleLeave = async () => {
     try {
@@ -1518,12 +1534,13 @@ export default function DuelArena() {
               
               <div className="flex-1 flex items-center justify-center">
                 <GestureCanvas
-                  ref={canvasRef}
-                  onGestureComplete={handleGestureComplete}
-                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
-                  className="canvas-container"
-                  drawColor={getDrawColor()}
-                  data-testid="gesture-canvas"
+                ref={canvasRef}
+                onGestureComplete={handleGestureComplete}
+                isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
+                className="canvas-container"
+                drawColor={getDrawColor()}
+                showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
+                data-testid="gesture-canvas"
                 />
               </div>
               
@@ -1664,6 +1681,8 @@ export default function DuelArena() {
             dismissedDialogForRound.current = roundKey;
             // Clear snapshot once dialog is dismissed
             setLastCompletedSnapshot(null);
+            // Reset canvas cleared state when dialog is dismissed
+            setCanvasCleared(false);
           }
           setShowRoundComplete(open);
         }}
@@ -1676,6 +1695,8 @@ export default function DuelArena() {
           setShowRoundComplete(false);
           // Clear snapshot when user continues
           setLastCompletedSnapshot(null);
+          // Reset canvas cleared state when dialog is continued
+          setCanvasCleared(false);
         }}
       />
 
