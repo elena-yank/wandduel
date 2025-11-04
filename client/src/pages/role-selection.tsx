@@ -2,13 +2,22 @@ import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Eye } from "lucide-react";
+import { GAME_VERSION } from "@shared/config";
 import { apiRequest, apiUrl } from "@/lib/queryClient";
+import playerIconPath from "@assets/magician.png";
+import spectatorIconPath from "@assets/spectator.png";
+import magicWandIconPath from "@assets/magic-wand.png";
+import defenceIconPath from "@assets/defence.png";
+import highScoreIconPath from "@assets/high-score.png";
+import binocularsIconPath from "@assets/binoculars.png";
+import scoreboardIconPath from "@assets/scoreboard.png";
+import { useIsPhone } from "@/hooks/use-phone";
 
 export default function RoleSelection() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/rooms/:roomId/role-selection");
   const [isJoining, setIsJoining] = useState(false);
+  const isPhone = useIsPhone();
 
   const roomId = params?.roomId;
 
@@ -86,41 +95,56 @@ export default function RoleSelection() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="phone-safe-area min-h-screen flex items-center justify-center px-3 py-2 sm:p-4">
       <div className="w-full max-w-4xl">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-angst mb-4 tracking-wider bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+        <header className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-angst mb-3 sm:mb-4 tracking-wider bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
             МАГИЧЕСКАЯ ДУЭЛЬ
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground font-serif">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground font-serif">
             Выберите свою роль
           </p>
         </header>
 
-        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
           {/* Player Card */}
           <Card 
-            className="spell-card border-border/20 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20"
+            className="spell-card border-border/20 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20 relative flex flex-col h-full"
             data-testid="card-role-player"
           >
+            <span className="absolute top-2 left-2 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
             <CardHeader>
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4 mx-auto">
-                <Users className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-1 sm:mb-2 mx-auto">
+                <img src={playerIconPath} alt="Игрок" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               </div>
               <CardTitle className="text-center text-xl sm:text-2xl">Игрок</CardTitle>
-              <CardDescription className="text-center text-sm">
-                Участвуйте в магическом поединке
-              </CardDescription>
+              {!isPhone && (
+                <CardDescription className="text-center text-sm">
+                  Участвуйте в магическом поединке
+                </CardDescription>
+              )}
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 text-sm text-muted-foreground">
-                <li>✨ Рисуйте заклинания</li>
-                <li>⚔️ Атакуйте противника</li>
-                <li>🛡️ Защищайтесь контрзаклинаниями</li>
-                <li>🏆 Набирайте очки для победы</li>
-              </ul>
+            <CardContent className="flex flex-col flex-1">
+              <div className="grid grid-cols-2 gap-x-6 mb-4 sm:mb-6 text-sm text-muted-foreground">
+                <ul className="space-y-1.5 sm:space-y-2">
+                  <li className="flex items-center justify-center">
+                    <img src={magicWandIconPath} alt="Твори заклинания" className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Твори заклинания
+                  </li>
+                </ul>
+                <ul className="space-y-1.5 sm:space-y-2">
+                  <li className="flex items-center justify-center">
+                    <img src={defenceIconPath} alt="Отражай удары" className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Отражай удары
+                  </li>
+                </ul>
+              </div>
+              <div className="text-sm text-muted-foreground mb-4 sm:mb-6 flex items-center justify-center">
+                <img src={highScoreIconPath} alt="Завоевывай очки" className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Завоевывай очки
+              </div>
               <Button 
-                className="w-full text-sm h-11" 
+                className="w-full text-sm h-10 mt-auto" 
                 onClick={() => handleJoin("player")}
                 disabled={isJoining}
                 data-testid="button-join-player"
@@ -135,28 +159,38 @@ export default function RoleSelection() {
 
           {/* Spectator Card */}
           <Card 
-            className="spell-card border-border/20 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20"
+            className="spell-card border-border/20 cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20 flex flex-col h-full"
             data-testid="card-role-spectator"
           >
             <CardHeader>
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-3 sm:mb-4 mx-auto">
-                <Eye className="w-7 h-7 sm:w-8 sm:h-8 text-secondary" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-1 sm:mb-2 mx-auto">
+                <img src={spectatorIconPath} alt="Наблюдатель" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
               </div>
               <CardTitle className="text-center text-xl sm:text-2xl">Наблюдатель</CardTitle>
-              <CardDescription className="text-center text-sm">
-                Следите за ходом битвы
-              </CardDescription>
+              {!isPhone && (
+                <CardDescription className="text-center text-sm">
+                  Следите за ходом битвы
+                </CardDescription>
+              )}
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 text-sm text-muted-foreground">
-                <li>👁️ Наблюдайте за дуэлью</li>
-                <li>📊 Видите все заклинания</li>
-                <li>🎯 Следите за счетом</li>
-                <li>📺 Режим зрителя</li>
-              </ul>
+            <CardContent className="flex flex-col flex-1">
+              <div className="grid grid-cols-2 gap-x-6 mb-4 sm:mb-6 text-sm text-muted-foreground">
+                <ul className="space-y-1.5 sm:space-y-2">
+                  <li className="flex items-center justify-center">
+                    <img src={binocularsIconPath} alt="Стань зрителем" className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Стань зрителем
+                  </li>
+                </ul>
+                <ul className="space-y-1.5 sm:space-y-2">
+                  <li className="flex items-center justify-center">
+                    <img src={scoreboardIconPath} alt="Следи за счетом" className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Следи за счетом
+                  </li>
+                </ul>
+              </div>
               <Button 
                 variant="secondary"
-                className="w-full text-sm h-11" 
+                className="w-full text-sm h-10 mt-auto" 
                 onClick={() => handleJoin("spectator")}
                 disabled={isJoining}
                 data-testid="button-join-spectator"

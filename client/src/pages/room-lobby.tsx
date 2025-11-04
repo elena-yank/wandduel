@@ -15,6 +15,7 @@ import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_17600830
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
 import { GAME_VERSION } from "@shared/config";
+import { useIsPhone } from "@/hooks/use-phone";
 
 const houses = [
   { id: "gryffindor", name: "Гриффиндор", icon: gryffindorIcon, color: "#EF4444", shadowColor: "239, 68, 68" },
@@ -25,6 +26,7 @@ const houses = [
 
 export default function RoomLobby() {
   const [, setLocation] = useLocation();
+  const isPhone = useIsPhone();
   const [createUserName, setCreateUserName] = useState("");
   const [createHouse, setCreateHouse] = useState<string>("");
   const [joinUserName, setJoinUserName] = useState("");
@@ -111,153 +113,305 @@ export default function RoomLobby() {
   return (
     <>
       <div className="min-h-screen flex items-center justify-center p-4 relative">
-        <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
-        <Card className="spell-card border-border/20 w-full max-w-2xl">
+        <Card className="spell-card border-border/20 w-full max-w-2xl relative">
+          <span className="absolute top-2 left-2 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
           <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
-              </div>
-              <h1 className="text-4xl md:text-5xl font-angst mb-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
-                Добро пожаловать!
-              </h1>
-              <p className="text-lg text-muted-foreground font-serif">
-                Создайте комнату или присоединитесь к существующей
-              </p>
-            </div>
+            {isPhone ? (
+              <Tabs defaultValue="create" className="w-full">
+                <div className="grid grid-cols-2 gap-4 items-stretch">
+                  <div className="col-span-1 text-center flex flex-col justify-between min-h-[220px]">
+                    <div className="mb-3 flex justify-center">
+                      <img src={duelIconPath} alt="Дуэльная арена" className="w-20 h-20 object-contain" />
+                    </div>
+                    <h1 className="text-3xl font-angst mb-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(234,179,8,0.45)]">
+                      Добро пожаловать!
+                    </h1>
+                    {/* Мобильная версия: убираем подпись "Создайте комнату..." */}
+                    {/* Левая колонка: поля имени и ID (для join) — закреплены снизу */}
+                    <div>
+                      <TabsContent value="create" className="mt-3 space-y-4">
+                        <div>
+                          <Input
+                            id="createUserName"
+                            type="text"
+                            placeholder="Введите ваше имя..."
+                            value={createUserName}
+                            onChange={(e) => setCreateUserName(e.target.value)}
+                            className="mt-2 h-12 text-base"
+                            data-testid="input-create-user-name"
+                          />
+                        </div>
+                      </TabsContent>
 
-            <Tabs defaultValue="create" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="create" data-testid="tab-create">Создать комнату</TabsTrigger>
-                <TabsTrigger value="join" data-testid="tab-join">Присоединиться</TabsTrigger>
-              </TabsList>
+                      <TabsContent value="join" className="mt-3 space-y-4">
+                        <div>
+                          <Input
+                            id="joinUserName"
+                            type="text"
+                            placeholder="Введите ваше имя..."
+                            value={joinUserName}
+                            onChange={(e) => setJoinUserName(e.target.value)}
+                            className="mt-2 h-12 text-base"
+                            data-testid="input-join-user-name"
+                          />
+                        </div>
+                        <div>
+                          <Input
+                            id="joinRoomId"
+                            type="text"
+                            placeholder="Вставьте ID комнаты..."
+                            value={joinRoomId}
+                            onChange={(e) => setJoinRoomId(e.target.value)}
+                            className="mt-2 h-12 text-base"
+                            data-testid="input-join-room-id"
+                          />
+                        </div>
+                      </TabsContent>
+                    </div>
+                  </div>
 
-              <TabsContent value="create" className="space-y-6">
-                <div>
-                  <Label htmlFor="createUserName" className="text-base font-medium">
-                    Ваше имя
-                  </Label>
-                  <Input
-                    id="createUserName"
-                    type="text"
-                    placeholder="Введите ваше имя..."
-                    value={createUserName}
-                    onChange={(e) => setCreateUserName(e.target.value)}
-                    className="mt-2 h-12 text-base"
-                    data-testid="input-create-user-name"
-                  />
-                </div>
+                  <div className="col-span-1 flex flex-col justify-between min-h-[220px]">
+                    {/* Правая колонка: переключатели и факультет */}
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="create" data-testid="tab-create">Создать комнату</TabsTrigger>
+                      <TabsTrigger value="join" data-testid="tab-join">Присоединиться</TabsTrigger>
+                    </TabsList>
 
-                <div>
-                  <Label className="text-base font-medium">
-                    Ваш факультет
-                  </Label>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    {houses.map((house) => (
-                      <button
-                        key={house.id}
-                        type="button"
-                        onClick={() => setCreateHouse(house.id)}
-                        className="p-3 rounded-lg border-2 transition-all hover:scale-105"
-                        style={{
-                          borderColor: createHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
-                          backgroundColor: createHouse === house.id ? `${house.color}15` : "transparent",
-                          boxShadow: createHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
-                        }}
-                        data-testid={`button-house-${house.id}-create`}
+                    {/* Средняя зона: факультеты в зависимости от вкладки */}
+                    <TabsContent value="create" className="space-y-4">
+                      <div>
+                        <Label className="text-base font-medium">
+                          Ваш факультет
+                        </Label>
+                        <div className="grid grid-cols-4 gap-2 mt-3">
+                          {houses.map((house) => (
+                            <button
+                              key={house.id}
+                              type="button"
+                              onClick={() => setCreateHouse(house.id)}
+                              className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                              style={{
+                                borderColor: createHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
+                                backgroundColor: createHouse === house.id ? `${house.color}15` : "transparent",
+                                boxShadow: createHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
+                              }}
+                              data-testid={`button-house-${house.id}-create`}
+                            >
+                              <img
+                                src={house.icon}
+                                alt={house.name}
+                                className="w-14 h-14 mx-auto"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="join" className="space-y-4">
+                      <div>
+                        <Label className="text-base font-medium">
+                          Ваш факультет
+                        </Label>
+                        <div className="grid grid-cols-4 gap-2 mt-3">
+                          {houses.map((house) => (
+                            <button
+                              key={house.id}
+                              type="button"
+                              onClick={() => setJoinHouse(house.id)}
+                              className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                              style={{
+                                borderColor: joinHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
+                                backgroundColor: joinHouse === house.id ? `${house.color}15` : "transparent",
+                                boxShadow: joinHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
+                              }}
+                              data-testid={`button-house-${house.id}-join`}
+                            >
+                              <img
+                                src={house.icon}
+                                alt={house.name}
+                                className="w-14 h-14 mx-auto"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* Нижняя зона: кнопки в зависимости от вкладки */}
+                    <TabsContent value="create" className="mt-4">
+                      <Button
+                        onClick={handleCreateRoom}
+                        disabled={createRoomMutation.isPending}
+                        className="w-full h-12 text-base"
+                        data-testid="button-create-room"
                       >
-                        <img
-                          src={house.icon}
-                          alt={house.name}
-                          className="w-16 h-16 mx-auto mb-2"
-                        />
-                        <p className="text-sm font-medium text-center">{house.name}</p>
-                      </button>
-                    ))}
+                        <Wand2 className="w-5 h-5 mr-2" />
+                        Создать комнату
+                      </Button>
+                    </TabsContent>
+
+                    <TabsContent value="join" className="mt-4">
+                      <Button
+                        onClick={handleJoinRoom}
+                        disabled={joinRoomMutation.isPending}
+                        className="w-full h-12 text-base"
+                        data-testid="button-join-room"
+                      >
+                        Присоединиться к комнате
+                      </Button>
+                    </TabsContent>
                   </div>
                 </div>
-
-                <Button
-                  onClick={handleCreateRoom}
-                  disabled={createRoomMutation.isPending}
-                  className="w-full h-14 text-lg"
-                  data-testid="button-create-room"
-                >
-                  <Wand2 className="w-5 h-5 mr-2" />
-                  Создать комнату
-                </Button>
-              </TabsContent>
-
-              <TabsContent value="join" className="space-y-6">
-                <div>
-                  <Label htmlFor="joinUserName" className="text-base font-medium">
-                    Ваше имя
-                  </Label>
-                  <Input
-                    id="joinUserName"
-                    type="text"
-                    placeholder="Введите ваше имя..."
-                    value={joinUserName}
-                    onChange={(e) => setJoinUserName(e.target.value)}
-                    className="mt-2 h-12 text-base"
-                    data-testid="input-join-user-name"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-base font-medium">
-                    Ваш факультет
-                  </Label>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    {houses.map((house) => (
-                      <button
-                        key={house.id}
-                        type="button"
-                        onClick={() => setJoinHouse(house.id)}
-                        className="p-3 rounded-lg border-2 transition-all hover:scale-105"
-                        style={{
-                          borderColor: joinHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
-                          backgroundColor: joinHouse === house.id ? `${house.color}15` : "transparent",
-                          boxShadow: joinHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
-                        }}
-                        data-testid={`button-house-${house.id}-join`}
-                      >
-                        <img
-                          src={house.icon}
-                          alt={house.name}
-                          className="w-16 h-16 mx-auto mb-2"
-                        />
-                        <p className="text-sm font-medium text-center">{house.name}</p>
-                      </button>
-                    ))}
+              </Tabs>
+            ) : (
+              <>
+                <div className="text-center mb-8">
+                  <div className="flex justify-center mb-4">
+                    <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
                   </div>
+                  <h1 className="text-4xl md:text-5xl font-angst mb-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+                    Добро пожаловать!
+                  </h1>
+                  <p className="text-lg text-muted-foreground font-serif">
+                    Создайте комнату или присоединитесь к существующей
+                  </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="joinRoomId" className="text-base font-medium">
-                    ID комнаты
-                  </Label>
-                  <Input
-                    id="joinRoomId"
-                    type="text"
-                    placeholder="Вставьте ID комнаты..."
-                    value={joinRoomId}
-                    onChange={(e) => setJoinRoomId(e.target.value)}
-                    className="mt-2 h-12 text-base"
-                    data-testid="input-join-room-id"
-                  />
-                </div>
+                <Tabs defaultValue="create" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="create" data-testid="tab-create">Создать комнату</TabsTrigger>
+                    <TabsTrigger value="join" data-testid="tab-join">Присоединиться</TabsTrigger>
+                  </TabsList>
 
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={joinRoomMutation.isPending}
-                  className="w-full h-14 text-lg"
-                  data-testid="button-join-room"
-                >
-                  Присоединиться к комнате
-                </Button>
-              </TabsContent>
-            </Tabs>
+                  <TabsContent value="create" className="space-y-6">
+                    <div>
+                      <Label htmlFor="createUserName" className="text-base font-medium">
+                        Ваше имя
+                      </Label>
+                      <Input
+                        id="createUserName"
+                        type="text"
+                        placeholder="Введите ваше имя..."
+                        value={createUserName}
+                        onChange={(e) => setCreateUserName(e.target.value)}
+                        className="mt-2 h-12 text-base"
+                        data-testid="input-create-user-name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-base font-medium">
+                        Ваш факультет
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        {houses.map((house) => (
+                          <button
+                            key={house.id}
+                            type="button"
+                            onClick={() => setCreateHouse(house.id)}
+                            className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                            style={{
+                              borderColor: createHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
+                              backgroundColor: createHouse === house.id ? `${house.color}15` : "transparent",
+                              boxShadow: createHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
+                            }}
+                            data-testid={`button-house-${house.id}-create`}
+                          >
+                            <img
+                              src={house.icon}
+                              alt={house.name}
+                              className="w-16 h-16 mx-auto mb-2"
+                            />
+                            <p className="text-sm font-medium text-center">{house.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleCreateRoom}
+                      disabled={createRoomMutation.isPending}
+                      className="w-full h-14 text-lg"
+                      data-testid="button-create-room"
+                    >
+                      <Wand2 className="w-5 h-5 mr-2" />
+                      Создать комнату
+                    </Button>
+                  </TabsContent>
+
+                  <TabsContent value="join" className="space-y-6">
+                    <div>
+                      <Label htmlFor="joinUserName" className="text-base font-medium">
+                        Ваше имя
+                      </Label>
+                      <Input
+                        id="joinUserName"
+                        type="text"
+                        placeholder="Введите ваше имя..."
+                        value={joinUserName}
+                        onChange={(e) => setJoinUserName(e.target.value)}
+                        className="mt-2 h-12 text-base"
+                        data-testid="input-join-user-name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-base font-medium">
+                        Ваш факультет
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        {houses.map((house) => (
+                          <button
+                            key={house.id}
+                            type="button"
+                            onClick={() => setJoinHouse(house.id)}
+                            className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                            style={{
+                              borderColor: joinHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
+                              backgroundColor: joinHouse === house.id ? `${house.color}15` : "transparent",
+                              boxShadow: joinHouse === house.id ? `0 10px 15px -3px rgba(${house.shadowColor}, 0.5)` : "none"
+                            }}
+                            data-testid={`button-house-${house.id}-join`}
+                          >
+                            <img
+                              src={house.icon}
+                              alt={house.name}
+                              className="w-16 h-16 mx-auto mb-2"
+                            />
+                            <p className="text-sm font-medium text-center">{house.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="joinRoomId" className="text-base font-medium">
+                        ID комнаты
+                      </Label>
+                      <Input
+                        id="joinRoomId"
+                        type="text"
+                        placeholder="Вставьте ID комнаты..."
+                        value={joinRoomId}
+                        onChange={(e) => setJoinRoomId(e.target.value)}
+                        className="mt-2 h-12 text-base"
+                        data-testid="input-join-room-id"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleJoinRoom}
+                      disabled={joinRoomMutation.isPending}
+                      className="w-full h-14 text-lg"
+                      data-testid="button-join-room"
+                    >
+                      Присоединиться к комнате
+                    </Button>
+                  </TabsContent>
+                </Tabs>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

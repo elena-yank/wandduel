@@ -346,23 +346,23 @@
 /* Safe area padding for phone browsers (top/bottom UI bars) */
 .phone-safe-area {
   /* Reserve space so nothing important sits under address/navigation bars */
-  padding-top: max(env(safe-area-inset-top, 0px), 48px);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 76px);
+  padding-top: max(env(safe-area-inset-top, 0px), 64px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 96px);
   min-height: 100dvh;
   box-sizing: border-box;
-  scroll-padding-top: max(env(safe-area-inset-top, 0px), 48px);
-  scroll-padding-bottom: max(env(safe-area-inset-bottom, 0px), 76px);
+  scroll-padding-top: max(env(safe-area-inset-top, 0px), 64px);
+  scroll-padding-bottom: max(env(safe-area-inset-bottom, 0px), 96px);
 }
 
 @supports not (padding-top: env(safe-area-inset-top)) {
   /* Fallback for browsers without env() support */
   .phone-safe-area {
-    padding-top: 48px;
-    padding-bottom: 76px;
+    padding-top: 64px;
+    padding-bottom: 96px;
     min-height: 100dvh;
     box-sizing: border-box;
-    scroll-padding-top: 48px;
-    scroll-padding-bottom: 76px;
+    scroll-padding-top: 64px;
+    scroll-padding-bottom: 96px;
   }
 }
 
@@ -407,7 +407,7 @@
     gap: 0.5rem !important;
   }
   .phone-safe-area {
-    padding-bottom: 88px; /* extra breathing room on very short screens */
+    padding-bottom: 120px; /* extra breathing room on very short screens */
   }
   .phone-safe-area .spell-card {
     font-size: 0.8125rem !important; /* 13px */
@@ -425,7 +425,7 @@
 /* Extremely short phones: height <= 480px */
 @media (max-height: 480px) and (max-width: 1200px) {
   .phone-safe-area {
-    padding-bottom: 112px; /* keep cards/buttons well above nav bar */
+    padding-bottom: 140px; /* keep cards/buttons well above nav bar */
   }
   .phone-safe-area header {
     margin-bottom: 0.5rem !important;
