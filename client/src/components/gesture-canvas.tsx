@@ -189,25 +189,34 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
 
   const startDrawing = useCallback((point: Point) => {
     if (isDisabled) return;
-    
+
+    // Cancel any pending feedback/auto-clear timeout from previous gesture
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+
+    // Ensure previous drawing is cleared before starting a new one
+    clearCanvas();
+
     setIsDrawing(true);
     isDrawingRef.current = true;
     setGesturePoints([point]);
     gesturePointsRef.current = [point];
-    
+
     // Play wind chime sound
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(err => console.log("Audio play failed:", err));
     }
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!ctx) return;
-    
+
     ctx.beginPath();
     ctx.moveTo(point.x, point.y);
-  }, [isDisabled]);
+  }, [isDisabled, clearCanvas]);
 
   const draw = useCallback((point: Point) => {
     if (!isDrawingRef.current || isDisabled) return;
@@ -232,25 +241,35 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   }, [isDisabled, drawColor]);
 
   const stopDrawing = useCallback(() => {
-    if (!isDrawingRef.current || isDisabled) return;
-    
+    if (isDisabled) return;
+
     setIsDrawing(false);
     isDrawingRef.current = false;
-    
+
     // Stop wind chime sound
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    
+
     // Use ref to get the latest points
     const currentPoints = gesturePointsRef.current;
-    
+
     // Trigger gesture complete if we have at least one point
     if (currentPoints.length >= 1) {
       onGestureComplete(currentPoints);
     }
-  }, [isDisabled, onGestureComplete]);
+
+    // Fallback: clear the canvas after a short delay to allow visual comparison
+    // If showReferencePattern/showCorrectGesture is called, they will override this timeout
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    feedbackTimeoutRef.current = setTimeout(() => {
+      clearCanvas();
+    }, 2000);
+  }, [isDisabled, onGestureComplete, clearCanvas]);
 
   // Mouse event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

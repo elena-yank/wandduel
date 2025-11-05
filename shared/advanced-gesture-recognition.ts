@@ -168,42 +168,40 @@ export function pathLength(gesture: Point[]): number {
  */
 export function isValidDrawing(gesture: Point[]): boolean {
   if (gesture.length === 0) return false;
-  
-  // Check if bounding box area is too small
+
+  // Work in normalized space so thresholds are consistent across canvases
+  const norm = normalizeGesture(gesture);
+  if (norm.length === 0) return false;
+
+  // Bounding box in normalized space
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  
-  for (const point of gesture) {
-    minX = Math.min(minX, point.x);
-    minY = Math.min(minY, point.y);
-    maxX = Math.max(maxX, point.x);
-    maxY = Math.max(maxY, point.y);
+  for (const p of norm) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
   }
-  
   const width = maxX - minX;
   const height = maxY - minY;
-  
-  // For vertical or horizontal lines, area will be 0, but we should still consider them valid
-  // if they have sufficient length
-  if (width === 0 || height === 0) {
-    // Check if the line has sufficient length
-    const lineLength = Math.max(width, height);
-    if (lineLength < 0.05) return false; // Still need some minimum length
+
+  // Special-case nearly straight lines: accept if long enough
+  const area = width * height;
+  const isLineLike = width < 0.02 || height < 0.02;
+  if (isLineLike) {
+    const len = pathLength(norm);
+    if (len < 0.25) return false; // normalized length must be meaningful
   } else {
-    // For non-linear gestures, check area
-    const area = width * height;
-    // Threshold for bounding box area (0.005 of unit square)
-    if (area < 0.005) return false;
+    // For non-linear gestures, require a larger footprint
+    if (area < 0.02) return false; // was 0.005; tighten to reduce tiny scribbles
   }
-  
-  // Check if path length is too short
-  const length = pathLength(gesture);
-  
-  // Threshold for path length (empirically determined)
-  if (length < 0.05) return false;
-  
+
+  // Path length threshold in normalized space
+  const length = pathLength(norm);
+  if (length < 0.25) return false;
+
   return true;
 }
 
@@ -219,21 +217,37 @@ export function calculateGestureSimilarity(userGesture: Point[], referenceGestur
   const normalizedUser = normalizeGesture(userGesture);
   const normalizedReference = normalizeGesture(referenceGesture);
   
-  // Calculate point-based similarity
-  let pointSimilarity = 0;
-  const minPoints = Math.min(normalizedUser.length, normalizedReference.length);
-  
-  for (let i = 0; i < minPoints; i++) {
-    const distance = euclideanDistance(normalizedUser[i], normalizedReference[i]);
-    // Convert distance to similarity (0-1), with 1.0 as threshold for maximum penalty
-    // Using a gentler curve that still gives some score for imperfect drawings
-    const similarity = Math.max(0, 1 - distance / 1.0);
-    pointSimilarity += similarity;
+  // Calculate point-based similarity with cyclic alignment and reverse-path consideration
+  const N = Math.min(normalizedUser.length, normalizedReference.length);
+  const ref = normalizedReference.slice(0, N);
+  const user = normalizedUser.slice(0, N);
+
+  // Helper to compute average per-point similarity for a given alignment
+  const avgSimilarityForOffset = (offset: number, useReversed: boolean): number => {
+    let sum = 0;
+    for (let i = 0; i < N; i++) {
+      const refIdx = (i + offset) % N;
+      const refPoint = useReversed ? ref[N - 1 - refIdx] : ref[refIdx];
+      const distance = euclideanDistance(user[i], refPoint);
+      // Convert distance to similarity (0-1), penalize more aggressively for deviations
+      const similarity = Math.max(0, 1 - distance / 0.9);
+      sum += similarity;
+    }
+    return (sum / N) * 100;
+  };
+
+  let bestPointSimilarity = 0;
+  for (let offset = 0; offset < N; offset++) {
+    // Forward direction
+    const forwardSim = avgSimilarityForOffset(offset, false);
+    if (forwardSim > bestPointSimilarity) bestPointSimilarity = forwardSim;
+    // Reverse direction (user drew in opposite path direction)
+    const reverseSim = avgSimilarityForOffset(offset, true);
+    if (reverseSim > bestPointSimilarity) bestPointSimilarity = reverseSim;
   }
+  const pointSimilarity = bestPointSimilarity;
   
-  pointSimilarity = pointSimilarity / minPoints * 100;
-  
-  // Calculate line-based similarity
+  // Calculate line-based similarity (tighter tolerance to reduce false matches)
   let lineSimilarity = 0;
   const lineSegments = Math.max(1, normalizedReference.length - 1);
   
@@ -250,16 +264,47 @@ export function calculateGestureSimilarity(userGesture: Point[], referenceGestur
       minDistance = Math.min(minDistance, distance);
     }
     
-    // Convert distance to similarity (0-1), with 0.6 as threshold for maximum penalty
-    // Using a gentler curve that still gives some score for imperfect drawings
-    const similarity = Math.max(0, 1 - minDistance / 0.6);
+    // Convert distance to similarity (0-1), with a stricter penalty threshold
+    const similarity = Math.max(0, 1 - minDistance / 0.35);
     lineSimilarity += similarity;
   }
   
   lineSimilarity = lineSimilarity / normalizedUser.length * 100;
   
-  // Combine point and line similarity (60% point, 40% line)
-  const combinedSimilarity = pointSimilarity * 0.6 + lineSimilarity * 0.4;
+  // Angle-based similarity: compare turning angles to distinguish shapes
+  const angles = (pts: Point[]): number[] => {
+    const result: number[] = [];
+    for (let i = 1; i < pts.length; i++) {
+      const dx = pts[i].x - pts[i - 1].x;
+      const dy = pts[i].y - pts[i - 1].y;
+      result.push(Math.atan2(dy, dx));
+    }
+    return result;
+  };
+  const userAngles = angles(normalizedUser);
+  const refAngles = angles(normalizedReference);
+  const M = Math.min(userAngles.length, refAngles.length);
+  const bestAngleSimForOffset = (offset: number, useReversed: boolean): number => {
+    let sum = 0;
+    for (let i = 0; i < M; i++) {
+      const refIdx = (i + offset) % M;
+      const refAng = useReversed ? refAngles[M - 1 - refIdx] : refAngles[refIdx];
+      const diff = Math.abs(userAngles[i] - refAng);
+      // Normalize angle difference to [0, pi]
+      const wrapped = Math.min(diff, Math.abs(Math.PI * 2 - diff));
+      const sim = 1 - wrapped / Math.PI; // 1 when angles match, 0 when opposite
+      sum += sim;
+    }
+    return (sum / M) * 100;
+  };
+  let angleSimilarity = 0;
+  for (let offset = 0; offset < M; offset++) {
+    angleSimilarity = Math.max(angleSimilarity, bestAngleSimForOffset(offset, false));
+    angleSimilarity = Math.max(angleSimilarity, bestAngleSimForOffset(offset, true));
+  }
+  
+  // Combine similarities: 50% points, 30% lines, 20% angles
+  const combinedSimilarity = pointSimilarity * 0.5 + lineSimilarity * 0.3 + angleSimilarity * 0.2;
   
   return Math.max(0, Math.min(100, combinedSimilarity));
 }
