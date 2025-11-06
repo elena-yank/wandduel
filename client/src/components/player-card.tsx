@@ -3,6 +3,7 @@ import { User, X, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Spell } from "@shared/schema";
 import CompactColorPalette from "@/components/compact-color-palette";
+import DuelColorPalette from "@/components/duel-color-palette";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useIsPhone } from "@/hooks/use-phone";
 import { useState } from "react";
@@ -377,7 +378,7 @@ export default function PlayerCard({
           {showColorPalette && onColorSelect && (
             !isMobile ? (
               <div className="pt-2">
-                <CompactColorPalette
+                <DuelColorPalette
                   selectedColor={selectedColor || null}
                   onColorSelect={onColorSelect}
                 />
@@ -400,9 +401,9 @@ export default function PlayerCard({
 
                 {/* Mobile color picker popup */}
                 <Dialog open={isColorPopupOpen} onOpenChange={setIsColorPopupOpen}>
-                  <DialogContent className="max-w-[18rem] p-4">
+                  <DialogContent className="max-w-[22rem] p-4">
                     <DialogTitle className="text-sm">Выбор цвета заклинания</DialogTitle>
-                    <CompactColorPalette
+                    <DuelColorPalette
                       selectedColor={selectedColor || null}
                       onColorSelect={(color) => {
                         onColorSelect?.(color);

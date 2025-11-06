@@ -90,6 +90,8 @@ export default function RoomLobby() {
     },
   });
 
+  const [activeTab, setActiveTab] = useState<"create" | "join">("create");
+
   const handleCreateRoom = () => {
     createRoomMutation.mutate();
   };
@@ -103,6 +105,39 @@ export default function RoomLobby() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     // Убраны всплывающие оповещения: не показываем тост
+  };
+
+  // Создание комнаты для тренировки и мгновенный вход на страницу тренировки
+  const handleStartTraining = async () => {
+    try {
+      let userName = activeTab === "create" ? createUserName : joinUserName;
+      let userHouse = activeTab === "create" ? createHouse : joinHouse;
+
+      // Подставляем разумные значения по умолчанию, чтобы кнопка всегда работала
+      if (!userName || !userName.trim()) {
+        userName = localStorage.getItem("userName") || "Player";
+      }
+      if (!userHouse) {
+        userHouse = (localStorage.getItem("userHouse") as any) || "gryffindor";
+      }
+
+      // API создания комнаты ожидает поле hostName
+      const res = await apiRequest("POST", "/api/rooms", {
+        hostName: userName,
+      });
+      if (!res.ok) throw new Error("Не удалось создать комнату для тренировки");
+      const data = await res.json();
+      const newRoomId = data.room.id;
+
+      // Сохраняем имя/факультет
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("userHouse", userHouse);
+
+      // Переходим сразу в режим тренировки
+      setLocation(`/rooms/${newRoomId}/training`);
+    } catch (e) {
+      console.warn("Training start error:", (e as Error).message);
+    }
   };
 
   const handleEnterRoom = () => {
@@ -172,17 +207,24 @@ export default function RoomLobby() {
 
                   <div className="col-span-1 flex flex-col justify-between min-h-[220px]">
                     {/* Правая колонка: переключатели и факультет */}
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                      <TabsTrigger value="create" data-testid="tab-create">Создать комнату</TabsTrigger>
-                      <TabsTrigger value="join" data-testid="tab-join">Присоединиться</TabsTrigger>
-                    </TabsList>
+                    <div className="flex items-center justify-between mb-4">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger className="w-full" value="create" data-testid="tab-create" onClick={() => setActiveTab("create")}>Создать комнату</TabsTrigger>
+                        <TabsTrigger className="w-full" value="join" data-testid="tab-join" onClick={() => setActiveTab("join")}>Присоединиться</TabsTrigger>
+                      </TabsList>
+                    </div>
 
                     {/* Средняя зона: факультеты в зависимости от вкладки */}
                     <TabsContent value="create" className="space-y-4">
                       <div>
-                        <Label className="text-base font-medium">
-                          Ваш факультет
-                        </Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-base font-medium">
+                            Ваш факультет
+                          </Label>
+                          <Button variant="secondary" size="sm" onClick={handleStartTraining} data-testid="button-start-training-mobile">
+                            Тренировка
+                          </Button>
+                        </div>
                         <div className="grid grid-cols-4 gap-2 mt-3">
                           {houses.map((house) => (
                             <button
@@ -210,9 +252,14 @@ export default function RoomLobby() {
 
                     <TabsContent value="join" className="space-y-4">
                       <div>
-                        <Label className="text-base font-medium">
-                          Ваш факультет
-                        </Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-base font-medium">
+                            Ваш факультет
+                          </Label>
+                          <Button variant="secondary" size="sm" onClick={handleStartTraining} data-testid="button-start-training-mobile">
+                            Тренировка
+                          </Button>
+                        </div>
                         <div className="grid grid-cols-4 gap-2 mt-3">
                           {houses.map((house) => (
                             <button
@@ -279,10 +326,15 @@ export default function RoomLobby() {
                 </div>
 
                 <Tabs defaultValue="create" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="create" data-testid="tab-create">Создать комнату</TabsTrigger>
-                    <TabsTrigger value="join" data-testid="tab-join">Присоединиться</TabsTrigger>
-                  </TabsList>
+                  <div className="flex items-center justify-between mb-6">
+                    <TabsList className="grid w-full max-w-[520px] grid-cols-2">
+                      <TabsTrigger value="create" data-testid="tab-create" onClick={() => setActiveTab("create")}>Создать комнату</TabsTrigger>
+                      <TabsTrigger value="join" data-testid="tab-join" onClick={() => setActiveTab("join")}>Присоединиться</TabsTrigger>
+                    </TabsList>
+                    <Button variant="secondary" onClick={handleStartTraining} data-testid="button-start-training-desktop">
+                      Тренировка
+                    </Button>
+                  </div>
 
                   <TabsContent value="create" className="space-y-6">
                     <div>

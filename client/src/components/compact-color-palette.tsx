@@ -26,59 +26,88 @@ export const SPELL_COLORS = [
 ] as const;
 
 export default function CompactColorPalette({ selectedColor, onColorSelect, className = "" }: CompactColorPaletteProps) {
-  return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <div className="text-[10px] text-muted-foreground/70 font-medium">
-        Цвет заклинания:
-      </div>
-      <div className="grid grid-cols-4 gap-1">
-        {/* Reset button */}
-        <button
-          onClick={() => onColorSelect(null)}
-          className={cn(
-            "h-7 rounded border transition-all flex items-center justify-center text-[9px] font-medium",
-            selectedColor === null 
-              ? "border-primary bg-primary/20 scale-105" 
-              : "border-muted-foreground/30 hover:border-primary/50"
-          )}
-          title="Все цвета"
-          data-testid="color-reset"
-        >
-          Все
-        </button>
+  // Заданный порядок: 6 строк
+  const rows: (string | null)[][] = [
+    [null, "Красный", "Зелёный"],
+    ["Голубой", "Жёлтый", "Золотой"],
+    ["Оранжевый", "Розовый", "Фиолетовый"],
+    ["Серебряный", "Серый", "Белый"],
+    ["Бело-жёлтый", "Бирюзовый", "Бесцветный"],
+    ["Пламенный шар"],
+  ];
 
-        {/* Color buttons with labels */}
-        {SPELL_COLORS.map((color) => (
-          <button
-            key={color.colorName}
-            onClick={() => onColorSelect(color.colorName)}
-            className={cn(
-              "h-7 rounded border transition-all flex items-center justify-center gap-1 px-1",
-              selectedColor === color.colorName 
-                ? "border-primary scale-105 shadow-md" 
-                : "border-transparent hover:border-primary/50"
-            )}
-            style={{ 
-              backgroundColor: color.hex,
-              boxShadow: selectedColor === color.colorName ? `0 0 8px ${color.hex}` : undefined
-            }}
-            title={color.name}
-            data-testid={`color-${color.colorName}`}
-          >
-            <span 
-              className="text-[9px] font-bold leading-none"
-              style={{ 
-                color: ['#FFFFFF', '#FFFACD', '#E5E5E5', '#C0C0C0'].includes(color.hex) ? '#000' : '#FFF',
-                textShadow: ['#FFFFFF', '#FFFACD', '#E5E5E5', '#C0C0C0'].includes(color.hex) 
-                  ? '0 0 2px rgba(0,0,0,0.5)' 
-                  : '0 0 2px rgba(0,0,0,0.8)'
-              }}
-            >
-              {color.name}
-            </span>
-          </button>
-        ))}
-      </div>
+  return (
+    <div className={cn("flex flex-col gap-0 justify-start w-full h-full min-w-0", className)}>
+      <div className="text-[9px] text-muted-foreground/70 font-medium">Цвет заклинания:</div>
+
+      {rows.map((row, idx) => (
+        <div key={idx} className="grid grid-cols-3 gap-0 w-full min-w-0 overflow-x-hidden">
+          {row.map((item, jdx) => {
+            if (item === null) {
+              return (
+                <button
+                  key={`reset-${jdx}`}
+                  onClick={() => onColorSelect(null)}
+                  className={cn(
+                    "h-7 w-1/3 justify-self-start min-w-0 rounded-sm border transition-all flex items-center justify-center text-[9px] font-medium px-1 truncate",
+                    selectedColor === null
+                      ? "border-primary bg-primary/20 ring-1 ring-primary"
+                      : "border-muted-foreground/30 hover:border-primary/50"
+                  )}
+                  title="Все цвета"
+                  data-testid="color-reset"
+                >
+                  Все
+                </button>
+              );
+            }
+
+            const color = SPELL_COLORS.find((c) => c.colorName === item);
+            if (!color) {
+              return <div key={`empty-${jdx}`} className="h-7" />;
+            }
+
+            return (
+              <button
+                key={color.colorName}
+                onClick={() => onColorSelect(color.colorName)}
+                className={cn(
+                  "h-7 w-1/3 justify-self-start min-w-0 rounded-sm border transition-all flex items-center justify-center gap-0.5 px-1 truncate",
+                  selectedColor === color.colorName
+                    ? "border-primary shadow-md ring-1 ring-primary"
+                    : "border-transparent hover:border-primary/50"
+                )}
+                style={{
+                  backgroundColor: color.hex,
+                  boxShadow:
+                    selectedColor === color.colorName ? `0 0 8px ${color.hex}` : undefined,
+                }}
+                title={color.name}
+                data-testid={`color-${color.colorName}`}
+              >
+                <span
+                  className="text-[9px] font-bold leading-none truncate"
+                  style={{
+                    color: ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
+                      ? "#000"
+                      : "#FFF",
+                    textShadow: ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
+                      ? "0 0 2px rgba(0,0,0,0.5)"
+                      : "0 0 2px rgba(0,0,0,0.8)",
+                  }}
+                >
+                  {color.name}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Заполняем недостающие клетки, чтобы сохранить 3 колонки */}
+          {Array.from({ length: Math.max(0, 3 - row.length) }).map((_, k) => (
+            <div key={`spacer-${k}`} className="h-7 min-w-0" />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
