@@ -111,6 +111,9 @@ export default function DuelArena() {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
   const isPhone = useIsPhone();
+  const [isCooldown, setIsCooldown] = useState(false);
+  const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPhaseRef = useRef<"attack" | "counter" | "complete" | null>(null);
 
   const roomId = params?.roomId;
 
@@ -389,6 +392,27 @@ export default function DuelArena() {
     }
   }, [session?.currentPhase]);
 
+<<<<<<< HEAD
+=======
+  // Cooldown after defense: disable drawing for 1.5s right after phase switches from counter -> attack
+  useEffect(() => {
+    const prev = lastPhaseRef.current;
+    const curr = roundPhase;
+    if (prev === "counter" && curr === "attack") {
+      if (cooldownTimerRef.current) {
+        clearTimeout(cooldownTimerRef.current);
+        cooldownTimerRef.current = null;
+      }
+      setIsCooldown(true);
+      cooldownTimerRef.current = setTimeout(() => {
+        setIsCooldown(false);
+        cooldownTimerRef.current = null;
+      }, 1500);
+    }
+    lastPhaseRef.current = curr;
+  }, [roundPhase]);
+
+>>>>>>> local-changes
   // Timer effect - handles countdown logic
   // Timer synchronization effect
   useEffect(() => {
@@ -812,7 +836,18 @@ export default function DuelArena() {
     const currentDefender = isBonusRound ? 2 : (isOddRound ? 2 : 1);
     
     // Add pending attack for the attacker
+<<<<<<< HEAD
     if (playerId === currentAttacker && session?.pendingAttackSpellId) {
+=======
+    // Guard against race conditions: only include pending attack
+    // when it belongs to the computed attacker and phase is counter
+    if (
+      playerId === currentAttacker &&
+      session?.pendingAttackSpellId &&
+      session?.pendingAttackPlayerId === currentAttacker &&
+      session?.currentPhase === "counter"
+    ) {
+>>>>>>> local-changes
       const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingAttackAccuracy || 0;
@@ -833,7 +868,17 @@ export default function DuelArena() {
     }
     
     // Add pending counter for the defender
+<<<<<<< HEAD
     if (playerId === currentDefender && session?.pendingCounterSpellId) {
+=======
+    // Guard against race conditions similarly
+    if (
+      playerId === currentDefender &&
+      session?.pendingCounterSpellId &&
+      session?.pendingCounterPlayerId === currentDefender &&
+      session?.currentPhase === "counter"
+    ) {
+>>>>>>> local-changes
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingCounterAccuracy || 0;
@@ -1533,6 +1578,7 @@ export default function DuelArena() {
               )}
               
               <div className="flex-1 flex items-center justify-center">
+<<<<<<< HEAD
                 <GestureCanvas
                 ref={canvasRef}
                 onGestureComplete={handleGestureComplete}
@@ -1542,6 +1588,24 @@ export default function DuelArena() {
                 showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
                 data-testid="gesture-canvas"
                 />
+=======
+                <div className="relative w-full h-full">
+                  <GestureCanvas
+                  ref={canvasRef}
+                  onGestureComplete={handleGestureComplete}
+                isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || isCooldown || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
+                  className="canvas-container"
+                  drawColor={getDrawColor()}
+                  showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
+                  data-testid="gesture-canvas"
+                />
+                  {isCooldown && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 text-yellow-300 text-sm font-medium">
+                      Подождите 1.5 сек. до начала следующего раунда
+                    </div>
+                  )}
+                </div>
+>>>>>>> local-changes
               </div>
               
               {userRole === "spectator" && (

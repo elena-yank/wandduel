@@ -391,7 +391,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       if (!session) {
         return res.status(404).json({ message: "Game session not found" });
       }
-
+      
+      const currentRound = session.currentRound || 1;
+      const isOddRound = currentRound % 2 === 1;
+      const isBonusRound = session.isBonusRound || false;
+      const expectedAttacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+      const expectedDefender = isBonusRound ? 2 : (isOddRound ? 2 : 1);
+      const expectedPlayer = session.currentPhase === "attack" ? expectedAttacker : expectedDefender;
+      if (playerId !== expectedPlayer) {
+        return res.json({ recognized: false, message: "Сейчас не ваш ход. Дождитесь своей фазы.", accuracy: 0 });
+      }
       // Get appropriate spells based on current phase
       const spellType = session.currentPhase === "attack" ? "attack" : "counter";
       let availableSpells = await storage.getSpellsByType(spellType);
@@ -720,7 +729,14 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       if (!session) {
         return res.status(404).json({ message: "Game session not found" });
       }
-
+      
+      const currentRound = session.currentRound || 1;
+      const isOddRound = currentRound % 2 === 1;
+      const isBonusRound = session.isBonusRound || false;
+      const expectedAttacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+      if (playerId !== expectedAttacker || session.currentPhase !== "attack") {
+        return res.json({ recognized: false, message: "Сейчас не ваш ход. Дождитесь своей фазы.", accuracy: 0 });
+      }
       // Update used spells for this player
       const usedSpellIds = playerId === 1
         ? (session.player1UsedAttackSpells as string[] || [])
