@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM mirror.gcr.io/library/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -10,16 +10,17 @@ COPY . .
 
 RUN npm run build
 
-FROM node:20-alpine
+FROM mirror.gcr.io/library/node:20-alpine
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/scripts ./scripts
 
 # App listens on 5000; expose matching port
 EXPOSE 5000
@@ -33,4 +34,4 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Run migrations on container start if DATABASE_URL is set, then start server
-CMD [ "sh", "-c", "if [ -n \"$DATABASE_URL\" ]; then echo 'Running db:push...'; npm run db:push; else echo 'Skipping db:push (no DATABASE_URL)'; fi; node dist/index.js" ]
+CMD [ "sh", "-c", "node scripts/check-db.js && node dist/index.js" ]

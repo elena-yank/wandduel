@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
+import fs from "fs";
+import path from "path";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
 import { initializeSpells } from "./init-spells";
 import { GameWebSocketServer } from "./websocket";
 import pg from "pg";
@@ -8,6 +9,17 @@ import pg from "pg";
 const { Pool } = pg;
 
 const app = express();
+
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
 
 declare module 'http' {
   interface IncomingMessage {
@@ -112,13 +124,20 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  // Настраиваем Vite только в dev через динамический импорт,
+  // чтобы в production не тянуть dev-зависимость "vite"
+  if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+    if (!fs.existsSync(distPath)) {
+      throw new Error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
+    }
+    app.use(express.static(distPath));
+    app.use("*", (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
@@ -128,7 +147,7 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || '5000', 10);
   // In development on Windows, bind to 127.0.0.1 to avoid ENOTSUP issues.
   // In production (including Docker), bind to 0.0.0.0 so the container is reachable.
-  const host = app.get("env") === "development" ? "127.0.0.1" : "0.0.0.0";
+  const host = process.env.NODE_ENV === "development" ? "127.0.0.1" : "0.0.0.0";
   server.listen({
     port,
     host,
