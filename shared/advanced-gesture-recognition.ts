@@ -192,15 +192,15 @@ export function isValidDrawing(gesture: Point[]): boolean {
   const isLineLike = width < 0.02 || height < 0.02;
   if (isLineLike) {
     const len = pathLength(norm);
-    if (len < 0.25) return false; // normalized length must be meaningful
+    if (len < 0.2) return false;
   } else {
     // For non-linear gestures, require a larger footprint
-    if (area < 0.02) return false; // was 0.005; tighten to reduce tiny scribbles
+    if (area < 0.01) return false;
   }
 
   // Path length threshold in normalized space
   const length = pathLength(norm);
-  if (length < 0.25) return false;
+  if (length < 0.2) return false;
 
   return true;
 }

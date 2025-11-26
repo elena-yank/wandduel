@@ -286,8 +286,8 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     // Use ref to get the latest points
     const currentPoints = gesturePointsRef.current;
 
-    // Trigger gesture complete if we have at least one point
-    if (currentPoints.length >= 1) {
+    // Trigger gesture complete only if we have a meaningful number of points
+    if (currentPoints.length >= 5) {
       onGestureComplete(currentPoints);
     }
 

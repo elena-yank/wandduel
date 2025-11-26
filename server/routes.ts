@@ -341,11 +341,18 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       const historyWithSpells = await Promise.all(
         attempts.map(async (attempt: any) => {
           const spell = attempt.spellId ? await storage.getSpellById(attempt.spellId) : null;
+          // Ensure accuracy is present: if missing or zero but we have gesture+spell, recompute for display
+          let displayAccuracy = attempt.accuracy;
+          if ((displayAccuracy === null || displayAccuracy === undefined || displayAccuracy === 0) && spell && attempt.drawnGesture) {
+            try {
+              displayAccuracy = calculateGestureAccuracy(attempt.drawnGesture as Point[], (spell.gesturePattern as Point[])) || 0;
+            } catch {}
+          }
           return {
             roundNumber: attempt.roundNumber,
             playerId: attempt.playerId,
             spell: spell,
-            accuracy: attempt.accuracy,
+            accuracy: displayAccuracy,
             successful: attempt.successful,
             drawnGesture: attempt.drawnGesture,
             isBonusRound: attempt.isBonusRound || false,
@@ -563,14 +570,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
       } else {
         // Counter spell
-        // If accuracy is below 50%, treat as "needs redraw" and do NOT record or auto-complete
-        if (selectedAccuracy < 50) {
-          return res.json({
-            recognized: false,
-            message: "Попробуйте перерисовать жест точнее",
-            accuracy: selectedAccuracy
-          });
-        }
+        
 
         // Compute time spent in counter phase and save pending data first
         const now = new Date();
@@ -624,13 +624,21 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             counterAccuracy,
             playerId,
             pendingAttackPlayerId: session.pendingAttackPlayerId ?? null,
+            attackTimeSpentSeconds: session.pendingAttackTimeSpent ?? null,
+            counterTimeSpentSeconds: counterTimeSpent
           });
           player1Score += award.p1;
           player2Score += award.p2;
 
           // Determine next round and bonus/winner state via utils
           const transition = nextRoundState(session, player1Score, player2Score, TOTAL_ROUNDS);
-          const bonusOutcome = calculateBonusRoundOutcome(session, attackAccuracy, counterAccuracy);
+          const bonusOutcome = calculateBonusRoundOutcome(
+            session,
+            attackAccuracy,
+            counterAccuracy,
+            session.pendingAttackTimeSpent ?? null,
+            counterTimeSpent
+          );
           const nextRound = transition.nextRound;
           const isBonusRound = session.isBonusRound || transition.isBonusRound;
           const bonusRoundWinner = bonusOutcome.bonusRoundWinner;
@@ -1002,35 +1010,18 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           player1Score += 1;
         }
       } else {
-        // Normal case - award point to player with higher accuracy
-        if (attackAccuracy > counterAccuracy) {
-          // Attack player has higher accuracy
-          // Determine which player is the attack player based on current round
-          const currentRoundNum = session.currentRound || 1;
-          const isOddRound = currentRoundNum % 2 === 1;
-          const isBonusRound = session.isBonusRound || false;
-          const attackPlayer = isBonusRound ? 1 : (isOddRound ? 1 : 2);
-          
-          if (attackPlayer === 1) {
-            player1Score += 1;
-          } else {
-            player2Score += 1;
-          }
-        } else if (counterAccuracy > attackAccuracy) {
-          // Counter player has higher accuracy
-          // Determine which player is the counter player based on current round
-          const currentRoundNum = session.currentRound || 1;
-          const isOddRound = currentRoundNum % 2 === 1;
-          const isBonusRound = session.isBonusRound || false;
-          const counterPlayer = isBonusRound ? 2 : (isOddRound ? 2 : 1);
-          
-          if (counterPlayer === 1) {
-            player1Score += 1;
-          } else {
-            player2Score += 1;
-          }
-        }
-        // If accuracies are equal, no points are awarded
+        // Normal case - award point using accuracy, break ties by time
+        const award = awardPointForRound({
+          session,
+          attackAccuracy,
+          counterAccuracy,
+          playerId: session.pendingCounterPlayerId ?? (session.currentRound % 2 === 1 ? 2 : 1),
+          pendingAttackPlayerId: session.pendingAttackPlayerId ?? null,
+          attackTimeSpentSeconds: session.pendingAttackTimeSpent ?? null,
+          counterTimeSpentSeconds: session.pendingCounterTimeSpent ?? null,
+        });
+        player1Score += award.p1;
+        player2Score += award.p2;
       }
 
       // Check if scores are equal after 10 rounds to trigger bonus round
@@ -1051,24 +1042,21 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       
       // If this is a bonus round, check if we have a winner
       if (session.isBonusRound) {
-        // Determine winner based on higher accuracy in the bonus round
-        if (attackAccuracy > counterAccuracy) {
-          // In bonus rounds, Player 1 is always the attacker
-          bonusRoundWinner = 1;
-        } else if (counterAccuracy > attackAccuracy) {
-          // In bonus rounds, Player 2 is always the counter
-          bonusRoundWinner = 2;
-        }
-        // If accuracies are equal, continue with another bonus round
-        if (attackAccuracy === counterAccuracy) {
-          isGameComplete = false; // Don't complete game yet
-          gameStatus = "active";
-          isBonusRound = true; // Continue with bonus round
-          // Keep same round number for bonus round
-        } else {
-          // Complete the game since bonus round is over with a winner
+        const outcome = calculateBonusRoundOutcome(
+          session,
+          attackAccuracy,
+          counterAccuracy,
+          session.pendingAttackTimeSpent ?? null,
+          session.pendingCounterTimeSpent ?? null
+        );
+        bonusRoundWinner = outcome.bonusRoundWinner;
+        if (outcome.isGameComplete) {
           isGameComplete = true;
           gameStatus = "completed";
+        } else {
+          isGameComplete = false;
+          gameStatus = "active";
+          isBonusRound = true;
         }
       }
       

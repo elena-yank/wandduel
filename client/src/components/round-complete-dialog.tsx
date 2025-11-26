@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import GesturePreview from "@/components/gesture-preview";
+import { evaluateDrawing } from "@shared/advanced-gesture-recognition";
 import type { GameSession, Point, Spell } from "@shared/schema";
 
 export default function RoundCompleteDialog({
@@ -24,8 +25,31 @@ export default function RoundCompleteDialog({
   const counterSpellName = session?.lastCompletedCounterSpellId
     ? allSpells.find(s => s.id === session.lastCompletedCounterSpellId)?.name
     : "Не выполнено";
-  // Align low accuracy threshold with success logic (57%)
-  const isLowCounterAccuracy = (session?.lastCompletedCounterAccuracy || 0) < 57;
+  const attackSpell = session?.lastCompletedAttackSpellId
+    ? allSpells.find(s => s.id === session.lastCompletedAttackSpellId)
+    : undefined;
+  const counterSpell = session?.lastCompletedCounterSpellId
+    ? allSpells.find(s => s.id === session.lastCompletedCounterSpellId)
+    : undefined;
+
+  const attackAccRaw = session?.lastCompletedAttackAccuracy ?? null;
+  const counterAccRaw = session?.lastCompletedCounterAccuracy ?? null;
+
+  const attackAcc = (attackAccRaw && attackAccRaw > 0) ? attackAccRaw : (
+    attackGesture && attackSpell ? (() => {
+      const res = evaluateDrawing(attackGesture, attackSpell.gesturePattern as Point[]);
+      return res.valid ? res.score : 0;
+    })() : (attackAccRaw ?? 0)
+  );
+
+  const counterAcc = (counterAccRaw && counterAccRaw > 0) ? counterAccRaw : (
+    counterGesture && counterSpell ? (() => {
+      const res = evaluateDrawing(counterGesture, counterSpell.gesturePattern as Point[]);
+      return res.valid ? res.score : 0;
+    })() : (counterAccRaw ?? 0)
+  );
+
+  const isLowCounterAccuracy = (counterAcc || 0) < 57;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,7 +71,7 @@ export default function RoundCompleteDialog({
                   {attackSpellName}
                 </p>
                 <p className="text-xs text-primary">
-                  Точность: {session?.lastCompletedAttackAccuracy || 0}%
+                  Точность: {attackAcc || 0}%
                 </p>
                 {typeof session?.lastCompletedAttackTimeSpent === 'number' ? (
                   <p className="text-xs text-muted-foreground">
@@ -77,7 +101,7 @@ export default function RoundCompleteDialog({
                   {counterSpellName}
                 </p>
                 <p className={`text-xs ${isLowCounterAccuracy ? 'text-muted-foreground' : (session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}`}>
-                  Точность: {session?.lastCompletedCounterAccuracy || 0}%
+                  Точность: {counterAcc || 0}%
                 </p>
                 {typeof session?.lastCompletedCounterTimeSpent === 'number' ? (
                   <p className="text-xs text-muted-foreground">

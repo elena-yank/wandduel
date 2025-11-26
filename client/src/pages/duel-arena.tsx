@@ -265,8 +265,8 @@ export default function DuelArena() {
         return;
       }
 
-      // Handle wrong defense used - show toast, but suppress for very low accuracy (<50%)
-      if (result.wrongDefenseUsed && (result.accuracy ?? 0) >= 50) {
+      // Handle wrong defense used
+      if (result.wrongDefenseUsed) {
         // Show correct gesture for 1 second before clearing
         if (result.spell && canvasRef.current) {
           canvasRef.current.showCorrectGesture(result.spell.gesturePattern as Point[]);
@@ -392,8 +392,6 @@ export default function DuelArena() {
     }
   }, [session?.currentPhase]);
 
-<<<<<<< HEAD
-=======
   // Cooldown after defense: disable drawing for 1.5s right after phase switches from counter -> attack
   useEffect(() => {
     const prev = lastPhaseRef.current;
@@ -411,8 +409,6 @@ export default function DuelArena() {
     }
     lastPhaseRef.current = curr;
   }, [roundPhase]);
-
->>>>>>> local-changes
   // Timer effect - handles countdown logic
   // Timer synchronization effect
   useEffect(() => {
@@ -836,9 +832,6 @@ export default function DuelArena() {
     const currentDefender = isBonusRound ? 2 : (isOddRound ? 2 : 1);
     
     // Add pending attack for the attacker
-<<<<<<< HEAD
-    if (playerId === currentAttacker && session?.pendingAttackSpellId) {
-=======
     // Guard against race conditions: only include pending attack
     // when it belongs to the computed attacker and phase is counter
     if (
@@ -847,7 +840,6 @@ export default function DuelArena() {
       session?.pendingAttackPlayerId === currentAttacker &&
       session?.currentPhase === "counter"
     ) {
->>>>>>> local-changes
       const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingAttackAccuracy || 0;
@@ -868,9 +860,6 @@ export default function DuelArena() {
     }
     
     // Add pending counter for the defender
-<<<<<<< HEAD
-    if (playerId === currentDefender && session?.pendingCounterSpellId) {
-=======
     // Guard against race conditions similarly
     if (
       playerId === currentDefender &&
@@ -878,7 +867,6 @@ export default function DuelArena() {
       session?.pendingCounterPlayerId === currentDefender &&
       session?.currentPhase === "counter"
     ) {
->>>>>>> local-changes
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingCounterAccuracy || 0;
@@ -1365,8 +1353,19 @@ export default function DuelArena() {
 
                   const attackAccuracy = attackHistory?.accuracy || 0;
                   const defenseAccuracy = defenseHistory?.accuracy || 0;
-                  const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackAccuracy > defenseAccuracy) : 0;
-                  const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseAccuracy > attackAccuracy) : 0;
+                  const ta = typeof attackHistory?.timeSpentSeconds === 'number' ? attackHistory.timeSpentSeconds as number : null;
+                  const td = typeof defenseHistory?.timeSpentSeconds === 'number' ? defenseHistory.timeSpentSeconds as number : null;
+                  let attackWins = false;
+                  let defenseWins = false;
+                  if (attackAccuracy > defenseAccuracy) {
+                    attackWins = true;
+                  } else if (defenseAccuracy > attackAccuracy) {
+                    defenseWins = true;
+                  } else if (ta != null && td != null) {
+                    if (ta < td) attackWins = true; else if (td < ta) defenseWins = true;
+                  }
+                  const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackWins) : 0;
+                  const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseWins) : 0;
 
                   return (
                     <div key={`${roundNumber}-${isBonusRound ? 'bonus' : 'regular'}`} style={{ border: "1px solid #E5E7EB", borderRadius: 12, padding: 16 }}>
@@ -1578,22 +1577,11 @@ export default function DuelArena() {
               )}
               
               <div className="flex-1 flex items-center justify-center">
-<<<<<<< HEAD
-                <GestureCanvas
-                ref={canvasRef}
-                onGestureComplete={handleGestureComplete}
-                isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
-                className="canvas-container"
-                drawColor={getDrawColor()}
-                showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
-                data-testid="gesture-canvas"
-                />
-=======
                 <div className="relative w-full h-full">
                   <GestureCanvas
                   ref={canvasRef}
                   onGestureComplete={handleGestureComplete}
-                isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || isCooldown || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
+                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || isCooldown || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
                   className="canvas-container"
                   drawColor={getDrawColor()}
                   showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
@@ -1605,7 +1593,6 @@ export default function DuelArena() {
                     </div>
                   )}
                 </div>
->>>>>>> local-changes
               </div>
               
               {userRole === "spectator" && (
