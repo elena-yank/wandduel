@@ -15,6 +15,7 @@ export function awardPointForRound(args: AwardArgs) {
   const { session, attackAccuracy, counterAccuracy, playerId, pendingAttackPlayerId, isTimeout, attackTimeSpentSeconds, counterTimeSpentSeconds } = args;
   let p1 = 0;
   let p2 = 0;
+  let tie = false;
 
   if (isTimeout) {
     // Defender gets point depending on who timed out
@@ -23,7 +24,7 @@ export function awardPointForRound(args: AwardArgs) {
     } else if (attackAccuracy === 100 && counterAccuracy === 0) {
       p1 += 1;
     }
-    return { p1, p2 };
+    return { p1, p2, tie };
   }
 
   if (attackAccuracy > counterAccuracy) {
@@ -36,7 +37,6 @@ export function awardPointForRound(args: AwardArgs) {
     const defender = session.isBonusRound ? 2 : ((session.currentRound ?? 1) % 2 === 1 ? 2 : 1);
     if (defender === 1) p1 += 1; else p2 += 1;
   } else {
-    // tie -> resolve by time spent (faster wins)
     const attacker = pendingAttackPlayerId
       ?? (session.isBonusRound ? 1 : ((session.currentRound ?? 1) % 2 === 1 ? 1 : 2));
     const defender = session.isBonusRound ? 2 : ((session.currentRound ?? 1) % 2 === 1 ? 2 : 1);
@@ -47,10 +47,14 @@ export function awardPointForRound(args: AwardArgs) {
         if (attacker === 1) p1 += 1; else p2 += 1;
       } else if (tc < ta) {
         if (defender === 1) p1 += 1; else p2 += 1;
+      } else {
+        tie = true;
       }
+    } else {
+      tie = true;
     }
   }
-  return { p1, p2 };
+  return { p1, p2, tie };
 }
 
 export function calculateBonusRoundOutcome(session: GameSession, attackAccuracy: number, counterAccuracy: number, attackTimeSpentSeconds?: number | null, counterTimeSpentSeconds?: number | null) {

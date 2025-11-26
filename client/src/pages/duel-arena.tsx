@@ -1147,13 +1147,21 @@ export default function DuelArena() {
                     const defenseHistory = defenderId === 1 ? player1 : player2;
                     if (!attackHistory) return null;
 
-                    // Determine accuracies
                     const attackAccuracy = attackHistory?.accuracy || 0;
                     const defenseAccuracy = defenseHistory?.accuracy || 0;
-
-                    // Points calculation
-                    const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackAccuracy > defenseAccuracy) : 0;
-                    const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseAccuracy > attackAccuracy) : 0;
+                    const ta = typeof attackHistory?.timeSpentSeconds === 'number' ? attackHistory.timeSpentSeconds as number : null;
+                    const td = typeof defenseHistory?.timeSpentSeconds === 'number' ? defenseHistory.timeSpentSeconds as number : null;
+                    let attackWins = false;
+                    let defenseWins = false;
+                    if (attackAccuracy > defenseAccuracy) {
+                      attackWins = true;
+                    } else if (defenseAccuracy > attackAccuracy) {
+                      defenseWins = true;
+                    } else if (ta != null && td != null) {
+                      if (ta < td) attackWins = true; else if (td < ta) defenseWins = true;
+                    }
+                    const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackWins) : 0;
+                    const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseWins) : 0;
 
                     return (
                       <div key={`${roundNumber}-${isBonusRound ? 'bonus' : 'regular'}`} className="bg-background/50 rounded-lg p-2 border border-border/30 text-left">

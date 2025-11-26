@@ -640,7 +640,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             counterTimeSpent
           );
           const nextRound = transition.nextRound;
-          const isBonusRound = session.isBonusRound || transition.isBonusRound;
+          const isBonusRound = session.isBonusRound || transition.isBonusRound || award.tie;
           const bonusRoundWinner = bonusOutcome.bonusRoundWinner;
           const isGameComplete = bonusOutcome.isGameComplete || transition.isGameComplete;
           let gameStatus: "active" | "completed" | "paused" = isGameComplete ? "completed" : "active";
@@ -1010,7 +1010,6 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           player1Score += 1;
         }
       } else {
-        // Normal case - award point using accuracy, break ties by time
         const award = awardPointForRound({
           session,
           attackAccuracy,
@@ -1022,13 +1021,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
         player1Score += award.p1;
         player2Score += award.p2;
+        if (award.tie) {
+          session.isBonusRound = true;
+        }
       }
 
       // Check if scores are equal after 10 rounds to trigger bonus round
       const nextRound = currentRound + 1;
       let isGameComplete = nextRound > 10;
       let gameStatus: "active" | "completed" | "paused" = isGameComplete ? "completed" : (session.gameStatus || "active");
-      let isBonusRound = false;
+      let isBonusRound = session.isBonusRound || false;
       let bonusRoundWinner = null;
       
       // If we're at the end of round 10, check for tie
@@ -1041,7 +1043,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       }
       
       // If this is a bonus round, check if we have a winner
-      if (session.isBonusRound) {
+      if (isBonusRound) {
         const outcome = calculateBonusRoundOutcome(
           session,
           attackAccuracy,
@@ -1067,7 +1069,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       const nextAttacker = isBonusRound ? 1 : (nextRound % 2 === 1 ? 1 : 2);
       
       const updates = {
-        currentRound: isBonusRound ? (session.isBonusRound ? currentRound + 1 : 11) : nextRound, // For bonus rounds, start at 11 and increment
+        currentRound: isBonusRound ? (session.isBonusRound ? currentRound + 1 : 11) : nextRound,
         currentPlayer: nextAttacker,
         currentPhase: "attack" as const,
         player1Score: player1Score.toString(),
