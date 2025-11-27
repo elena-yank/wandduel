@@ -118,7 +118,12 @@ export default function DuelArena() {
   const roomId = params?.roomId;
 
   // Initialize WebSocket connection only when we have sessionId and userId
-  const { isConnected: wsConnected, connectionError: wsError } = useWebSocket({
+  const remotePrevPointRef = useRef<Point | null>(null);
+  const remoteColorRef = useRef<string | null>(null);
+  const actualPlayerRef = useRef<number | null>(null);
+  const userRoleRef = useRef<string | null>(null);
+
+  const { isConnected: wsConnected, connectionError: wsError, sendMessage } = useWebSocket({
     sessionId: currentSessionId || undefined,
     userId: userId || undefined,
     onMessage: (message) => {
@@ -126,9 +131,42 @@ export default function DuelArena() {
       
       // Handle real-time updates
       if (message.type === 'session_update') {
-        // Убраны всплывающие оповещения: не показываем тосты на событиях
-        // При необходимости можно добавить ненавязчивое логирование
-        // console.log('Session update:', message.updateType)
+        if (message.updateType === 'drawing_started') {
+          const { playerId, point, color } = message.data || {};
+          const currentRole = userRoleRef.current;
+          const currentPlayer = actualPlayerRef.current;
+          const shouldRender = currentRole === 'spectator' || (currentPlayer !== null && playerId !== currentPlayer);
+          if (shouldRender && point) {
+            remotePrevPointRef.current = point;
+            remoteColorRef.current = color || null;
+            canvasRef.current?.clearCanvas();
+          }
+        } else if (message.updateType === 'drawing_progress') {
+          const { playerId, point, color } = message.data || {};
+          const currentRole = userRoleRef.current;
+          const currentPlayer = actualPlayerRef.current;
+          const shouldRender = currentRole === 'spectator' || (currentPlayer !== null && playerId !== currentPlayer);
+          if (shouldRender && point) {
+            if (!remotePrevPointRef.current) {
+              remotePrevPointRef.current = point;
+              remoteColorRef.current = color || remoteColorRef.current;
+            } else {
+              canvasRef.current?.drawExternalSegment(remotePrevPointRef.current, point, (color || remoteColorRef.current) || undefined);
+              remotePrevPointRef.current = point;
+            }
+          }
+        } else if (message.updateType === 'drawing_completed') {
+          const { playerId } = message.data || {};
+          const currentRole = userRoleRef.current;
+          const currentPlayer = actualPlayerRef.current;
+          const shouldRender = currentRole === 'spectator' || (currentPlayer !== null && playerId !== currentPlayer);
+          if (shouldRender) {
+            remotePrevPointRef.current = null;
+            remoteColorRef.current = null;
+            // Clear after completion to match local behavior
+            canvasRef.current?.clearCanvas();
+          }
+        }
       }
     },
     onConnect: () => {
@@ -384,6 +422,11 @@ export default function DuelArena() {
   // Find current user's participant to get their actual player number
   const currentParticipant = userId ? participants.find(p => p.userId === userId) : null;
   const actualPlayerNumber = currentParticipant?.playerNumber || playerNumber;
+
+  useEffect(() => {
+    actualPlayerRef.current = actualPlayerNumber ?? null;
+    userRoleRef.current = userRole ?? null;
+  }, [actualPlayerNumber, userRole]);
 
   // Sync roundPhase with session.currentPhase
   useEffect(() => {
@@ -1586,15 +1629,48 @@ export default function DuelArena() {
               
               <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-full h-full">
-                  <GestureCanvas
-                  ref={canvasRef}
-                  onGestureComplete={handleGestureComplete}
-                  isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || isCooldown || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
-                  className="canvas-container"
-                  drawColor={getDrawColor()}
-                  showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
-                  data-testid="gesture-canvas"
-                />
+              <GestureCanvas
+                ref={canvasRef}
+                onGestureComplete={handleGestureComplete}
+                isDisabled={recognizeGestureMutation.isPending || userRole === "spectator" || isCooldown || (actualPlayerNumber !== null && actualPlayerNumber !== getCurrentPlayer()) || (userRole === "player" && actualPlayerNumber === 1 && players.length < 2)}
+                className="canvas-container"
+                drawColor={getDrawColor()}
+                showFeedback={(correctGesture) => canvasRef.current?.showCorrectGesture(correctGesture)}
+                onDrawStart={(point) => {
+                  if (!currentSessionId || !actualPlayerNumber) return;
+                  sendMessage?.({
+                    type: 'drawing_started',
+                    sessionId: currentSessionId,
+                    userId,
+                    playerId: actualPlayerNumber,
+                    point,
+                    color: getDrawColor(),
+                  });
+                }}
+                onDrawProgress={(point) => {
+                  if (!currentSessionId || !actualPlayerNumber) return;
+                  sendMessage?.({
+                    type: 'drawing_progress',
+                    sessionId: currentSessionId,
+                    userId,
+                    playerId: actualPlayerNumber,
+                    point,
+                    color: getDrawColor(),
+                  });
+                }}
+                onDrawEnd={(points) => {
+                  if (!currentSessionId || !actualPlayerNumber) return;
+                  sendMessage?.({
+                    type: 'drawing_completed',
+                    sessionId: currentSessionId,
+                    userId,
+                    playerId: actualPlayerNumber,
+                    points,
+                    color: getDrawColor(),
+                  });
+                }}
+                data-testid="gesture-canvas"
+              />
                   {isCooldown && (
                     <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 text-yellow-300 text-sm font-medium">
                       Подождите 1.5 сек. до начала следующего раунда

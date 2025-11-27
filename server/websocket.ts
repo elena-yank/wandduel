@@ -12,7 +12,7 @@ class GameWebSocketServer {
   private clients: Map<string, SessionClient[]> = new Map(); // sessionId -> clients[]
 
   constructor(server: Server) {
-    this.wss = new WebSocketServer({ server, path: '/ws' });
+    this.wss = new WebSocketServer({ server, path: '/gamews' });
     this.setupWebSocketServer();
   }
 
@@ -48,6 +48,33 @@ class GameWebSocketServer {
         break;
       case 'leave_session':
         this.leaveSession(ws, data.sessionId);
+        break;
+      case 'drawing_started':
+        if (data.sessionId) {
+          this.broadcastSessionUpdate(data.sessionId, 'drawing_started', {
+            playerId: data.playerId,
+            point: data.point,
+            color: data.color
+          });
+        }
+        break;
+      case 'drawing_progress':
+        if (data.sessionId) {
+          this.broadcastSessionUpdate(data.sessionId, 'drawing_progress', {
+            playerId: data.playerId,
+            point: data.point,
+            color: data.color
+          });
+        }
+        break;
+      case 'drawing_completed':
+        if (data.sessionId) {
+          this.broadcastSessionUpdate(data.sessionId, 'drawing_completed', {
+            playerId: data.playerId,
+            points: data.points,
+            color: data.color
+          });
+        }
         break;
       default:
         console.log('Unknown WebSocket message type:', data.type);
@@ -95,8 +122,8 @@ class GameWebSocketServer {
   }
 
   private removeClient(ws: WebSocket) {
-    for (const [sessionId, sessionClients] of this.clients.entries()) {
-      const index = sessionClients.findIndex(client => client.ws === ws);
+    for (const [sessionId, sessionClients] of Array.from(this.clients.entries())) {
+      const index = sessionClients.findIndex((client: SessionClient) => client.ws === ws);
       if (index !== -1) {
         sessionClients.splice(index, 1);
         
@@ -138,8 +165,8 @@ class GameWebSocketServer {
     });
 
     let totalSent = 0;
-    for (const sessionClients of this.clients.values()) {
-      sessionClients.forEach(client => {
+    for (const sessionClients of Array.from(this.clients.values())) {
+      sessionClients.forEach((client: SessionClient) => {
         if (client.ws.readyState === WebSocket.OPEN) {
           client.ws.send(message);
           totalSent++;
@@ -159,7 +186,7 @@ class GameWebSocketServer {
 
   public getAllConnectedClients(): number {
     let total = 0;
-    for (const sessionClients of this.clients.values()) {
+    for (const sessionClients of Array.from(this.clients.values())) {
       total += sessionClients.length;
     }
     return total;

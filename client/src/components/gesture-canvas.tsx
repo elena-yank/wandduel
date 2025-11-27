@@ -10,16 +10,20 @@ interface GestureCanvasProps {
   drawColor?: string; // Hex color for drawing the gesture
   showFeedback?: (correctGesture: Point[]) => void; // Function to show correct gesture feedback
   restrictToSquare?: boolean; // If true, only allow drawing inside a centered square and render its border
+  onDrawStart?: (point: Point) => void;
+  onDrawProgress?: (point: Point) => void;
+  onDrawEnd?: (points: Point[]) => void;
 }
 
 export interface GestureCanvasRef {
   clearCanvas: () => void;
   showCorrectGesture: (gesture: Point[]) => void; // Method to show correct gesture
   showReferencePattern: (gesture: Point[], onClear?: () => void) => void; // Method to show reference pattern overlay with optional callback
+  drawExternalSegment: (from: Point, to: Point, color?: string) => void;
 }
 
 const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
-  ({ onGestureComplete, isDisabled = false, className = "", drawColor = "hsl(259, 74%, 56%)", showFeedback, restrictToSquare = false, ...props }, ref) => {
+  ({ onGestureComplete, isDisabled = false, className = "", drawColor = "hsl(259, 74%, 56%)", showFeedback, restrictToSquare = false, onDrawStart, onDrawProgress, onDrawEnd, ...props }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [gesturePoints, setGesturePoints] = useState<Point[]>([]);
@@ -28,6 +32,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paddingRef = useRef<number>(40); // padding for square bounds from each edge
+  const externalDrawingRef = useRef<boolean>(false);
   const isPhone = useIsPhone();
 
   // Update square padding: 0 on phones to match CardContent offsets; 40 on desktop
@@ -70,6 +75,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     setGesturePoints([]);
     gesturePointsRef.current = [];
     isDrawingRef.current = false;
+    externalDrawingRef.current = false;
   }, [restrictToSquare]);
 
   // Show the correct gesture with purple highlighting for 1 second
@@ -187,11 +193,29 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   }, [clearCanvas]);
 
   // Expose clearCanvas and showCorrectGesture methods to parent
+  const drawExternalSegment = useCallback((from: Point, to: Point, color?: string) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!ctx) return;
+    ctx.strokeStyle = color || drawColor;
+    ctx.lineWidth = 1;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = color || drawColor;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    externalDrawingRef.current = true;
+  }, [drawColor]);
+
   useImperativeHandle(ref, () => ({
     clearCanvas,
     showCorrectGesture,
     showReferencePattern,
-  }), [clearCanvas, showCorrectGesture, showReferencePattern]);
+    drawExternalSegment,
+  }), [clearCanvas, showCorrectGesture, showReferencePattern, drawExternalSegment]);
 
   // Helper: check if a point is within the allowed square bounds
   const isInBounds = useCallback((point: Point) => {
@@ -256,6 +280,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     isDrawingRef.current = true;
     setGesturePoints([point]);
     gesturePointsRef.current = [point];
+    if (onDrawStart) onDrawStart(point);
 
     // Play wind chime sound
     if (audioRef.current) {
@@ -269,7 +294,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
 
     ctx.beginPath();
     ctx.moveTo(point.x, point.y);
-  }, [isDisabled, clearCanvas, isInBounds]);
+  }, [isDisabled, clearCanvas, isInBounds, onDrawStart]);
 
   const stopDrawing = useCallback(() => {
     if (isDisabled) return;
@@ -290,6 +315,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     if (currentPoints.length >= 5) {
       onGestureComplete(currentPoints);
     }
+    if (onDrawEnd) onDrawEnd(currentPoints);
 
     // Fallback: clear the canvas after a short delay to allow visual comparison
     // If showReferencePattern/showCorrectGesture is called, they will override this timeout
@@ -300,7 +326,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     feedbackTimeoutRef.current = setTimeout(() => {
       clearCanvas();
     }, 2000);
-  }, [isDisabled, onGestureComplete, clearCanvas]);
+  }, [isDisabled, onGestureComplete, clearCanvas, onDrawEnd]);
 
   const draw = useCallback((point: Point) => {
     if (!isDrawingRef.current || isDisabled) return;
@@ -313,6 +339,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     const newPoints = [...gesturePointsRef.current, point];
     setGesturePoints(newPoints);
     gesturePointsRef.current = newPoints;
+    if (onDrawProgress) onDrawProgress(point);
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -327,7 +354,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
-  }, [isDisabled, drawColor, isInBounds, stopDrawing]);
+  }, [isDisabled, drawColor, isInBounds, stopDrawing, onDrawProgress]);
 
   // Mouse event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -374,7 +401,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
 
   // Clear canvas on component update
   useEffect(() => {
-    if (!isDrawing && gesturePoints.length === 0) {
+    if (!isDrawing && gesturePoints.length === 0 && !externalDrawingRef.current) {
       clearCanvas();
     }
   }, [isDrawing, gesturePoints.length, clearCanvas]);

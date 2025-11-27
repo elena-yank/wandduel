@@ -36,7 +36,7 @@ export function useWebSocket(options: UseWebSocketOptions) {
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const wsUrl = `${protocol}//${window.location.host}/gamews`;
       
       console.log('Connecting to WebSocket:', wsUrl);
       wsRef.current = new WebSocket(wsUrl);

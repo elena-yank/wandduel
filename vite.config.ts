@@ -41,6 +41,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/gamews": {
+        target: "ws://127.0.0.1:5000",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
     },
     // Use default HMR settings to avoid invalid clientPort issues in preview
   },
