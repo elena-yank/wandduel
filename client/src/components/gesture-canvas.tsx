@@ -298,27 +298,23 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
 
   const stopDrawing = useCallback(() => {
     if (isDisabled) return;
+    if (!isDrawingRef.current) return;
 
     setIsDrawing(false);
     isDrawingRef.current = false;
 
-    // Stop wind chime sound
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
 
-    // Use ref to get the latest points
     const currentPoints = gesturePointsRef.current;
 
-    // Trigger gesture complete only if we have a meaningful number of points
     if (currentPoints.length >= 5) {
       onGestureComplete(currentPoints);
     }
     if (onDrawEnd) onDrawEnd(currentPoints);
 
-    // Fallback: clear the canvas after a short delay to allow visual comparison
-    // If showReferencePattern/showCorrectGesture is called, they will override this timeout
     if (feedbackTimeoutRef.current) {
       clearTimeout(feedbackTimeoutRef.current);
       feedbackTimeoutRef.current = null;
