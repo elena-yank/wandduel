@@ -307,7 +307,11 @@ export default function DuelArena() {
       if (result.wrongDefenseUsed) {
         // Show correct gesture for 1 second before clearing
         if (result.spell && canvasRef.current) {
-          canvasRef.current.showCorrectGesture(result.spell.gesturePattern as Point[]);
+          const isImpervius = result.spell.name?.toLowerCase?.() === "импервиус";
+          canvasRef.current.showCorrectGesture(
+            result.spell.gesturePattern as Point[],
+            { scaleRatio: isImpervius ? 0.85 : undefined }
+          );
         }
         
         toast({
@@ -341,9 +345,10 @@ export default function DuelArena() {
         
         // Show reference pattern for 1.5 seconds before clearing canvas (only for the player who drew the spell)
         if (result.spell && canvasRef.current && actualPlayerNumber === getCurrentPlayer()) {
+          const isImpervius = result.spell.name?.toLowerCase?.() === "импервиус";
           canvasRef.current.showReferencePattern(result.spell.gesturePattern as Point[], () => {
             setCanvasCleared(true);
-          });
+          }, { scaleRatio: isImpervius ? 0.85 : undefined });
         } else {
           // Clear canvas immediately for other players or if conditions not met
           canvasRef.current?.clearCanvas();

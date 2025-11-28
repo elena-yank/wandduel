@@ -17,8 +17,8 @@ interface GestureCanvasProps {
 
 export interface GestureCanvasRef {
   clearCanvas: () => void;
-  showCorrectGesture: (gesture: Point[]) => void; // Method to show correct gesture
-  showReferencePattern: (gesture: Point[], onClear?: () => void) => void; // Method to show reference pattern overlay with optional callback
+  showCorrectGesture: (gesture: Point[], opts?: { scaleRatio?: number }) => void; // Method to show correct gesture
+  showReferencePattern: (gesture: Point[], onClear?: () => void, opts?: { scaleRatio?: number }) => void; // Method to show reference pattern overlay with optional callback
   drawExternalSegment: (from: Point, to: Point, color?: string) => void;
 }
 
@@ -79,7 +79,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   }, [restrictToSquare]);
 
   // Show the correct gesture with purple highlighting for 1 second
-  const showCorrectGesture = useCallback((gesture: Point[]) => {
+  const showCorrectGesture = useCallback((gesture: Point[], opts?: { scaleRatio?: number }) => {
     const canvas = canvasRef.current;
     if (!canvas || gesture.length === 0) return;
     
@@ -92,23 +92,48 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
       feedbackTimeoutRef.current = null;
     }
     
-    // Clear canvas and draw the correct gesture in purple
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Compute bounding box of gesture
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of gesture) {
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    }
+    const width = (maxX - minX) || 1;
+    const height = (maxY - minY) || 1;
+
+    // Target area: full canvas or restricted square
+    const pad = restrictToSquare ? paddingRef.current : 0;
+    const targetW = canvas.width - pad * 2;
+    const targetH = canvas.height - pad * 2;
+    const baseScale = Math.min(targetW / width, targetH / height);
+    const scale = baseScale * (opts?.scaleRatio ?? 0.95);
+    const offsetX = pad + (targetW - width * scale) / 2;
+    const offsetY = pad + (targetH - height * scale) / 2;
+
+    // Draw scaled gesture with purple color and glow
     ctx.beginPath();
-    ctx.moveTo(gesture[0].x, gesture[0].y);
-    
-    // Draw the gesture with purple color and glow effect
+    const x0 = (gesture[0].x - minX) * scale + offsetX;
+    const y0 = (gesture[0].y - minY) * scale + offsetY;
+    ctx.moveTo(x0, y0);
+
     ctx.strokeStyle = "#a855f7"; // Purple color
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.shadowBlur = 15;
     ctx.shadowColor = "#a855f7";
-    
+
     for (let i = 1; i < gesture.length; i++) {
-      ctx.lineTo(gesture[i].x, gesture[i].y);
+      const xi = (gesture[i].x - minX) * scale + offsetX;
+      const yi = (gesture[i].y - minY) * scale + offsetY;
+      ctx.lineTo(xi, yi);
     }
-    
+
     ctx.stroke();
     
     // Reset shadow
@@ -121,7 +146,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
   }, [clearCanvas, showFeedback]);
 
   // Show the reference pattern overlay on top of existing drawing for 1.5 seconds
-  const showReferencePattern = useCallback((gesture: Point[], onClear?: () => void) => {
+  const showReferencePattern = useCallback((gesture: Point[], onClear?: () => void, opts?: { scaleRatio?: number }) => {
     const canvas = canvasRef.current;
     if (!canvas || gesture.length === 0) return;
     
@@ -140,7 +165,7 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     // Reset any transformations to ensure we're drawing in the correct coordinate space
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     
-    // Calculate bounding box of the gesture
+    // Calculate bounding box and scaling to fit target area
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const point of gesture) {
       minX = Math.min(minX, point.x);
@@ -148,22 +173,23 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
       maxX = Math.max(maxX, point.x);
       maxY = Math.max(maxY, point.y);
     }
-    
-    // Calculate center of the gesture bounding box
-    const gestureCenterX = (minX + maxX) / 2;
-    const gestureCenterY = (minY + maxY) / 2;
-    
-    // Calculate center of the canvas
-    const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 2;
-    
-    // Calculate offset to center the gesture
-    const offsetX = canvasCenterX - gestureCenterX;
-    const offsetY = canvasCenterY - gestureCenterY;
-    
+    const width = (maxX - minX) || 1;
+    const height = (maxY - minY) || 1;
+
+    const pad = restrictToSquare ? paddingRef.current : 0;
+    const availW = canvas.width - pad * 2;
+    const availH = canvas.height - pad * 2;
+    const areaW = availW * (2 / 3);
+    const areaH = availH * (2 / 3);
+    const scale = Math.min(areaW / width, areaH / height);
+    const offsetX = pad + (availW - areaW) / 2 + (areaW - width * scale) / 2;
+    const offsetY = pad + (availH - areaH) / 2 + (areaH - height * scale) / 2;
+
     // Draw the reference pattern on top of existing drawing with purple color and glow effect
     ctx.beginPath();
-    ctx.moveTo(gesture[0].x + offsetX, gesture[0].y + offsetY);
+    const x0 = (gesture[0].x - minX) * scale + offsetX;
+    const y0 = (gesture[0].y - minY) * scale + offsetY;
+    ctx.moveTo(x0, y0);
     
     // Draw the gesture with purple color and glow effect
     ctx.strokeStyle = "#a855f7"; // Purple color
@@ -174,7 +200,9 @@ const GestureCanvas = forwardRef<GestureCanvasRef, GestureCanvasProps>(
     ctx.shadowColor = "#a855f7";
     
     for (let i = 1; i < gesture.length; i++) {
-      ctx.lineTo(gesture[i].x + offsetX, gesture[i].y + offsetY);
+      const xi = (gesture[i].x - minX) * scale + offsetX;
+      const yi = (gesture[i].y - minY) * scale + offsetY;
+      ctx.lineTo(xi, yi);
     }
     
     ctx.stroke();

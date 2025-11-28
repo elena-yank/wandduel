@@ -11,6 +11,7 @@ export const SPELL_COLORS = [
   { name: "Красный", hex: "#EF4444", colorName: "Красный" },
   { name: "Зелёный", hex: "#22C55E", colorName: "Зелёный" },
   { name: "Голубой", hex: "#3B82F6", colorName: "Голубой" },
+  { name: "Синий", hex: "#0000FF", colorName: "Синий" },
   { name: "Жёлтый", hex: "#FBBF24", colorName: "Жёлтый" },
   { name: "Золотой", hex: "#FFD700", colorName: "Золотой" },
   { name: "Оранжевый", hex: "#FFA500", colorName: "Оранжевый" },
@@ -33,7 +34,7 @@ export default function CompactColorPalette({ selectedColor, onColorSelect, clas
     ["Оранжевый", "Розовый", "Фиолетовый"],
     ["Серебряный", "Серый", "Белый"],
     ["Бело-жёлтый", "Бирюзовый", "Бесцветный"],
-    ["Пламенный шар"],
+    ["Пламенный шар", "Синий"],
   ];
 
   return (

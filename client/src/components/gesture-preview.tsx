@@ -19,7 +19,7 @@ export default function GesturePreview({ gesture, className = "" }: { gesture: P
     const maxY = Math.max(...gesture.map(p => p.y));
     const width = maxX - minX || 1;
     const height = maxY - minY || 1;
-    const scale = Math.min(canvas.width / width, canvas.height / height) * 0.8;
+    const scale = Math.min(canvas.width / width, canvas.height / height) * 0.95;
     const offsetX = (canvas.width - width * scale) / 2;
     const offsetY = (canvas.height - height * scale) / 2;
 

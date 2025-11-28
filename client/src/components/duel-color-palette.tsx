@@ -16,6 +16,7 @@ export default function DuelColorPalette({ selectedColor, onColorSelect, classNa
     ["Жёлтый", "Золотой", "Оранжевый", "Розовый"],
     ["Фиолетовый", "Серебряный", "Серый", "Белый"],
     ["Бело-жёлтый", "Бирюзовый", "Бесцветный", "Пламенный шар"],
+    ["Синий"],
   ];
 
   return (

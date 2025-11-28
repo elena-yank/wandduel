@@ -3,7 +3,7 @@ import { type InsertSpell } from "@shared/schema";
 
 export async function initializeSpells(storage: PostgresStorage) {
   // Expected number of spells in the system
-  const EXPECTED_SPELL_COUNT = 27;
+  const EXPECTED_SPELL_COUNT = 44;
   
   // Check if spells already exist in the database
   const existingSpells = await storage.getSpells();
@@ -209,6 +209,28 @@ export async function initializeSpells(storage: PostgresStorage) {
   const flippendoSpell = await storage.createSpell(flippendo);
   console.log("Created spell:", flippendoSpell.name);
 
+  // Create new attack spell: импедимЕнта (Линия)
+  const impedimenta: InsertSpell = {
+    name: "импедимЕнта",
+    type: "attack",
+    color: "#40E0D0",
+    colorName: "Бирюзовый",
+    description: "Линия",
+    gesturePattern: [
+      { x: 43.37077, y: 195.868 },
+      { x: 84.876131, y: 196.33435 },
+      { x: 130.11231, y: 196.8007 },
+      { x: 173.01673, y: 196.8007 },
+      { x: 214.52209, y: 196.8007 },
+      { x: 259.75827, y: 196.8007 },
+      { x: 298.93187, y: 196.33435 },
+      { x: 339.97088, y: 196.8007 }
+    ]
+  };
+
+  const impedimentaSpell = await storage.createSpell(impedimenta);
+  console.log("Created spell:", impedimentaSpell.name);
+
   // Create counter spell: протЕго
   const protego: InsertSpell = {
     name: "протЕго",
@@ -233,7 +255,7 @@ export async function initializeSpells(storage: PostgresStorage) {
       { x: 125.05, y: 325.88 },
       { x: 101.74, y: 318.46 },
       { x: 95.38, y: 303.62 }], 
-    counters: [alarteSpell.id, immobulusSpell.id, flippendoSpell.id],
+    counters: [alarteSpell.id, immobulusSpell.id, flippendoSpell.id, impedimentaSpell.id],
   };
 
   const protegoSpell = await storage.createSpell(protego);
@@ -291,6 +313,109 @@ export async function initializeSpells(storage: PostgresStorage) {
   const furunculusSpell = await storage.createSpell(furunculus);
   console.log("Created spell:", furunculusSpell.name);
 
+  const petrificusTotalus: InsertSpell = {
+    name: "петрИфикус тотАлус",
+    type: "attack",
+    color: "#E5E5E5",
+    colorName: "Бесцветный",
+    description: "Ключ",
+    gesturePattern: [
+      { x: 110.68994, y: 143.85452 },
+      { x: 83.723075, y: 157.45255 },
+      { x: 66.691382, y: 176.48979 },
+      { x: 51.078975, y: 204.36575 },
+      { x: 51.788641, y: 235.6412 },
+      { x: 70.23965, y: 257.39805 },
+      { x: 90.819627, y: 270.99608 },
+      { x: 122.75406, y: 273.03577 },
+      { x: 149.51813, y: 259.99989 },
+      { x: 160.36575, y: 238.36081 },
+      { x: 158.94643, y: 196.88683 },
+      { x: 204.36432, y: 196.88683 },
+      { x: 251.91114, y: 197.56673 },
+      { x: 298.03868, y: 196.20693 },
+      { x: 323.58623, y: 196.20693 },
+      { x: 339.19863, y: 210.48486 },
+      { x: 343.45655, y: 230.202 },
+      { x: 343.45655, y: 268.27647 }
+    ]
+  };
+
+  const petrificusSpell = await storage.createSpell(petrificusTotalus);
+  console.log("Created spell:", petrificusSpell.name);
+
+  // Create new attack spell: коньюнктивИтус (Глаз)
+  const conjunctivitis: InsertSpell = {
+    name: "коньюнктивИтус",
+    type: "attack",
+    color: "#EF4444",
+    colorName: "Красный",
+    description: "Глаз",
+    gesturePattern: [
+      { x: 329.71113, y: 179.07931 },
+      { x: 311.05703, y: 153.89628 },
+      { x: 283.54224, y: 133.84313 },
+      { x: 244.83499, y: 122.18432 },
+      { x: 203.79599, y: 119.38621 },
+      { x: 163.68968, y: 121.71797 },
+      { x: 130.11231, y: 131.04502 },
+      { x: 97.467645, y: 146.43464 },
+      { x: 74.616379, y: 164.62239 },
+      { x: 59.226751, y: 187.94001 },
+      { x: 50.832408, y: 202.39693 },
+      { x: 63.423922, y: 224.78184 },
+      { x: 83.477074, y: 246.7004 },
+      { x: 112.85727, y: 264.42179 },
+      { x: 149.69911, y: 274.21519 },
+      { x: 187.94001, y: 278.41236 },
+      { x: 230.37807, y: 276.54696 },
+      { x: 266.75356, y: 267.21991 },
+      { x: 294.7347, y: 251.36393 },
+      { x: 314.78785, y: 231.31078 },
+      { x: 328.31207, y: 221.51738 },
+      { x: 339.03817, y: 220.58467 },
+      { x: 345.56711, y: 228.51266 },
+      { x: 346.03346, y: 250.43122 },
+      { x: 341.36993, y: 277.01331 },
+      { x: 335.30735, y: 295.6674 }
+    ]
+  };
+
+  const conjunctivitisSpell = await storage.createSpell(conjunctivitis);
+  console.log("Created spell:", conjunctivitisSpell.name);
+
+  const tarantallegra: InsertSpell = {
+    name: "таранталлЕгра",
+    type: "attack",
+    color: "#22C55E",
+    colorName: "Зелёный",
+    description: "Танцующие ноги",
+    gesturePattern: [
+      { x: 98.402076, y: 315.55595 },
+      { x: 124.25021, y: 307.24181 },
+      { x: 135.9434, y: 281.65983 },
+      { x: 124.25021, y: 250.32193 },
+      { x: 109.47984, y: 219.62355 },
+      { x: 95.324907, y: 188.92519 },
+      { x: 111.94157, y: 151.19179 },
+      { x: 131.01995, y: 112.81883 },
+      { x: 139.02056, y: 98.748744 },
+      { x: 182.10078, y: 98.748744 },
+      { x: 229.48901, y: 98.109184 },
+      { x: 232.56617, y: 148.63359 },
+      { x: 244.25938, y: 187.6461 },
+      { x: 260.2606, y: 222.18175 },
+      { x: 279.33897, y: 261.83381 },
+      { x: 282.41614, y: 281.65983 },
+      { x: 295.95564, y: 300.20676 },
+      { x: 311.34143, y: 297.00902 },
+      { x: 323.03462, y: 277.82254 }
+    ]
+  };
+
+  const tarantallegraSpell = await storage.createSpell(tarantallegra);
+  console.log("Created spell:", tarantallegraSpell.name);
+
   // Create counter spell: финИте инкантАтем (shield pattern - 24 points)
   const finiteIncantatem: InsertSpell = {
     name: "финИте инкантАтем",
@@ -326,7 +451,7 @@ export async function initializeSpells(storage: PostgresStorage) {
       { x: 80, y: 190 },
       { x: 80, y: 140 }
     ],
-    counters: [baubelliusSpell.id, calvorioSpell.id, rictusempraSpell.id, furunculusSpell.id],
+    counters: [baubelliusSpell.id, calvorioSpell.id, rictusempraSpell.id, furunculusSpell.id, conjunctivitisSpell.id, petrificusSpell.id, tarantallegraSpell.id],
   };
 
   const finiteSpell = await storage.createSpell(finiteIncantatem);
@@ -567,6 +692,35 @@ export async function initializeSpells(storage: PostgresStorage) {
   const mucusAdNosemSpell = await storage.createSpell(mucusAdNosem);
   console.log("Created spell:", mucusAdNosemSpell.name);
 
+  // Create attack spell: титилАндо (Крюк)
+  const titilando: InsertSpell = {
+    name: "титилАндо",
+    type: "attack",
+    color: "#EC4899",
+    colorName: "Розовый",
+    description: "Крюк",
+    gesturePattern: [
+      { x: 60.869298, y: 331.72872 },
+      { x: 95.822408, y: 303.78209 },
+      { x: 137.13061, y: 263.60882 },
+      { x: 158.5791, y: 218.19558 },
+      { x: 177.64444, y: 157.9357 },
+      { x: 195.12099, y: 121.25575 },
+      { x: 229.2797, y: 85.44914 },
+      { x: 268.99913, y: 74.095828 },
+      { x: 306.3354, y: 83.702466 },
+      { x: 325.40072, y: 119.50908 },
+      { x: 326.98951, y: 158.80902 },
+      { x: 313.48491, y: 205.09559 },
+      { x: 284.09252, y: 241.77553 },
+      { x: 248.34502, y: 263.60882 },
+      { x: 205.44804, y: 280.20214 }
+    ]
+  };
+
+  const titilandoSpell = await storage.createSpell(titilando);
+  console.log("Created spell:", titilandoSpell.name);
+
   // Create counter spell: финИте (точка в центре)
   const finiteCounter: InsertSpell = {
     name: "финИте",
@@ -601,7 +755,7 @@ export async function initializeSpells(storage: PostgresStorage) {
       { x: 136.26, y: 238.55 },
       { x: 105.73, y: 234.30 }
     ],
-    counters: [mucusAdNosemSpell.id],
+    counters: [mucusAdNosemSpell.id, titilandoSpell.id],
   };
 
   const finiteCounterSpell = await storage.createSpell(finiteCounter);
@@ -767,6 +921,47 @@ export async function initializeSpells(storage: PostgresStorage) {
   const fumosSpell = await storage.createSpell(fumos);
   console.log("Created spell:", fumosSpell.name);
 
+  // Create attack spell: экспеллимЕллиус (Свеча)
+  const expellimellius: InsertSpell = {
+    name: "экспеллимЕллиус",
+    type: "attack",
+    color: "#E5E5E5",
+    colorName: "Бесцветный",
+    description: "Свеча",
+    gesturePattern: [
+      { x: 143.17018, y: 339.97088 },
+      { x: 142.70383, y: 309.19162 },
+      { x: 141.77112, y: 277.01331 },
+      { x: 140.37206, y: 246.7004 },
+      { x: 145.50194, y: 230.37807 },
+      { x: 159.95886, y: 212.65668 },
+      { x: 184.67554, y: 198.19976 },
+      { x: 206.12775, y: 185.14189 },
+      { x: 223.84914, y: 164.62239 },
+      { x: 229.44537, y: 144.10288 },
+      { x: 228.51266, y: 127.78055 },
+      { x: 220.11832, y: 109.12646 },
+      { x: 207.99316, y: 87.674245 },
+      { x: 194.93529, y: 61.558512 },
+      { x: 180.47837, y: 92.804121 },
+      { x: 171.61767, y: 111.92457 },
+      { x: 165.08874, y: 131.51137 },
+      { x: 165.55509, y: 146.901 },
+      { x: 170.21862, y: 162.75698 },
+      { x: 188.40636, y: 181.41107 },
+      { x: 218.25291, y: 198.66611 },
+      { x: 233.64254, y: 207.52681 },
+      { x: 250.43122, y: 226.1809 },
+      { x: 257.89286, y: 244.36864 },
+      { x: 259.75827, y: 270.48438 },
+      { x: 261.15733, y: 301.72998 },
+      { x: 262.09003, y: 331.11018 }
+    ]
+  };
+
+  const expellimelliusSpell = await storage.createSpell(expellimellius);
+  console.log("Created spell:", expellimelliusSpell.name);
+
   // Create counter spell: вЕнтус (19 точек из SVG - вращение)
   const ventus: InsertSpell = {
     name: "вЕнтус",
@@ -796,7 +991,7 @@ export async function initializeSpells(storage: PostgresStorage) {
       { x: 264.92, y: 232.88 },
       { x: 224.12, y: 203.73 }
     ],
-    counters: [fumosSpell.id],
+    counters: [fumosSpell.id, expellimelliusSpell.id],
   };
 
   const ventusSpell = await storage.createSpell(ventus);
@@ -865,6 +1060,343 @@ export async function initializeSpells(storage: PostgresStorage) {
 
   const reducioSpell = await storage.createSpell(reducio);
   console.log("Created spell:", reducioSpell.name);
+
+  const aguamenti: InsertSpell = {
+    name: "агуамЕнти",
+    type: "attack",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Синусоида",
+    gesturePattern: [
+      { x: 67.93075, y: 211.04699 },
+      { x: 81.121187, y: 245.01237 },
+      { x: 102.88541, y: 269.41467 },
+      { x: 125.30915, y: 276.33965 },
+      { x: 153.99835, y: 270.73372 },
+      { x: 172.79472, y: 255.23495 },
+      { x: 188.29349, y: 238.41715 },
+      { x: 191.92086, y: 217.64221 },
+      { x: 192.25062, y: 191.26134 },
+      { x: 194.55894, y: 165.21022 },
+      { x: 212.6958, y: 144.43528 },
+      { x: 233.47073, y: 134.54246 },
+      { x: 261.50041, y: 132.23413 },
+      { x: 285.90272, y: 137.84007 },
+      { x: 298.7634, y: 153.99835 },
+      { x: 305.68838, y: 171.80544 },
+      { x: 311.29431, y: 192.91014 }
+    ]
+  };
+
+  const aguamentiSpell = await storage.createSpell(aguamenti);
+  console.log("Created spell:", aguamentiSpell.name);
+
+  const impervius: InsertSpell = {
+    name: "импЕрвиус",
+    type: "counter",
+    color: "#E5E5E5",
+    colorName: "Бесцветный",
+    description: "Угол",
+    gesturePattern: [
+      { x: 310.63479, y: 86.727123 },
+      { x: 310.96455, y: 130.25556 },
+      { x: 312.28359, y: 182.68755 },
+      { x: 312.61336, y: 227.20528 },
+      { x: 312.61336, y: 276.99918 },
+      { x: 311.95383, y: 304.36933 },
+      { x: 279.63726, y: 275.35037 },
+      { x: 239.40643, y: 254.90519 },
+      { x: 202.47321, y: 246.99093 },
+      { x: 156.63644, y: 249.62902 },
+      { x: 124.31987, y: 264.1385 },
+      { x: 97.279472, y: 280.62655 },
+      { x: 75.185491, y: 297.77411 },
+      { x: 64.633141, y: 307.9967 }
+    ],
+    counters: [aguamentiSpell.id]
+  };
+
+  const imperviusSpell = await storage.createSpell(impervius);
+  console.log("Created spell:", imperviusSpell.name);
+
+  const glacius: InsertSpell = {
+    name: "глАциус",
+    type: "attack",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Айсберг",
+    gesturePattern: [
+      { x: 34.624897, y: 275.02061 },
+      { x: 61.335532, y: 266.44683 },
+      { x: 86.727123, y: 254.57543 },
+      { x: 108.8211, y: 237.0981 },
+      { x: 125.96867, y: 215.33388 },
+      { x: 136.19126, y: 192.91014 },
+      { x: 142.12696, y: 167.84831 },
+      { x: 147.07337, y: 148.72218 },
+      { x: 155.97692, y: 139.15911 },
+      { x: 167.51855, y: 143.446 },
+      { x: 173.12448, y: 161.58285 },
+      { x: 177.08162, y: 180.37923 },
+      { x: 181.36851, y: 197.85655 },
+      { x: 189.61253, y: 212.36603 },
+      { x: 201.15416, y: 222.58862 },
+      { x: 215.33388, y: 219.29101 },
+      { x: 225.22671, y: 204.12201 },
+      { x: 233.14097, y: 177.08162 },
+      { x: 237.42786, y: 148.39242 },
+      { x: 237.42786, y: 128.60676 },
+      { x: 241.385, y: 110.14015 },
+      { x: 247.98021, y: 96.619951 },
+      { x: 258.2028, y: 94.311624 },
+      { x: 271.723, y: 102.88541 },
+      { x: 275.68013, y: 127.94724 },
+      { x: 276.33965, y: 144.43528 },
+      { x: 277.98846, y: 166.52927 },
+      { x: 282.93487, y: 185.32564 },
+      { x: 289.85985, y: 204.45177 },
+      { x: 304.36933, y: 220.2803 },
+      { x: 325.14427, y: 230.17312 },
+      { x: 345.25969, y: 237.75763 },
+      { x: 359.43941, y: 246.33141 },
+      { x: 360.09893, y: 257.87304 },
+      { x: 353.17395, y: 271.06348 },
+      { x: 335.69662, y: 280.29678 },
+      { x: 316.90025, y: 286.23248 }
+    ]
+  };
+
+  const glaciusSpell = await storage.createSpell(glacius);
+  console.log("Created spell:", glaciusSpell.name);
+
+  const incendio: InsertSpell = {
+    name: "инсЕндио",
+    type: "counter",
+    color: "#E5E5E5",
+    colorName: "Бесцветный",
+    description: "Пламя",
+    gesturePattern: [
+      { x: 159.93405, y: 290.51937 },
+      { x: 144.43528, y: 273.37181 },
+      { x: 140.47815, y: 252.26711 },
+      { x: 139.81863, y: 230.83265 },
+      { x: 145.42457, y: 208.4089 },
+      { x: 160.59357, y: 187.96373 },
+      { x: 177.08162, y: 168.50783 },
+      { x: 189.28277, y: 146.74361 },
+      { x: 196.86727, y: 131.57461 },
+      { x: 198.84584, y: 114.09728 },
+      { x: 202.80297, y: 131.57461 },
+      { x: 208.73866, y: 146.41385 },
+      { x: 214.67436, y: 164.22094 },
+      { x: 220.93982, y: 182.02803 },
+      { x: 227.20528, y: 194.55894 },
+      { x: 238.74691, y: 207.08986 },
+      { x: 250.28854, y: 219.95054 },
+      { x: 255.56472, y: 237.75763 },
+      { x: 254.90519, y: 257.54328 },
+      { x: 245.34213, y: 276.99918 },
+      { x: 232.15169, y: 291.83842 },
+      { x: 224.89695, y: 300.74196 }
+    ],
+    counters: [glaciusSpell.id]
+  };
+
+  const incendioSpell = await storage.createSpell(incendio);
+  console.log("Created spell:", incendioSpell.name);
+
+  // Add new attack spell: инсЕндио (use base/simple pattern)
+  const incendioAttack: InsertSpell = {
+    name: "инсЕндио",
+    type: "attack",
+    color: "#E5E5E5",
+    colorName: "Бесцветный",
+    description: "Пламя",
+    gesturePattern: [
+      { x: 159.93405, y: 290.51937 },
+      { x: 144.43528, y: 273.37181 },
+      { x: 140.47815, y: 252.26711 },
+      { x: 139.81863, y: 230.83265 },
+      { x: 145.42457, y: 208.4089 },
+      { x: 160.59357, y: 187.96373 },
+      { x: 177.08162, y: 168.50783 },
+      { x: 189.28277, y: 146.74361 },
+      { x: 196.86727, y: 131.57461 },
+      { x: 198.84584, y: 114.09728 },
+      { x: 202.80297, y: 131.57461 },
+      { x: 208.73866, y: 146.41385 },
+      { x: 214.67436, y: 164.22094 },
+      { x: 220.93982, y: 182.02803 },
+      { x: 227.20528, y: 194.55894 },
+      { x: 238.74691, y: 207.08986 },
+      { x: 250.28854, y: 219.95054 },
+      { x: 255.56472, y: 237.75763 },
+      { x: 254.90519, y: 257.54328 },
+      { x: 245.34213, y: 276.99918 },
+      { x: 232.15169, y: 291.83842 },
+      { x: 224.89695, y: 300.74196 }
+    ]
+  };
+
+  const incendioAttackSpell = await storage.createSpell(incendioAttack);
+  console.log("Created spell:", incendioAttackSpell.name);
+
+  // Add new counter spell: агуамЕнти (use base/simple wave pattern) to counter инсЕндио
+  const aguamentiCounter: InsertSpell = {
+    name: "агуамЕнти",
+    type: "counter",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Синусоида",
+    gesturePattern: [
+      { x: 67.93075, y: 211.04699 },
+      { x: 81.121187, y: 245.01237 },
+      { x: 102.88541, y: 269.41467 },
+      { x: 125.30915, y: 276.33965 },
+      { x: 153.99835, y: 270.73372 },
+      { x: 172.79472, y: 255.23495 },
+      { x: 188.29349, y: 238.41715 },
+      { x: 191.92086, y: 217.64221 },
+      { x: 192.25062, y: 191.26134 },
+      { x: 194.55894, y: 165.21022 },
+      { x: 212.6958, y: 144.43528 },
+      { x: 233.47073, y: 134.54246 },
+      { x: 261.50041, y: 132.23413 },
+      { x: 285.90272, y: 137.84007 },
+      { x: 298.7634, y: 153.99835 },
+      { x: 305.68838, y: 171.80544 },
+      { x: 311.29431, y: 192.91014 }
+    ],
+    counters: [incendioAttackSpell.id]
+  };
+
+  const aguamentiCounterSpell = await storage.createSpell(aguamentiCounter);
+  console.log("Created spell:", aguamentiCounterSpell.name);
+
+  // Create new attack spell: мобилиАрбус (Рывок)
+  const mobiliarbus: InsertSpell = {
+    name: "мобилиАрбус",
+    type: "attack",
+    color: "#0000FF",
+    colorName: "Синий",
+    description: "Рывок",
+    gesturePattern: [
+      { x: 73.451088, y: 332.97813 },
+      { x: 74.129445, y: 289.46813 },
+      { x: 82.948071, y: 243.85283 },
+      { x: 103.29875, y: 201.74639 },
+      { x: 139.2516, y: 170.16655 },
+      { x: 183.34474, y: 152.6222 },
+      { x: 226.75952, y: 149.11333 },
+      { x: 270.17429, y: 155.4293 },
+      { x: 318.33756, y: 181.39494 },
+      { x: 270.85264, y: 122.44592 },
+      { x: 244.39677, y: 85.953679 }
+    ]
+  };
+
+  const mobiliarbusSpell = await storage.createSpell(mobiliarbus);
+  console.log("Created spell:", mobiliarbusSpell.name);
+
+  // Create counter spell: флиппЕндо (reuse attack properties)
+  const flippendoCounter: InsertSpell = {
+    name: "флиппЕндо",
+    type: "counter",
+    color: "#FFA500",
+    colorName: "Оранжевый",
+    description: "V с крючком",
+    gesturePattern: [
+      { x: 55.64, y: 190.23 },
+      { x: 85.31, y: 208.24 },
+      { x: 112.34, y: 234.20 },
+      { x: 134.59, y: 270.77 },
+      { x: 147.85, y: 296.20 },
+      { x: 160.57, y: 255.40 },
+      { x: 185.47, y: 192.87 },
+      { x: 216.20, y: 144.12 },
+      { x: 232.63, y: 125.06 },
+      { x: 249.05, y: 117.64 },
+      { x: 268.66, y: 124.53 },
+      { x: 273.96, y: 143.10 },
+      { x: 278.73, y: 162.18 },
+      { x: 291.99, y: 178.60 },
+      { x: 312.66, y: 178.60 },
+      { x: 333.85, y: 158.08 },
+      { x: 339.15, y: 135.30 },
+      { x: 337.00, y: 119.83 }
+    ],
+    counters: [mobiliarbusSpell.id]
+  };
+
+  const flippendoCounterSpell = await storage.createSpell(flippendoCounter);
+  console.log("Created spell:", flippendoCounterSpell.name);
+
+  // Create attack spell: экспелиАрмус (Завиток)
+  const expelliarmus: InsertSpell = {
+    name: "экспелиАрмус",
+    type: "attack",
+    color: "#EF4444",
+    colorName: "Красный",
+    description: "Завиток",
+    gesturePattern: [
+      { x: 88.619163, y: 72.435866 },
+      { x: 107.90756, y: 73.657086 },
+      { x: 116.949, y: 85.869136 },
+      { x: 125.38768, y: 114.56748 },
+      { x: 133.82637, y: 142.04463 },
+      { x: 141.66228, y: 169.52177 },
+      { x: 156.12858, y: 218.98063 },
+      { x: 169.99213, y: 269.66069 },
+      { x: 188.07501, y: 296.52722 },
+      { x: 206.76065, y: 314.84531 },
+      { x: 240.51536, y: 317.89833 },
+      { x: 268.84522, y: 307.51807 },
+      { x: 285.72257, y: 278.20913 },
+      { x: 283.91429, y: 243.40474 },
+      { x: 270.6535, y: 218.37003 },
+      { x: 246.54299, y: 198.83072 },
+      { x: 222.43248, y: 199.44132 },
+      { x: 203.14408, y: 218.37003 },
+      { x: 200.13027, y: 246.45777 },
+      { x: 208.56894, y: 263.55465 },
+      { x: 226.65182, y: 278.81973 },
+      { x: 246.54299, y: 278.20913 },
+      { x: 253.77615, y: 259.89104 },
+      { x: 243.52918, y: 239.74113 },
+      { x: 232.07668, y: 233.6351 }
+    ]
+  };
+
+  const expelliarmusSpell = await storage.createSpell(expelliarmus);
+  console.log("Created spell:", expelliarmusSpell.name);
+
+  // Create counter spell: Акцио (Дуга) counters экспелиАрмус
+  const accio: InsertSpell = {
+    name: "Акцио",
+    type: "counter",
+    color: "#3B82F6",
+    colorName: "Голубой",
+    description: "Дуга",
+    gesturePattern: [
+      { x: 80.67896, y: 245.30135 },
+      { x: 90.938712, y: 210.32492 },
+      { x: 107.26105, y: 180.94472 },
+      { x: 133.37678, y: 156.6944 },
+      { x: 163.22333, y: 142.70383 },
+      { x: 189.80541, y: 138.0403 },
+      { x: 220.11832, y: 138.50665 },
+      { x: 248.09946, y: 143.17018 },
+      { x: 272.81614, y: 153.89628 },
+      { x: 295.6674, y: 171.15132 },
+      { x: 311.52338, y: 193.06988 },
+      { x: 320.85043, y: 215.45479 },
+      { x: 327.84572, y: 238.30606 }
+    ],
+    counters: [expelliarmusSpell.id]
+  };
+
+  const accioSpell = await storage.createSpell(accio);
+  console.log("Created spell:", accioSpell.name);
 
   console.log("Spells initialized successfully!");
 }
