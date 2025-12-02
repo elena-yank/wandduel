@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { MIN_RECOGNITION_THRESHOLD } from "@shared/config";
 import { Button } from "@/components/ui/button";
 import GesturePreview from "@/components/gesture-preview";
 import { evaluateDrawing } from "@shared/advanced-gesture-recognition";
@@ -49,6 +50,9 @@ export default function RoundCompleteDialog({
     })() : (counterAccRaw ?? 0)
   );
 
+  const attackRecognizedDisplay = (attackAcc || 0) >= MIN_RECOGNITION_THRESHOLD;
+  const counterRecognizedDisplay = (counterAcc || 0) >= MIN_RECOGNITION_THRESHOLD;
+
   const isLowCounterAccuracy = (counterAcc || 0) < 57;
 
   return (
@@ -70,9 +74,11 @@ export default function RoundCompleteDialog({
                 <p className="font-serif font-bold text-foreground text-sm">
                   {attackSpellName}
                 </p>
-                <p className="text-xs text-primary">
-                  Точность: {attackAcc || 0}%
-                </p>
+                {attackRecognizedDisplay ? (
+                  <p className="text-xs text-primary">Точность: {attackAcc || 0}%</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Заклинание не опознано</p>
+                )}
                 {typeof session?.lastCompletedAttackTimeSpent === 'number' ? (
                   <p className="text-xs text-muted-foreground">
                     Время: {session?.lastCompletedAttackTimeSpent} сек
@@ -100,9 +106,11 @@ export default function RoundCompleteDialog({
                 <p className="font-serif font-bold text-foreground text-sm">
                   {counterSpellName}
                 </p>
-                <p className={`text-xs ${isLowCounterAccuracy ? 'text-muted-foreground' : (session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}`}>
-                  Точность: {counterAcc || 0}%
-                </p>
+                {counterRecognizedDisplay ? (
+                  <p className={`text-xs ${isLowCounterAccuracy ? 'text-muted-foreground' : (session?.lastCompletedCounterSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}`}>Точность: {counterAcc || 0}%</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Заклинание не опознано</p>
+                )}
                 {typeof session?.lastCompletedCounterTimeSpent === 'number' ? (
                   <p className="text-xs text-muted-foreground">
                     Время: {session?.lastCompletedCounterTimeSpent} сек

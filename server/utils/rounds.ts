@@ -1,4 +1,5 @@
 import type { GameSession } from "@shared/schema";
+import { TOTAL_ROUNDS } from "@shared/config";
 
 export type AwardArgs = {
   session: GameSession;
@@ -27,19 +28,20 @@ export function awardPointForRound(args: AwardArgs) {
     return { p1, p2, tie };
   }
 
+  const currentRound = session.currentRound ?? 1;
+  const isFinalBonus = session.isBonusRound && currentRound === TOTAL_ROUNDS && Number(session.player1Score) === Number(session.player2Score);
+
   if (attackAccuracy > counterAccuracy) {
-    // Attacker gets point
     const attacker = pendingAttackPlayerId
-      ?? (session.isBonusRound ? 1 : ((session.currentRound ?? 1) % 2 === 1 ? 1 : 2));
+      ?? (session.isBonusRound ? (isFinalBonus ? 1 : (currentRound % 2 === 1 ? 1 : 2)) : (currentRound % 2 === 1 ? 1 : 2));
     if (attacker === 1) p1 += 1; else p2 += 1;
   } else if (counterAccuracy > attackAccuracy) {
-    // Defender gets point
-    const defender = session.isBonusRound ? 2 : ((session.currentRound ?? 1) % 2 === 1 ? 2 : 1);
+    const defender = session.isBonusRound ? ( (currentRound % 2 === 1 || isFinalBonus) ? 2 : 1 ) : (currentRound % 2 === 1 ? 2 : 1);
     if (defender === 1) p1 += 1; else p2 += 1;
   } else {
     const attacker = pendingAttackPlayerId
-      ?? (session.isBonusRound ? 1 : ((session.currentRound ?? 1) % 2 === 1 ? 1 : 2));
-    const defender = session.isBonusRound ? 2 : ((session.currentRound ?? 1) % 2 === 1 ? 2 : 1);
+      ?? (session.isBonusRound ? (isFinalBonus ? 1 : (currentRound % 2 === 1 ? 1 : 2)) : (currentRound % 2 === 1 ? 1 : 2));
+    const defender = session.isBonusRound ? (attacker === 1 ? 2 : 1) : (currentRound % 2 === 1 ? 2 : 1);
     const ta = typeof attackTimeSpentSeconds === 'number' ? attackTimeSpentSeconds : null;
     const tc = typeof counterTimeSpentSeconds === 'number' ? counterTimeSpentSeconds : null;
     if (ta != null && tc != null) {
@@ -62,25 +64,29 @@ export function calculateBonusRoundOutcome(session: GameSession, attackAccuracy:
   let bonusRoundWinner: number | null = null;
 
   if (session.isBonusRound) {
+    const currentRound = session.currentRound ?? 1;
+    const isFinalBonus = currentRound === TOTAL_ROUNDS;
+    const bonusAttacker = isFinalBonus ? 1 : (currentRound % 2 === 1 ? 1 : 2);
+    const bonusDefender = bonusAttacker === 1 ? 2 : 1;
+
     if (attackAccuracy > counterAccuracy) {
-      bonusRoundWinner = 1; // In bonus rounds, Player 1 attacks
-      isGameComplete = true;
+      bonusRoundWinner = bonusAttacker;
+      isGameComplete = isFinalBonus;
     } else if (counterAccuracy > attackAccuracy) {
-      bonusRoundWinner = 2; // Player 2 defends
-      isGameComplete = true;
+      bonusRoundWinner = bonusDefender;
+      isGameComplete = isFinalBonus;
     } else {
-      // tie -> resolve by time spent (faster wins)
       const ta = typeof attackTimeSpentSeconds === 'number' ? attackTimeSpentSeconds : null;
       const tc = typeof counterTimeSpentSeconds === 'number' ? counterTimeSpentSeconds : null;
       if (ta != null && tc != null) {
         if (ta < tc) {
-          bonusRoundWinner = 1;
-          isGameComplete = true;
+          bonusRoundWinner = bonusAttacker;
+          isGameComplete = isFinalBonus;
         } else if (tc < ta) {
-          bonusRoundWinner = 2;
-          isGameComplete = true;
+          bonusRoundWinner = bonusDefender;
+          isGameComplete = isFinalBonus;
         } else {
-          isGameComplete = false; // absolute tie in time as well -> continue
+          isGameComplete = false;
         }
       } else {
         isGameComplete = false;

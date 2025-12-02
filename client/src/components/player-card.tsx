@@ -7,6 +7,7 @@ import DuelColorPalette from "@/components/duel-color-palette";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useIsPhone } from "@/hooks/use-phone";
 import { useState } from "react";
+import { MIN_RECOGNITION_THRESHOLD } from "@shared/config";
 
 interface SpellHistoryItem {
   roundNumber: number;
@@ -133,14 +134,13 @@ export default function PlayerCard({
   const roundsDisplay = Array.from({ length: maxRoundNumber }, (_, i) => {
     const roundNum = i + 1;
     const historyItem = spellHistory.find(h => h.roundNumber === roundNum);
-    // Only mark rounds as bonus rounds if they are actually bonus rounds in history
-    // Don't use the isBonusRound prop which indicates a pending bonus round
     const isBonusRound = historyItem?.isBonusRound ?? false;
+    const recognized = (historyItem?.accuracy ?? 0) >= MIN_RECOGNITION_THRESHOLD && !!historyItem?.spell;
     return {
       roundNumber: roundNum,
-      spell: historyItem?.spell || null,
-      accuracy: historyItem?.accuracy || 0,
-      successful: historyItem?.successful ?? true,
+      spell: recognized ? (historyItem!.spell as Spell) : null,
+      accuracy: recognized ? (historyItem!.accuracy as number) : 0,
+      successful: recognized ? (historyItem!.successful as boolean) : true,
       isBonusRound: isBonusRound
     };
   });
@@ -268,15 +268,17 @@ export default function PlayerCard({
                             )}
                             style={houseTheme ? { color: houseTheme.textColor } : undefined}
                           >
-                            {round.spell.name}
+                            {round.spell ? round.spell.name : "-"}
                           </span>
                           <span className={cn(
                             "text-xs font-medium ml-1",
-                            round.accuracy <= 55 ? "text-red-500" :
-                            round.accuracy <= 75 ? "text-yellow-500" :
-                            "text-green-500"
+                            (round.accuracy ?? 0) < MIN_RECOGNITION_THRESHOLD ? "text-muted-foreground" : (
+                              round.accuracy <= 55 ? "text-red-500" :
+                              round.accuracy <= 75 ? "text-yellow-500" :
+                              "text-green-500"
+                            )
                           )}>
-                            {round.accuracy}%
+                            {round.spell ? `${round.accuracy}%` : "—"}
                           </span>
                           {round.isBonusRound && (
                             <span className="ml-1 px-1 py-0.5 bg-yellow-500 text-yellow-900 text-xs font-bold rounded">
@@ -342,15 +344,17 @@ export default function PlayerCard({
                             )}
                             style={houseTheme && round.successful ? { color: houseTheme.textColor } : undefined}
                           >
-                            {round.spell.name}
+                            {round.spell ? round.spell.name : "-"}
                           </span>
                           <span className={cn(
                             "text-xs font-medium ml-1",
-                            round.accuracy <= 55 ? "text-red-500" : 
-                            round.accuracy <= 75 ? "text-yellow-500" : 
-                            "text-green-500"
+                            (round.accuracy ?? 0) < MIN_RECOGNITION_THRESHOLD ? "text-muted-foreground" : (
+                              round.accuracy <= 55 ? "text-red-500" : 
+                              round.accuracy <= 75 ? "text-yellow-500" : 
+                              "text-green-500"
+                            )
                           )}>
-                            {round.accuracy}%
+                            {round.spell ? `${round.accuracy}%` : "—"}
                           </span>
                           {round.isBonusRound && (
                             <span className="ml-1 px-1 py-0.5 bg-yellow-500 text-yellow-900 text-xs font-bold rounded">

@@ -189,18 +189,18 @@ export function isValidDrawing(gesture: Point[]): boolean {
 
   // Special-case nearly straight lines: accept if long enough
   const area = width * height;
-  const isLineLike = width < 0.02 || height < 0.02;
+  const isLineLike = width < 0.005 || height < 0.005;
   if (isLineLike) {
     const len = pathLength(norm);
-    if (len < 0.2) return false;
+    if (len < 0.06) return false;
   } else {
     // For non-linear gestures, require a larger footprint
-    if (area < 0.01) return false;
+    if (area < 0.0015) return false;
   }
 
   // Path length threshold in normalized space
   const length = pathLength(norm);
-  if (length < 0.2) return false;
+  if (length < 0.06) return false;
 
   return true;
 }

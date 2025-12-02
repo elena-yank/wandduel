@@ -25,7 +25,7 @@ import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_17600830
 import hufflepuffIcon from "@assets/icons8-hogwarts-legacy-hufflepuff-480_1760083019603.png";
 import { useToast } from "@/hooks/use-toast";
 import { useIsPhone } from "@/hooks/use-phone";
-import { GAME_VERSION } from "@shared/config";
+import { GAME_VERSION, MIN_RECOGNITION_THRESHOLD, ATTACK_SUCCESS_THRESHOLD, COUNTER_SUCCESS_THRESHOLD } from "@shared/config";
 
 const houseIcons: Record<string, string> = {
   gryffindor: gryffindorIcon,
@@ -787,51 +787,43 @@ export default function DuelArena() {
     setShowSpellChoice(false);
     setSpellChoices(null);
 
-    // Create result object with chosen spell
-    const result: RecognitionResult = {
-      recognized: true,
-      spell: choice.spell,
-      accuracy: choice.accuracy,
-      successful: true
-    };
+    // After user choice, confirm/save via server and trust server's decision
+    if (roundPhase === "attack" && currentSessionId && actualPlayerNumber && pendingGesture) {
+      try {
+        const res = await apiRequest("POST", `/api/sessions/${currentSessionId}/save-spell-attempt`, {
+          spellId: choice.spell.id,
+          playerId: actualPlayerNumber,
+          accuracy: choice.accuracy,
+          gesture: pendingGesture
+        });
+        const data = await res.json();
+        if (!data.success) {
+          toast({
+            title: "Заклинание не опознано",
+            description: "Попробуй нарисовать точнее",
+          });
+          // Do NOT progress phase; let player redraw
+          setPendingGesture(null);
+          canvasRef.current?.clearCanvas();
+          return;
+        }
 
-    // Process as normal recognition
-    if (roundPhase === "attack") {
-      setAttackResult(result);
-      
-      // Save spell attempt to history using the pending gesture
-      if (currentSessionId && actualPlayerNumber && pendingGesture) {
-        try {
-          await apiRequest("POST", `/api/sessions/${currentSessionId}/save-spell-attempt`, {
-            spellId: choice.spell.id,
-            playerId: actualPlayerNumber,
-            accuracy: choice.accuracy,
-            gesture: pendingGesture
-          });
-          
-          // Invalidate spell history to show the new attempt
-          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
-        } catch (error) {
-          console.error("Failed to save spell attempt:", error);
-        }
-      }
-      
-      // Update session with selected attack spell
-      if (currentSessionId) {
-        try {
-          await apiRequest("PATCH", `/api/sessions/${currentSessionId}`, {
-            currentPhase: "counter",
-            lastAttackSpellId: choice.spell.id,
-            lastAttackAccuracy: choice.accuracy
-          });
-          // Invalidate session to get updated phase from server
-          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
-        } catch (error) {
-          console.error("Failed to update session:", error);
-        }
+        // Recognized and saved: rely on server-updated session; accuracy from server
+        const result: RecognitionResult = {
+          recognized: true,
+          spell: choice.spell,
+          accuracy: choice.accuracy,
+          successful: true
+        };
+        setAttackResult(result);
+        // Refresh session and history from server-side updates
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+        queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
+      } catch (error) {
+        console.error("Failed to save spell attempt:", error);
       }
     }
-    
+
     // Clear pending gesture and canvas after spell choice
     setPendingGesture(null);
     canvasRef.current?.clearCanvas();
@@ -891,19 +883,22 @@ export default function DuelArena() {
       const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingAttackAccuracy || 0;
-        return [
-          ...baseHistory,
-          {
-            roundNumber: currentRound,
-            playerId: playerId,
-            spell: pendingSpell,
-            accuracy: rawAccuracy,
-            successful: rawAccuracy >= 57,
-            drawnGesture: (session.pendingAttackGesture as Point[]) || [],
-            isBonusRound: session.isBonusRound || false,
-            timeSpentSeconds: session.pendingAttackTimeSpent || undefined
-          }
-        ];
+        // Do NOT include a pending attack below minimal recognition threshold
+        if (rawAccuracy >= MIN_RECOGNITION_THRESHOLD) {
+          return [
+            ...baseHistory,
+            {
+              roundNumber: currentRound,
+              playerId: playerId,
+              spell: pendingSpell,
+              accuracy: rawAccuracy,
+              successful: rawAccuracy >= 57,
+              drawnGesture: (session.pendingAttackGesture as Point[]) || [],
+              isBonusRound: session.isBonusRound || false,
+              timeSpentSeconds: session.pendingAttackTimeSpent || undefined
+            }
+          ];
+        }
       }
     }
     
@@ -918,19 +913,22 @@ export default function DuelArena() {
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingCounterAccuracy || 0;
-        return [
-          ...baseHistory,
-          {
-            roundNumber: currentRound,
-            playerId: playerId,
-            spell: pendingSpell,
-            accuracy: rawAccuracy,
-            successful: rawAccuracy >= 57,
-            drawnGesture: (session.pendingCounterGesture as Point[]) || [],
-            isBonusRound: session.isBonusRound || false,
-            timeSpentSeconds: session.pendingCounterTimeSpent || undefined
-          }
-        ];
+        // For defense, also skip extremely low-quality gestures
+        if (rawAccuracy >= MIN_RECOGNITION_THRESHOLD) {
+          return [
+            ...baseHistory,
+            {
+              roundNumber: currentRound,
+              playerId: playerId,
+              spell: pendingSpell,
+              accuracy: rawAccuracy,
+              successful: rawAccuracy >= 57,
+              drawnGesture: (session.pendingCounterGesture as Point[]) || [],
+              isBonusRound: session.isBonusRound || false,
+              timeSpentSeconds: session.pendingCounterTimeSpent || undefined
+            }
+          ];
+        }
       }
     }
     
@@ -1232,7 +1230,7 @@ export default function DuelArena() {
                                 {attackHistory?.spell?.name || "Unknown"}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {attackerId === 1 ? player1Name : player2Name} - {attackHistory?.accuracy}%
+                                {attackerId === 1 ? player1Name : player2Name} - {attackHistory?.accuracy != null && attackHistory.accuracy >= MIN_RECOGNITION_THRESHOLD ? attackHistory.accuracy : "—"}%
                               </p>
                             </div>
                             <div className="flex-shrink-0 w-12 grid grid-rows-2 gap-1">
@@ -1432,8 +1430,10 @@ export default function DuelArena() {
                       <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 56px", alignItems: "center", gap: 10, marginBottom: 8 }}>
                         <GesturePreview gesture={attackHistory?.drawnGesture || []} className="w-12 h-12" />
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: attackerId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>{attackHistory?.spell?.name || "Unknown"}</div>
-                          <div style={{ fontSize: 12, color: "#6B7280" }}>{attackerId === 1 ? player1Name : player2Name} — {attackHistory?.accuracy}%</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: attackerId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>
+                            {(attackHistory?.accuracy ?? 0) >= MIN_RECOGNITION_THRESHOLD && attackHistory?.spell?.name ? attackHistory.spell.name : "—"}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#6B7280" }}>{attackerId === 1 ? player1Name : player2Name} — {attackHistory?.accuracy != null && attackHistory.accuracy >= MIN_RECOGNITION_THRESHOLD ? attackHistory.accuracy : "—"}%</div>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           <div style={{ border: "1px solid #E5E7EB", borderRadius: 6, width: 48, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent" }}>
@@ -1449,8 +1449,11 @@ export default function DuelArena() {
                         <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 56px", alignItems: "center", gap: 10 }}>
                           <GesturePreview gesture={defenseHistory?.drawnGesture || []} className="w-12 h-12" />
                           <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: defenderId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>{defenseHistory?.spell?.name || "Unknown"}{(!defenseHistory?.successful && (defenseHistory?.accuracy ?? 0) >= 57) ? " ❌" : ''}</div>
-                            <div style={{ fontSize: 12, color: "#6B7280" }}>{defenderId === 1 ? player1Name : player2Name} — {defenseHistory?.accuracy != null ? defenseHistory.accuracy : "—"}%</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: defenderId === 1 ? (player1Color || undefined) : (player2Color || undefined) }}>
+                              {(defenseHistory?.accuracy ?? 0) >= MIN_RECOGNITION_THRESHOLD && defenseHistory?.spell?.name ? defenseHistory.spell.name : "—"}
+                              {((defenseHistory?.accuracy ?? 0) >= MIN_RECOGNITION_THRESHOLD && !defenseHistory?.successful && (defenseHistory?.accuracy ?? 0) >= COUNTER_SUCCESS_THRESHOLD) ? " ❌" : ''}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#6B7280" }}>{defenderId === 1 ? player1Name : player2Name} — {defenseHistory?.accuracy != null && defenseHistory.accuracy >= MIN_RECOGNITION_THRESHOLD ? defenseHistory.accuracy : "—"}%</div>
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             <div style={{ border: "1px solid #E5E7EB", borderRadius: 6, width: 48, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent" }}>

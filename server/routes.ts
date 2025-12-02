@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { insertGameSessionSchema, insertGestureAttemptSchema, insertSpellSchema, insertSessionParticipantSchema, insertGameRoomSchema, type Point, type GameSession } from "@shared/schema";
-import { ATTACK_SUCCESS_THRESHOLD, COUNTER_SUCCESS_THRESHOLD, TOTAL_ROUNDS } from "@shared/config";
+import { ATTACK_SUCCESS_THRESHOLD, COUNTER_SUCCESS_THRESHOLD, TOTAL_ROUNDS, MIN_RECOGNITION_THRESHOLD, MULTI_MATCH_DELTA, MULTI_MATCH_MAX_COUNT, MULTI_MATCH_MIN_SCORE } from "@shared/config";
 import { z } from "zod";
 import type { IStorage } from "./storage";
 import { evaluateDrawing } from "@shared/advanced-gesture-recognition";
@@ -307,7 +307,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
       }
 
-      res.json({ success: true });
+      res.json({ success: true, recognized: true, accuracy: calculatedAccuracy });
     } catch (error) {
       console.error('Failed to remove participant:', error);
       res.status(500).json({ message: "Failed to remove participant" });
@@ -402,8 +402,9 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       const currentRound = session.currentRound || 1;
       const isOddRound = currentRound % 2 === 1;
       const isBonusRound = session.isBonusRound || false;
-      const expectedAttacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
-      const expectedDefender = isBonusRound ? 2 : (isOddRound ? 2 : 1);
+      const isFinalBonus = isBonusRound && (currentRound === TOTAL_ROUNDS) && (Number(session.player1Score) === Number(session.player2Score));
+      const expectedAttacker = isBonusRound ? (isFinalBonus ? 1 : (isOddRound ? 1 : 2)) : (isOddRound ? 1 : 2);
+      const expectedDefender = isBonusRound ? (isFinalBonus ? 2 : (isOddRound ? 2 : 1)) : (isOddRound ? 2 : 1);
       const expectedPlayer = session.currentPhase === "attack" ? expectedAttacker : expectedDefender;
       if (playerId !== expectedPlayer) {
         return res.json({ recognized: false, message: "Сейчас не ваш ход. Дождитесь своей фазы.", accuracy: 0 });
@@ -459,6 +460,15 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       // Get best match
       const bestMatch = spellMatches[0];
 
+      // If the best match is below minimal recognition threshold, treat as not recognized
+      if (bestMatch && bestMatch.accuracy < MIN_RECOGNITION_THRESHOLD) {
+        return res.json({
+          recognized: false,
+          message: "Жест не распознан.",
+          accuracy: bestMatch.accuracy,
+        });
+      }
+
       // Special case: if this is an attack spell and the best match is a spell the player has already used,
       // provide a specific error message
       if (spellType === "attack" && bestMatch) {
@@ -484,11 +494,51 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
       }
 
-      // Do not present multiple-match selection; proceed with best match automatically
+      // Present multiple-match selection for attacks when top results are close
+      if (spellType === "attack" && bestMatch) {
+        // Exclude already used attack spells from choices
+        const usedIds = playerId === 1
+          ? (session.player1UsedAttackSpells as string[] || [])
+          : (session.player2UsedAttackSpells as string[] || []);
+
+        const candidates = spellMatches.filter((m: any) => !usedIds.includes(m.spell.id));
+        const second = candidates[1];
+        if (
+          second &&
+          bestMatch.accuracy >= MULTI_MATCH_MIN_SCORE &&
+          second.accuracy >= MULTI_MATCH_MIN_SCORE &&
+          Math.abs(bestMatch.accuracy - second.accuracy) <= MULTI_MATCH_DELTA
+        ) {
+          return res.json({
+            recognized: false,
+            multipleMatches: true,
+            matches: candidates.slice(0, MULTI_MATCH_MAX_COUNT),
+            gesture,
+          });
+        }
+      }
 
       // Single match or counter spell - proceed normally
       const selectedSpell = bestMatch.spell;
       const selectedAccuracy = bestMatch.accuracy;
+
+      // Extra guard: block attacks below minimal threshold
+      if (spellType === "attack" && selectedAccuracy < MIN_RECOGNITION_THRESHOLD) {
+        return res.json({
+          recognized: false,
+          message: "Жест не распознан.",
+          accuracy: selectedAccuracy,
+        });
+      }
+
+      // Extra guard: block counters below minimal threshold (do not record or progress round)
+      if (spellType === "counter" && selectedAccuracy < MIN_RECOGNITION_THRESHOLD) {
+        return res.json({
+          recognized: false,
+          message: "Жест не распознан.",
+          accuracy: selectedAccuracy,
+        });
+      }
 
       // For counter spells, validate if it's the correct counter
       let isValidCounter = true;
@@ -535,7 +585,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           lastAttackAccuracy: selectedAccuracy,
           // Update timer fields when switching to counter phase
           roundStartTime: new Date().toISOString(),
-          currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1),
+          currentPlayerTurn: session.isBonusRound ? ((session.currentRound === TOTAL_ROUNDS && Number(session.player1Score) === Number(session.player2Score)) ? 2 : (session.currentRound % 2 === 1 ? 2 : 1)) : (session.currentRound % 2 === 1 ? 2 : 1),
           // Clear lastCompleted data when new attack starts (so previous round dialog data is removed)
           lastCompletedRoundNumber: null,
           lastCompletedAttackSpellId: null,
@@ -640,16 +690,19 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
             counterTimeSpent
           );
           const nextRound = transition.nextRound;
-          const isBonusRound = session.isBonusRound || transition.isBonusRound || award.tie;
+          const baseBonus = session.isBonusRound || transition.isBonusRound || award.tie;
           const bonusRoundWinner = bonusOutcome.bonusRoundWinner;
+          const isFinalBonus = baseBonus && (currentRound === TOTAL_ROUNDS) && (player1Score === player2Score);
+          // Do not add extra points here: bonus rounds already award exactly 1 point
           const isGameComplete = bonusOutcome.isGameComplete || transition.isGameComplete;
           let gameStatus: "active" | "completed" | "paused" = isGameComplete ? "completed" : "active";
-          // Determine who attacks next
-          const nextAttacker = isBonusRound ? 1 : (nextRound % 2 === 1 ? 1 : 2);
+          const isOdd = currentRound % 2 === 1;
+          const isBonusRound = baseBonus && !(bonusRoundWinner && !isFinalBonus);
+          const nextAttacker = isBonusRound ? (isFinalBonus ? 1 : (isOdd ? 1 : 2)) : (nextRound % 2 === 1 ? 1 : 2);
           
           // Advance to next round or complete game
           await storage.updateGameSession(sessionId, {
-            currentRound: isBonusRound ? (session.isBonusRound ? currentRound + 1 : 11) : nextRound, // For bonus rounds, start at 11 and increment
+            currentRound: isBonusRound ? currentRound : nextRound,
             currentPhase: isGameComplete ? null : "attack",
             currentPlayer: isGameComplete ? (updatedSession.currentPlayer ?? null) : nextAttacker,
             player1Score: player1Score.toString(),
@@ -741,7 +794,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       const currentRound = session.currentRound || 1;
       const isOddRound = currentRound % 2 === 1;
       const isBonusRound = session.isBonusRound || false;
-      const expectedAttacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
+      const isFinalBonus = isBonusRound && (currentRound === TOTAL_ROUNDS) && (Number(session.player1Score) === Number(session.player2Score));
+      const expectedAttacker = isBonusRound ? (isFinalBonus ? 1 : (isOddRound ? 1 : 2)) : (isOddRound ? 1 : 2);
       if (playerId !== expectedAttacker || session.currentPhase !== "attack") {
         return res.json({ recognized: false, message: "Сейчас не ваш ход. Дождитесь своей фазы.", accuracy: 0 });
       }
@@ -750,6 +804,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         ? (session.player1UsedAttackSpells as string[] || [])
         : (session.player2UsedAttackSpells as string[] || []);
       
+      // Validate the provided gesture against the selected spell and compute accuracy server-side
+      const selectedSpell = await storage.getSpellById(spellId);
+      if (!selectedSpell) {
+        return res.status(400).json({ message: "Invalid spellId" });
+      }
+      const calculatedAccuracy = calculateGestureAccuracy(gesture, selectedSpell.gesturePattern as Point[]);
+      if (calculatedAccuracy < MIN_RECOGNITION_THRESHOLD) {
+        return res.json({ recognized: false, message: "Жест не распознан.", accuracy: calculatedAccuracy });
+      }
+
       // Add this spell to the player's used spells if not already there
       let updatedUsedSpells = [...usedSpellIds];
       if (!updatedUsedSpells.includes(spellId)) {
@@ -764,15 +828,15 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         pendingAttackPlayerId: playerId,
         pendingAttackSpellId: spellId,
         pendingAttackGesture: gesture,
-        pendingAttackAccuracy: accuracy,
+        pendingAttackAccuracy: calculatedAccuracy,
         pendingAttackTimeSpent: attackTimeSpent,
         // Always pass turn to defender regardless of accuracy
         currentPhase: "counter",
         lastAttackSpellId: spellId,
-        lastAttackAccuracy: accuracy,
+        lastAttackAccuracy: calculatedAccuracy,
         // Update timer fields when switching to counter phase
         roundStartTime: new Date().toISOString(),
-        currentPlayerTurn: session.isBonusRound ? 2 : (session.currentRound % 2 === 1 ? 2 : 1),
+        currentPlayerTurn: session.isBonusRound ? ((session.currentRound === TOTAL_ROUNDS && Number(session.player1Score) === Number(session.player2Score)) ? 2 : (session.currentRound % 2 === 1 ? 2 : 1)) : (session.currentRound % 2 === 1 ? 2 : 1),
         // Clear lastCompleted data when new attack starts
         lastCompletedRoundNumber: null,
         lastCompletedAttackSpellId: null,
@@ -799,8 +863,8 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         playerId,
         spellId,
         drawnGesture: gesture,
-        accuracy,
-        successful: accuracy >= ATTACK_SUCCESS_THRESHOLD,
+        accuracy: calculatedAccuracy,
+        successful: calculatedAccuracy >= ATTACK_SUCCESS_THRESHOLD,
         roundNumber: session.currentRound || 1,
         isBonusRound: session.isBonusRound || false,
         timeSpentSeconds: attackTimeSpent
@@ -1065,11 +1129,11 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       // Determine attacker for next round
       // Odd rounds (1,3,5,7,9): Player 1 attacks
       // Even rounds (2,4,6,8,10): Player 2 attacks
-      // For bonus round, Player 1 always attacks first
-      const nextAttacker = isBonusRound ? 1 : (nextRound % 2 === 1 ? 1 : 2);
+      // For final bonus (5:5), Player 1 attacks; mid-game bonus follows parity of the tied round
+      const nextAttacker = isBonusRound ? ((currentRound === TOTAL_ROUNDS && player1Score === player2Score) ? 1 : (isOddRound ? 1 : 2)) : (nextRound % 2 === 1 ? 1 : 2);
       
       const updates = {
-        currentRound: isBonusRound ? (session.isBonusRound ? currentRound + 1 : 11) : nextRound,
+        currentRound: isBonusRound ? currentRound : nextRound,
         currentPlayer: nextAttacker,
         currentPhase: "attack" as const,
         player1Score: player1Score.toString(),
