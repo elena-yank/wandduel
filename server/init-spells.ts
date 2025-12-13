@@ -1,7 +1,7 @@
-import { type PostgresStorage } from "./storage";
+import type { IStorage } from "./storage";
 import { type InsertSpell } from "@shared/schema";
 
-export async function initializeSpells(storage: PostgresStorage) {
+export async function initializeSpells(storage: IStorage) {
   // Expected number of spells in the system
   const EXPECTED_SPELL_COUNT = 44;
   
@@ -1401,7 +1401,7 @@ export async function initializeSpells(storage: PostgresStorage) {
   console.log("Spells initialized successfully!");
 }
 
-async function updateExistingSpells(existingSpells: any[], storage: PostgresStorage) {
+async function updateExistingSpells(existingSpells: any[], storage: IStorage) {
   console.log("Updating existing spells...");
   console.log(`Total existing spells: ${existingSpells.length}`);
   
@@ -1477,13 +1477,14 @@ async function updateExistingSpells(existingSpells: any[], storage: PostgresStor
       
       if (needsUpdate) {
         console.log(`Spell needs update: ${spellData.name}`);
-        await storage.updateSpell(existingSpell.id, {
-          description: spellData.description,
-          gesturePattern: spellData.gesturePattern
-        });
-        console.log(`Updated spell: ${spellData.name}`);
-      } else {
-        console.log(`Spell is already up to date: ${spellData.name}`);
+        if ((storage as any).updateSpell) {
+          await (storage as any).updateSpell(existingSpell.id, {
+            description: spellData.description,
+            gesturePattern: spellData.gesturePattern
+          });
+        } else {
+          console.log("Storage does not support updateSpell; skipping in-memory update");
+        }
       }
     } else {
       console.log(`Spell not found: ${spellData.name}`);

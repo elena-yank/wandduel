@@ -203,6 +203,8 @@ export class MemStorage implements IStorage {
   async createGameSession(insertSession: InsertGameSession): Promise<GameSession> {
     const id = randomUUID();
     const session: GameSession = {
+      id,
+      roomId: insertSession.roomId,
       currentRound: insertSession.currentRound ?? 1,
       currentPlayer: insertSession.currentPlayer ?? 1,
       currentPhase: insertSession.currentPhase ?? "attack",
@@ -212,29 +214,35 @@ export class MemStorage implements IStorage {
       lastAttackAccuracy: insertSession.lastAttackAccuracy ?? null,
       gameStatus: insertSession.gameStatus ?? "active",
       isBonusRound: insertSession.isBonusRound ?? false,
+      bonusRoundWinner: insertSession.bonusRoundWinner ?? null,
       player1UsedAttackSpells: insertSession.player1UsedAttackSpells ?? [],
       player2UsedAttackSpells: insertSession.player2UsedAttackSpells ?? [],
       pendingAttackPlayerId: insertSession.pendingAttackPlayerId ?? null,
       pendingAttackSpellId: insertSession.pendingAttackSpellId ?? null,
       pendingAttackGesture: insertSession.pendingAttackGesture ?? null,
       pendingAttackAccuracy: insertSession.pendingAttackAccuracy ?? null,
+      pendingAttackTimeSpent: insertSession.pendingAttackTimeSpent ?? null,
       pendingCounterPlayerId: insertSession.pendingCounterPlayerId ?? null,
       pendingCounterSpellId: insertSession.pendingCounterSpellId ?? null,
       pendingCounterGesture: insertSession.pendingCounterGesture ?? null,
       pendingCounterAccuracy: insertSession.pendingCounterAccuracy ?? null,
+      pendingCounterTimeSpent: insertSession.pendingCounterTimeSpent ?? null,
       lastCompletedRoundNumber: insertSession.lastCompletedRoundNumber ?? null,
       lastCompletedAttackSpellId: insertSession.lastCompletedAttackSpellId ?? null,
       lastCompletedAttackAccuracy: insertSession.lastCompletedAttackAccuracy ?? null,
       lastCompletedAttackGesture: insertSession.lastCompletedAttackGesture ?? null,
+      lastCompletedAttackTimeSpent: insertSession.lastCompletedAttackTimeSpent ?? null,
       lastCompletedCounterSpellId: insertSession.lastCompletedCounterSpellId ?? null,
       lastCompletedCounterAccuracy: insertSession.lastCompletedCounterAccuracy ?? null,
       lastCompletedCounterGesture: insertSession.lastCompletedCounterGesture ?? null,
       lastCompletedCounterSuccess: insertSession.lastCompletedCounterSuccess ?? null,
-      bonusRoundWinner: insertSession.bonusRoundWinner ?? null,
-      ...insertSession,
-      id,
-      createdAt: new Date().toISOString()
+      lastCompletedCounterTimeSpent: insertSession.lastCompletedCounterTimeSpent ?? null,
+      roundStartTime: insertSession.roundStartTime ?? null,
+      timeLimit: insertSession.timeLimit ?? 60,
+      currentPlayerTurn: insertSession.currentPlayerTurn ?? null,
+      createdAt: new Date().toISOString(),
     };
+
     this.gameSessions.set(id, session);
     return session;
   }
@@ -303,7 +311,8 @@ export class MemStorage implements IStorage {
       isBonusRound: insertAttempt.isBonusRound ?? false,
       ...insertAttempt,
       id,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      timeSpentSeconds: insertAttempt.timeSpentSeconds ?? null,
     };
     this.gestureAttempts.set(id, attempt);
     return attempt;

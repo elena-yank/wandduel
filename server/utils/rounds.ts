@@ -29,18 +29,17 @@ export function awardPointForRound(args: AwardArgs) {
   }
 
   const currentRound = session.currentRound ?? 1;
-  const isFinalBonus = session.isBonusRound && currentRound === TOTAL_ROUNDS && Number(session.player1Score) === Number(session.player2Score);
 
   if (attackAccuracy > counterAccuracy) {
     const attacker = pendingAttackPlayerId
-      ?? (session.isBonusRound ? (isFinalBonus ? 1 : (currentRound % 2 === 1 ? 1 : 2)) : (currentRound % 2 === 1 ? 1 : 2));
+      ?? (session.isBonusRound ? (currentRound % 2 === 1 ? 1 : 2) : (currentRound % 2 === 1 ? 1 : 2));
     if (attacker === 1) p1 += 1; else p2 += 1;
   } else if (counterAccuracy > attackAccuracy) {
-    const defender = session.isBonusRound ? ( (currentRound % 2 === 1 || isFinalBonus) ? 2 : 1 ) : (currentRound % 2 === 1 ? 2 : 1);
+    const defender = session.isBonusRound ? (currentRound % 2 === 1 ? 2 : 1) : (currentRound % 2 === 1 ? 2 : 1);
     if (defender === 1) p1 += 1; else p2 += 1;
   } else {
     const attacker = pendingAttackPlayerId
-      ?? (session.isBonusRound ? (isFinalBonus ? 1 : (currentRound % 2 === 1 ? 1 : 2)) : (currentRound % 2 === 1 ? 1 : 2));
+      ?? (session.isBonusRound ? (currentRound % 2 === 1 ? 1 : 2) : (currentRound % 2 === 1 ? 1 : 2));
     const defender = session.isBonusRound ? (attacker === 1 ? 2 : 1) : (currentRound % 2 === 1 ? 2 : 1);
     const ta = typeof attackTimeSpentSeconds === 'number' ? attackTimeSpentSeconds : null;
     const tc = typeof counterTimeSpentSeconds === 'number' ? counterTimeSpentSeconds : null;
@@ -65,26 +64,25 @@ export function calculateBonusRoundOutcome(session: GameSession, attackAccuracy:
 
   if (session.isBonusRound) {
     const currentRound = session.currentRound ?? 1;
-    const isFinalBonus = currentRound === TOTAL_ROUNDS;
-    const bonusAttacker = isFinalBonus ? 1 : (currentRound % 2 === 1 ? 1 : 2);
+    const bonusAttacker = currentRound % 2 === 1 ? 1 : 2;
     const bonusDefender = bonusAttacker === 1 ? 2 : 1;
 
     if (attackAccuracy > counterAccuracy) {
       bonusRoundWinner = bonusAttacker;
-      isGameComplete = isFinalBonus;
+      isGameComplete = currentRound === TOTAL_ROUNDS;
     } else if (counterAccuracy > attackAccuracy) {
       bonusRoundWinner = bonusDefender;
-      isGameComplete = isFinalBonus;
+      isGameComplete = currentRound === TOTAL_ROUNDS;
     } else {
       const ta = typeof attackTimeSpentSeconds === 'number' ? attackTimeSpentSeconds : null;
       const tc = typeof counterTimeSpentSeconds === 'number' ? counterTimeSpentSeconds : null;
       if (ta != null && tc != null) {
         if (ta < tc) {
           bonusRoundWinner = bonusAttacker;
-          isGameComplete = isFinalBonus;
+          isGameComplete = currentRound === TOTAL_ROUNDS;
         } else if (tc < ta) {
           bonusRoundWinner = bonusDefender;
-          isGameComplete = isFinalBonus;
+          isGameComplete = currentRound === TOTAL_ROUNDS;
         } else {
           isGameComplete = false;
         }
@@ -108,7 +106,7 @@ export function nextRoundState(session: GameSession, player1Score: number, playe
     isBonusRound = true;
   }
 
-  const nextAttacker = isBonusRound ? 1 : (nextRound % 2 === 1 ? 1 : 2);
+  const nextAttacker = isBonusRound ? (nextRound % 2 === 1 ? 1 : 2) : (nextRound % 2 === 1 ? 1 : 2);
 
   return { nextRound, isGameComplete, isBonusRound, nextAttacker };
 }

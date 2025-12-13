@@ -37,7 +37,6 @@ interface PlayerCardProps {
   timeLeft?: number | null; // Add timer props
   isTimerActive?: boolean; // Add timer props
 }
-
 // House color themes with actual color values
 const houseColors = {
   gryffindor: {
@@ -99,25 +98,13 @@ export default function PlayerCard({
   isTimerActive,
   ...props
 }: PlayerCardProps) {
-  const playerColor = player === 1 ? "primary" : "accent";
-  const isMobile = useIsPhone();
   const [isColorPopupOpen, setIsColorPopupOpen] = useState(false);
-  
-  // Determine role based on current round
-  // Odd rounds (1,3,5,7,9): Player 1 attacks, Player 2 defends
-  // Even rounds (2,4,6,8,10): Player 2 attacks, Player 1 defends
-  // In bonus rounds, Player 1 always attacks
+  const isMobile = useIsPhone();
   const isOddRound = currentRound % 2 === 1;
-  const playerRole = (player === 1)
-    ? (isBonusRound ? "Атакующий" : (isOddRound ? "Атакующий" : "Защищающийся"))
-    : (isBonusRound ? "Защищающийся" : (isOddRound ? "Защищающийся" : "Атакующий"));
-  
-  const displayName = playerName || `Player ${player}`;
-  
-  // Get house colors or fallback to default
-  const houseTheme = playerHouse && playerHouse in houseColors 
-    ? houseColors[playerHouse as keyof typeof houseColors]
-    : null;
+  const isAttacker = player === (isOddRound ? 1 : 2);
+  const playerRole = isAttacker ? "Атакующий" : "Защищающийся";
+  const houseTheme = playerHouse ? houseColors[playerHouse as keyof typeof houseColors] : null;
+  const displayName = playerName || `Игрок ${player}`;
 
 
   // Format time for display (MM:SS)
@@ -145,30 +132,21 @@ export default function PlayerCard({
     };
   });
 
-  // Separate attacks and defenses based on round number
-  // For Player 1: odd rounds are attacks, even rounds are defenses
-  // For Player 2: even rounds are attacks, odd rounds are defenses
-  // In bonus rounds, Player 1 always attacks, Player 2 always defends
   const attacks = roundsDisplay.filter(round => {
-    const isOddRound = round.roundNumber % 2 === 1;
-    const isBonusRound = round.isBonusRound || false;
-    // In bonus rounds, Player 1 always attacks, Player 2 always defends
-    if (isBonusRound) {
-      return player === 1;
+    const isOdd = round.roundNumber % 2 === 1;
+    const isBonus = round.isBonusRound || false;
+    if (isBonus) {
+      return player === (isOdd ? 1 : 2);
     }
-    // For regular rounds, use the standard logic
-    return player === 1 ? isOddRound : !isOddRound;
+    return player === 1 ? isOdd : !isOdd;
   });
-  
   const defenses = roundsDisplay.filter(round => {
-    const isOddRound = round.roundNumber % 2 === 1;
-    const isBonusRound = round.isBonusRound || false;
-    // In bonus rounds, Player 1 always attacks, Player 2 always defends
-    if (isBonusRound) {
-      return player === 2;
+    const isOdd = round.roundNumber % 2 === 1;
+    const isBonus = round.isBonusRound || false;
+    if (isBonus) {
+      return player === (isOdd ? 2 : 1);
     }
-    // For regular rounds, use the standard logic
-    return player === 1 ? !isOddRound : isOddRound;
+    return player === 1 ? !isOdd : isOdd;
   });
 
   return (
@@ -249,36 +227,32 @@ export default function PlayerCard({
                       className={cn(
                         "px-2 py-1 rounded text-xs border transition-all flex items-center gap-1",
                         round.spell || !round.successful ? "opacity-100" : "opacity-30 border-dashed",
-                        !round.successful ? "border-destructive/50" : round.spell ? (
-                          !houseTheme && (player === 1 ? "border-primary/30" : "border-accent/30")
-                        ) : "border-border/30",
+                        !houseTheme && (player === 1 ? "border-primary/30" : "border-accent/30"),
                         round.spell && onSpellClick && "cursor-pointer hover:scale-105 hover:shadow-md"
                       )}
-                      style={houseTheme && round.spell && round.successful ? {
-                        borderColor: houseTheme.borderColor + "4D"
-                      } : undefined}
+                      style={houseTheme && round.spell ? { borderColor: houseTheme.borderColor + "4D" } : undefined}
                       title={round.spell ? `${round.spell.name} (${round.accuracy}%)\n\nКликните, чтобы открыть в гримуаре` : `Раунд ${round.roundNumber}`}
                     >
                       {round.spell ? (
                         <>
-                          <span
+                          <span 
                             className={cn(
                               "font-serif font-semibold",
                               !houseTheme && (player === 1 ? "text-primary" : "text-accent")
                             )}
                             style={houseTheme ? { color: houseTheme.textColor } : undefined}
                           >
-                            {round.spell ? round.spell.name : "-"}
+                            {round.spell.name}
                           </span>
                           <span className={cn(
                             "text-xs font-medium ml-1",
                             (round.accuracy ?? 0) < MIN_RECOGNITION_THRESHOLD ? "text-muted-foreground" : (
-                              round.accuracy <= 55 ? "text-red-500" :
-                              round.accuracy <= 75 ? "text-yellow-500" :
+                              round.accuracy <= 55 ? "text-red-500" : 
+                              round.accuracy <= 75 ? "text-yellow-500" : 
                               "text-green-500"
                             )
                           )}>
-                            {round.spell ? `${round.accuracy}%` : "—"}
+                            {`${round.accuracy}%`}
                           </span>
                           {round.isBonusRound && (
                             <span className="ml-1 px-1 py-0.5 bg-yellow-500 text-yellow-900 text-xs font-bold rounded">

@@ -12,7 +12,7 @@ export const MIN_RECOGNITION_THRESHOLD = 12;
 export const TOTAL_ROUNDS = 10;
 
 // Game version
-export const GAME_VERSION = "1.1.0";
+export const GAME_VERSION = "1.2.0";
 
 // Multi-match dialog config
 export const MULTI_MATCH_DELTA = 10; // show choice if top-2 within 10%

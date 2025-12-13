@@ -42,6 +42,7 @@ const houseColors = {
   hufflepuff: "#EAB308" // yellow-500
 };
 
+
 type RecognitionResult = {
   recognized: boolean;
   spell?: Spell;
@@ -98,6 +99,13 @@ export default function DuelArena() {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   // Timer states - now synchronized with server
   const [serverTime, setServerTime] = useState<number>(Date.now());
+
+  const getCurrentPlayer = (): 1 | 2 => {
+    const currentRoundNum = session?.currentRound || 1;
+    const isOddRound = currentRoundNum % 2 === 1;
+    const attacker = isOddRound ? 1 : 2;
+    return roundPhase === "attack" ? attacker : (attacker === 1 ? 2 : 1);
+  };
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const canvasRef = useRef<GestureCanvasRef>(null);
@@ -841,39 +849,18 @@ export default function DuelArena() {
       spellDatabaseRef.current.scrollIntoView({ behavior: "auto", block: "start" });
     }
   };
-
-  const getCurrentPlayer = () => {
-    const currentRound = session?.currentRound || 1;
     // Нечетные раунды (1,3,5,7,9): Игрок 1 атакует, Игрок 2 защищается
     // Четные раунды (2,4,6,8,10): Игрок 2 атакует, Игрок 1 защищается
     // В бонусных раундах всегда атакует Игрок 1
-    const isOddRound = currentRound % 2 === 1;
-    const isBonusRound = session?.isBonusRound || false;
-    
-    if (roundPhase === "attack") {
-      return isBonusRound ? 1 : (isOddRound ? 1 : 2);
-    } else {
-      return isBonusRound ? 2 : (isOddRound ? 2 : 1);
-    }
-  };
-
   // Enhanced spell history: add pending spells for current round
   const getEnhancedSpellHistory = (playerId: number) => {
     const baseHistory = spellHistory.filter(h => h.playerId === playerId);
     const currentRound = session?.currentRound || 1;
-    
-    // Determine who attacks in current round
-    // Нечетные раунды (1,3,5,7,9): Игрок 1 атакует, Игрок 2 защищается
-    // Четные раунды (2,4,6,8,10): Игрок 2 атакует, Игрок 1 защищается
-    // В бонусных раундах всегда атакует Игрок 1
     const isOddRound = currentRound % 2 === 1;
-    const isBonusRound = session?.isBonusRound || false;
-    const currentAttacker = isBonusRound ? 1 : (isOddRound ? 1 : 2);
-    const currentDefender = isBonusRound ? 2 : (isOddRound ? 2 : 1);
-    
-    // Add pending attack for the attacker
-    // Guard against race conditions: only include pending attack
-    // when it belongs to the computed attacker and phase is counter
+    const currentAttacker = isOddRound ? 1 : 2;
+    const currentDefender = isOddRound ? 2 : 1;
+
+    // Pending attack entry for attacker in counter phase
     if (
       playerId === currentAttacker &&
       session?.pendingAttackSpellId &&
@@ -883,27 +870,25 @@ export default function DuelArena() {
       const pendingSpell = allSpells.find(s => s.id === session.pendingAttackSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingAttackAccuracy || 0;
-        // Do NOT include a pending attack below minimal recognition threshold
         if (rawAccuracy >= MIN_RECOGNITION_THRESHOLD) {
           return [
             ...baseHistory,
             {
               roundNumber: currentRound,
-              playerId: playerId,
+              playerId,
               spell: pendingSpell,
               accuracy: rawAccuracy,
               successful: rawAccuracy >= 57,
               drawnGesture: (session.pendingAttackGesture as Point[]) || [],
               isBonusRound: session.isBonusRound || false,
-              timeSpentSeconds: session.pendingAttackTimeSpent || undefined
-            }
+              timeSpentSeconds: session.pendingAttackTimeSpent || undefined,
+            },
           ];
         }
       }
     }
-    
-    // Add pending counter for the defender
-    // Guard against race conditions similarly
+
+    // Pending counter entry for defender in counter phase
     if (
       playerId === currentDefender &&
       session?.pendingCounterSpellId &&
@@ -913,25 +898,24 @@ export default function DuelArena() {
       const pendingSpell = allSpells.find(s => s.id === session.pendingCounterSpellId);
       if (pendingSpell) {
         const rawAccuracy = session.pendingCounterAccuracy || 0;
-        // For defense, also skip extremely low-quality gestures
         if (rawAccuracy >= MIN_RECOGNITION_THRESHOLD) {
           return [
             ...baseHistory,
             {
               roundNumber: currentRound,
-              playerId: playerId,
+              playerId,
               spell: pendingSpell,
               accuracy: rawAccuracy,
               successful: rawAccuracy >= 57,
               drawnGesture: (session.pendingCounterGesture as Point[]) || [],
               isBonusRound: session.isBonusRound || false,
-              timeSpentSeconds: session.pendingCounterTimeSpent || undefined
-            }
+              timeSpentSeconds: session.pendingCounterTimeSpent || undefined,
+            },
           ];
         }
       }
     }
-    
+
     return baseHistory;
   };
 
@@ -1055,9 +1039,9 @@ export default function DuelArena() {
 
     return (
       <div className="relative z-10 min-h-screen p-4 md:p-8 flex items-center justify-center">
-        <span className="absolute top-0 left-0 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
         <Card className="spell-card border-border/20 max-w-2xl w-full">
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-12 text-center relative">
+            <span className="absolute top-3 left-4 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
             <div className="flex justify-center mb-6">
               <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
             </div>
@@ -1185,9 +1169,8 @@ export default function DuelArena() {
                     if (!player1 && !player2) return null;
 
                     const isOddRound = roundNumber % 2 === 1;
-                    // In bonus rounds, Player 1 always attacks, Player 2 always defends
-                    const attackerId = isBonusRound ? 1 : (isOddRound ? 1 : 2);
-                    const defenderId = isBonusRound ? 2 : (isOddRound ? 2 : 1);
+                    const attackerId = isBonusRound ? (isOddRound ? 1 : 2) : (isOddRound ? 1 : 2);
+                    const defenderId = isBonusRound ? (isOddRound ? 2 : 1) : (isOddRound ? 2 : 1);
 
                     const attackHistory = attackerId === 1 ? player1 : player2;
                     const defenseHistory = defenderId === 1 ? player1 : player2;
@@ -1203,8 +1186,14 @@ export default function DuelArena() {
                       attackWins = true;
                     } else if (defenseAccuracy > attackAccuracy) {
                       defenseWins = true;
-                    } else if (ta != null && td != null) {
-                      if (ta < td) attackWins = true; else if (td < ta) defenseWins = true;
+                    } else {
+                      // accuracies equal: decide by time if available
+                      if (ta != null && td != null) {
+                        const taNum = ta as number;
+                        const tdNum = td as number;
+                        if (taNum < tdNum) attackWins = true;
+                        else if (tdNum < taNum) defenseWins = true;
+                      }
                     }
                     const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackWins) : 0;
                     const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseWins) : 0;
@@ -1415,8 +1404,13 @@ export default function DuelArena() {
                     attackWins = true;
                   } else if (defenseAccuracy > attackAccuracy) {
                     defenseWins = true;
-                  } else if (ta != null && td != null) {
-                    if (ta < td) attackWins = true; else if (td < ta) defenseWins = true;
+                  } else {
+                    if (ta != null && td != null) {
+                      const taNum = ta as number;
+                      const tdNum = td as number;
+                      if (taNum < tdNum) attackWins = true;
+                      else if (tdNum < taNum) defenseWins = true;
+                    }
                   }
                   const attackPoints = attackHistory?.successful ? calculatePoints(attackHistory.spell || undefined, attackHistory.accuracy, attackWins) : 0;
                   const defensePoints = defenseHistory?.successful ? calculatePoints(defenseHistory.spell || undefined, defenseHistory.accuracy, defenseWins) : 0;
@@ -1634,7 +1628,7 @@ export default function DuelArena() {
                   Ожидание подключения второго игрока...
                 </div>
               )}
-              
+
               <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-full h-full">
               <GestureCanvas
@@ -1713,7 +1707,6 @@ export default function DuelArena() {
                       <span
                         className="wave-underline"
                         key={`${phase}-${active}-${currentRound}-${isBonusRound ? 1 : 0}`}
-                        style={color ? ({ color, ['--house-color' as any]: color } as any) : undefined}
                       >
                         {name}
                       </span>, {actionText}
@@ -1766,7 +1759,7 @@ export default function DuelArena() {
       <div className="max-w-7xl mx-auto mb-8">
         <Card className="spell-card border-border/20">
           <CardContent className="p-6">
-            <h3 className="text-xl font-serif font-bold text-foreground mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-serif font-bold flex items-center gap-2 text-foreground">
               <Info className="w-6 h-6 text-secondary" />
               Как сражаться
             </h3>
