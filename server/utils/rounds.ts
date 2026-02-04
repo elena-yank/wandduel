@@ -95,13 +95,29 @@ export function calculateBonusRoundOutcome(session: GameSession, attackAccuracy:
   return { isGameComplete, bonusRoundWinner };
 }
 
-export function nextRoundState(session: GameSession, player1Score: number, player2Score: number, totalRounds: number) {
+export function nextRoundState(session: GameSession, player1Score: number, player2Score: number, totalRounds: number, isTie: boolean = false) {
   const currentRound = session.currentRound ?? 1;
-  const nextRound = currentRound + 1;
+  
+  // Default progression
+  let nextRound = currentRound + 1;
   let isGameComplete = nextRound > totalRounds;
   let isBonusRound = false;
 
-  if (currentRound === totalRounds && player1Score === player2Score) {
+  // Handle mid-game bonus round (draw in rounds 1-10)
+  // If it's a tie, we trigger a bonus round and DO NOT increment the round counter
+  if (isTie && currentRound <= totalRounds) {
+    nextRound = currentRound;
+    isGameComplete = false;
+    isBonusRound = true;
+  }
+  // Handle bonus round tie (retry bonus round)
+  else if (session.isBonusRound && isTie) {
+    nextRound = currentRound;
+    isGameComplete = false;
+    isBonusRound = true;
+  }
+  // Handle end of game tie-breaker (after round 10)
+  else if (currentRound === totalRounds && player1Score === player2Score) {
     isGameComplete = false;
     isBonusRound = true;
   }

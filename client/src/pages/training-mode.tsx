@@ -363,7 +363,7 @@ export default function TrainingMode() {
                     ["Оранжевый", "Розовый", "Фиолетовый"],
                     ["Серебряный", "Серый", "Белый"],
                     ["Бело-жёлтый", "Бирюзовый", "Бесцветный"],
-                    ["Пламенный шар"],
+                    ["Пламенный шар", "Синий"],
                   ].map((row, idx) => (
                     <div key={idx} className="grid grid-cols-3 gap-0 w-full min-w-0 overflow-x-hidden">
                       {row.map((item, jdx) => {

@@ -694,7 +694,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
           player2Score += award.p2;
 
           // Determine next round and bonus/winner state via utils
-          const transition = nextRoundState(session, player1Score, player2Score, TOTAL_ROUNDS);
+          const transition = nextRoundState(session, player1Score, player2Score, TOTAL_ROUNDS, award.tie);
           const bonusOutcome = calculateBonusRoundOutcome(
             session,
             attackAccuracy,
@@ -1073,6 +1073,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         counterAccuracy = session.pendingCounterAccuracy || 0;
       }
 
+      let isTie = false;
       // Award 1 point based on higher accuracy or timeout logic
       if (isTimeout) {
         // In timeout cases, the defender gets the point
@@ -1096,26 +1097,16 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
         });
         player1Score += award.p1;
         player2Score += award.p2;
-        if (award.tie) {
-          session.isBonusRound = true;
-        }
+        isTie = award.tie;
       }
 
-      // Check if scores are equal after 10 rounds to trigger bonus round
-      const nextRound = currentRound + 1;
-      let isGameComplete = nextRound > 10;
+      // Determine next round state using the shared utility function
+      const transition = nextRoundState(session, player1Score, player2Score, TOTAL_ROUNDS, isTie);
+      const nextRound = transition.nextRound;
+      let isGameComplete = transition.isGameComplete;
       let gameStatus: "active" | "completed" | "paused" = isGameComplete ? "completed" : (session.gameStatus || "active");
-      let isBonusRound = session.isBonusRound || false;
+      let isBonusRound = session.isBonusRound || transition.isBonusRound;
       let bonusRoundWinner = null;
-      
-      // If we're at the end of round 10, check for tie
-  if (currentRound === TOTAL_ROUNDS && player1Score === player2Score) {
-        // Scores are tied, start bonus round
-        isGameComplete = false; // Don't complete game yet
-        gameStatus = "active";
-        isBonusRound = true;
-        // Keep same round number for bonus round
-      }
       
       // If this is a bonus round, check if we have a winner
       if (isBonusRound) {
@@ -1137,9 +1128,7 @@ export async function registerRoutes(app: Express, storage: IStorage): Promise<S
       }
       
       // Determine attacker for next round
-      // Odd rounds (1,3,5,7,9): Player 1 attacks
-      // Even rounds (2,4,6,8,10): Player 2 attacks
-      const nextAttacker = isBonusRound ? (nextRound % 2 === 1 ? 1 : 2) : (nextRound % 2 === 1 ? 1 : 2);
+      const nextAttacker = transition.nextAttacker;
       
       const updates = {
         currentRound: nextRound,
