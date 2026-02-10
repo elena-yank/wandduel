@@ -174,6 +174,11 @@ export default function DuelArena() {
             // Clear after completion to match local behavior
             canvasRef.current?.clearCanvas();
           }
+        } else if (message.updateType === 'gesture_recognized') {
+          console.log('Gesture recognized update received, refreshing data...');
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId] });
+          queryClient.invalidateQueries({ queryKey: ["/api/sessions", currentSessionId, "spell-history"] });
         }
       }
     },
