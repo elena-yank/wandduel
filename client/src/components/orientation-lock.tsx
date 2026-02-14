@@ -5,6 +5,22 @@ export default function OrientationLock() {
   const [isPortrait, setIsPortrait] = useState(false);
 
   useEffect(() => {
+    // Attempt to lock orientation to landscape on capable devices
+    const tryLockLandscape = async () => {
+      try {
+        const isMobile = Math.min(window.screen.width, window.screen.height) < 1024;
+        // Only try on mobile contexts
+        if (!isMobile) return;
+        // Screen Orientation API guard
+        const orientation = (screen as any).orientation || (screen as any).msOrientation || (screen as any).mozOrientation;
+        if (orientation && typeof orientation.lock === "function") {
+          await orientation.lock("landscape");
+        }
+      } catch {
+        // Silently ignore if the environment disallows locking (e.g. iOS WKWebView)
+      }
+    };
+
     const checkOrientation = () => {
       // Check if device is mobile (screen width < 1024px) and in portrait mode
       const isMobile = window.innerWidth < 1024;
@@ -14,6 +30,14 @@ export default function OrientationLock() {
 
     // Check on mount
     checkOrientation();
+    // Try to enforce landscape when app becomes visible or on mount
+    tryLockLandscape();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        tryLockLandscape();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     // Listen for orientation and resize changes
     window.addEventListener("resize", checkOrientation);
@@ -22,6 +46,7 @@ export default function OrientationLock() {
     return () => {
       window.removeEventListener("resize", checkOrientation);
       window.removeEventListener("orientationchange", checkOrientation);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 
