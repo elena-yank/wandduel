@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Wand2, Copy, Check } from "lucide-react";
 import duelIconPath from "@assets/image_1760081444104.png";
+import bannerPath from "@assets/banner.jpg";
+import banner2Path from "@assets/banner-2.jpg";
 import gryffindorIcon from "@assets/icons8-hogwarts-legacy-gryffindor-480_1760083007155.png";
 import ravenclawIcon from "@assets/icons8-hogwarts-legacy-ravenclaw-480_1760083011315.png";
 import slytherinIcon from "@assets/icons8-hogwarts-legacy-slytherin-480_1760083015546.png";
@@ -147,23 +149,66 @@ export default function RoomLobby() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center p-4 relative">
-        <Card className="spell-card border-border/20 w-full max-w-2xl relative">
-          <span className="absolute top-2 left-2 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
-          <CardContent className="p-8">
-            {isPhone ? (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+        <div className="w-full max-w-2xl flex flex-col items-center">
+          <Card className="spell-card border-border/20 w-full relative">
+            <div className="flex gap-0 absolute -top-[30px] right-4 lg:right-8">
+              <a 
+                href="https://vk.ru/drake.fletcher" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="relative pl-8 pr-2 lg:pl-12 lg:pr-4 py-1.5 lg:py-2 text-[8px] lg:text-[10px] xl:text-xs font-sans bg-[#0f1117] text-white hover:text-amber-400 transition-colors flex items-center justify-center min-w-[140px] lg:min-w-[180px]"
+                style={{ 
+                  clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)',
+                  filter: 'drop-shadow(1px 0px 0px #4b5563) drop-shadow(-1px 0px 0px #4b5563) drop-shadow(0px 1px 0px #4b5563) drop-shadow(0px -1px 0px #4b5563)'
+                }}
+              >
+                Тех. поддержка: Дрейк Флетчер
+              </a>
+              <a 
+                href="https://vk.ru/crouch_jr" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="relative pl-8 pr-2 lg:pl-12 lg:pr-4 py-1.5 lg:py-2 text-[8px] lg:text-[10px] xl:text-xs font-sans bg-[#0f1117] text-white hover:text-amber-400 transition-colors ml-[-1px] flex items-center justify-center min-w-[140px] lg:min-w-[180px]"
+                style={{ 
+                  clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0 100%)',
+                  filter: 'drop-shadow(1px 0px 0px #4b5563) drop-shadow(-1px 0px 0px #4b5563) drop-shadow(0px 1px 0px #4b5563) drop-shadow(0px -1px 0px #4b5563)'
+                }}
+              >
+                Арбитр: Барти Крауч-мл.
+              </a>
+            </div>
+            <span className="absolute top-2 left-2 text-xs md:text-sm text-muted-foreground">Версия {`v${GAME_VERSION}`}</span>
+            <CardContent className="p-8">
+              {isPhone ? (
               <Tabs defaultValue="create" className="w-full">
                 <div className="grid grid-cols-2 gap-4 items-stretch">
-                  <div className="col-span-1 text-center flex flex-col justify-between min-h-[220px]">
-                    <div className="mb-3 flex justify-center">
-                      <img src={duelIconPath} alt="Дуэльная арена" className="w-20 h-20 object-contain" />
+                  <div className="col-span-1 flex flex-col h-full">
+                    <div className="grid grid-cols-2 gap-2 items-center h-44 mb-1 overflow-hidden shrink-0">
+                      <div className="flex flex-col items-center justify-center text-center h-full">
+                        <div className="mb-0.5">
+                          <img src={duelIconPath} alt="Дуэльная арена" className="w-8 h-8 object-contain" />
+                        </div>
+                        <h1 className="text-lg font-angst leading-tight bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(234,179,8,0.45)]">
+                          Добро<br />пожаловать!
+                        </h1>
+                      </div>
+                      <div className="flex items-center justify-center h-full overflow-hidden">
+                        <a
+                          href="https://vk.ru/magichogwarts_school"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center h-full"
+                        >
+                          <img
+                            src={bannerPath}
+                            alt="Мир Гарри Поттера"
+                            className="h-full w-auto object-contain rounded hover:opacity-90 transition-opacity"
+                          />
+                        </a>
+                      </div>
                     </div>
-                    <h1 className="text-3xl font-angst mb-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(234,179,8,0.45)]">
-                      Добро пожаловать!
-                    </h1>
-                    {/* Мобильная версия: убираем подпись "Создайте комнату..." */}
-                    {/* Левая колонка: поля имени и ID (для join) — закреплены снизу */}
-                    <div>
+                    <div className="flex-grow flex flex-col justify-end min-h-[100px]">
                       <TabsContent value="create" className="mt-3 space-y-4">
                         <div>
                           <Input
@@ -205,8 +250,7 @@ export default function RoomLobby() {
                     </div>
                   </div>
 
-                  <div className="col-span-1 flex flex-col justify-between min-h-[220px]">
-                    {/* Правая колонка: переключатели и факультет */}
+                  <div className="col-span-1 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger className="w-full" value="create" data-testid="tab-create" onClick={() => setActiveTab("create")}>Создать комнату</TabsTrigger>
@@ -214,7 +258,6 @@ export default function RoomLobby() {
                       </TabsList>
                     </div>
 
-                    {/* Средняя зона: факультеты в зависимости от вкладки */}
                     <TabsContent value="create" className="space-y-4">
                       <div>
                         <div className="flex items-center justify-between">
@@ -231,7 +274,7 @@ export default function RoomLobby() {
                               key={house.id}
                               type="button"
                               onClick={() => setCreateHouse(house.id)}
-                              className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                              className="p-2 rounded-lg border-2 transition-all hover:scale-105"
                               style={{
                                 borderColor: createHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
                                 backgroundColor: createHouse === house.id ? `${house.color}15` : "transparent",
@@ -242,7 +285,7 @@ export default function RoomLobby() {
                               <img
                                 src={house.icon}
                                 alt={house.name}
-                                className="w-14 h-14 mx-auto"
+                                className="w-12 h-12 mx-auto"
                               />
                             </button>
                           ))}
@@ -266,7 +309,7 @@ export default function RoomLobby() {
                               key={house.id}
                               type="button"
                               onClick={() => setJoinHouse(house.id)}
-                              className="p-3 rounded-lg border-2 transition-all hover:scale-105"
+                              className="p-2 rounded-lg border-2 transition-all hover:scale-105"
                               style={{
                                 borderColor: joinHouse === house.id ? house.color : "rgba(255, 255, 255, 0.1)",
                                 backgroundColor: joinHouse === house.id ? `${house.color}15` : "transparent",
@@ -277,7 +320,7 @@ export default function RoomLobby() {
                               <img
                                 src={house.icon}
                                 alt={house.name}
-                                className="w-14 h-14 mx-auto"
+                                className="w-12 h-12 mx-auto"
                               />
                             </button>
                           ))}
@@ -285,7 +328,6 @@ export default function RoomLobby() {
                       </div>
                     </TabsContent>
 
-                    {/* Нижняя зона: кнопки в зависимости от вкладки */}
                     <TabsContent value="create" className="mt-4">
                       <Button
                         onClick={handleCreateRoom}
@@ -312,19 +354,36 @@ export default function RoomLobby() {
                 </div>
               </Tabs>
             ) : (
-              <>
-                <div className="text-center mb-8">
-                  <div className="flex justify-center mb-4">
-                    <img src={duelIconPath} alt="Дуэльная арена" className="w-24 h-24 object-contain" />
+              <div className="flex flex-col gap-8">
+                {/* Верхняя часть: две колонки */}
+                <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center">
+                    <div className="flex justify-center mb-4">
+                      <img src={duelIconPath} alt="Дуэльная арена" className="w-20 h-20 object-contain" />
+                    </div>
+                    <h1 className="text-2xl lg:text-3xl font-angst mb-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+                      Добро пожаловать!
+                    </h1>
+                    <p className="text-sm text-muted-foreground font-serif">
+                      Создайте комнату или<br />присоединитесь к существующей
+                    </p>
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-angst mb-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
-                    Добро пожаловать!
-                  </h1>
-                  <p className="text-sm text-muted-foreground font-serif">
-                    Создайте комнату или присоединитесь к существующей
-                  </p>
+                  <div className="flex-1 flex items-center justify-center">
+                    <a
+                      href="https://vk.ru/magichogwarts_school"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img
+                        src={bannerPath}
+                        alt="Баннер"
+                        className="w-full h-auto object-contain rounded-lg hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                  </div>
                 </div>
 
+                {/* Нижняя часть: вкладки на всю ширину */}
                 <Tabs defaultValue="create" className="w-full">
                   <div className="flex items-center justify-between mb-6">
                     <TabsList className="grid w-full max-w-[520px] grid-cols-2">
@@ -460,10 +519,14 @@ export default function RoomLobby() {
                     </Button>
                   </TabsContent>
                 </Tabs>
-              </>
+              </div>
             )}
-          </CardContent>
-        </Card>
+           </CardContent>
+          </Card>
+          <div className="mt-2 text-center text-xs text-muted-foreground font-serif">
+            © 2026 <a href="https://vk.ru/magichogwarts_school" target="_blank" rel="noopener noreferrer" className="hover:text-amber-500 transition-colors underline underline-offset-4">https://vk.ru/magichogwarts_school</a>
+          </div>
+        </div>
       </div>
 
       <Dialog open={showRoomDialog} onOpenChange={setShowRoomDialog}>
