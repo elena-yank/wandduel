@@ -12,22 +12,31 @@ import { type Spell, type Point } from "@shared/schema";
 // Explicitly import the TypeScript ESM module to avoid CJS named export issues
 import { evaluateDrawing, isValidDrawing } from "@shared/advanced-gesture-recognition.ts";
 import { useIsPhone } from "@/hooks/use-phone";
-import { LogOut } from "lucide-react";
+import { BookOpen, LogOut } from "lucide-react";
 import { GAME_VERSION } from "@shared/config";
+import bannerPath from "@assets/banner.jpg";
+import SpellDatabase from "@/components/spell-database";
 
 export default function TrainingMode() {
   const isPhone = useIsPhone();
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/rooms/:roomId/training");
   const roomId = params?.roomId || "";
+  const headerRef = useRef<HTMLElement>(null);
+  const lastSizerRectRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const canvasRef = useRef<GestureCanvasRef>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasSizerRef = useRef<HTMLDivElement>(null);
+  const [canvasSidePx, setCanvasSidePx] = useState(0);
   const [mode, setMode] = useState<"attack" | "counter">("attack");
   const [accuracyText, setAccuracyText] = useState<string>("");
   const [showReferenceDialog, setShowReferenceDialog] = useState(false);
+  const [showSpellBookDialog, setShowSpellBookDialog] = useState(false);
   const [referenceShown, setReferenceShown] = useState(false);
   const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const paletteCellHeightClass = isPhone ? "h-6" : "h-7";
+  const paletteTextClass = isPhone ? "text-[8px]" : "text-[9px]";
 
   // Fetch spells for listing and local recognition
   const { data: allSpells = [] } = useQuery<Spell[]>({
@@ -91,6 +100,47 @@ export default function TrainingMode() {
     };
     join();
   }, [roomId]);
+
+  useEffect(() => {
+    const el = canvasSizerRef.current;
+    if (!el) return;
+    const getViewportH = () => {
+      const vv = window.visualViewport?.height;
+      return typeof vv === "number" && Number.isFinite(vv) ? vv : window.innerHeight;
+    };
+    const computeNext = (rect: { w: number; h: number }) => {
+      const headerH = headerRef.current?.getBoundingClientRect().height ?? 0;
+      const viewportH = getViewportH();
+      const safeReserve = isPhone ? 80 : 140;
+      const maxByViewport = Math.max(180, Math.floor(viewportH - headerH - safeReserve));
+      const maxByDesign = isPhone ? Infinity : 560;
+      const base = isPhone ? Math.min(rect.w, maxByViewport) : Math.min(rect.w, maxByDesign);
+      const shrink = isPhone ? 0.98 : 1;
+      return Math.floor(Math.max(0, base * shrink));
+    };
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const rect = { w: entry.contentRect.width, h: entry.contentRect.height };
+      lastSizerRectRef.current = rect;
+      const next = computeNext(rect);
+      setCanvasSidePx((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+    });
+    ro.observe(el);
+    const onViewportResize = () => {
+      const rect = lastSizerRectRef.current;
+      if (!rect.w && !rect.h) return;
+      const next = computeNext(rect);
+      setCanvasSidePx((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+    };
+    window.visualViewport?.addEventListener?.("resize", onViewportResize);
+    window.addEventListener("resize", onViewportResize);
+    return () => {
+      ro.disconnect();
+      window.visualViewport?.removeEventListener?.("resize", onViewportResize);
+      window.removeEventListener("resize", onViewportResize);
+    };
+  }, [isPhone]);
 
   const clearOverlay = () => {
     const canvas = overlayCanvasRef.current;
@@ -264,13 +314,15 @@ export default function TrainingMode() {
   };
 
   return (
-    <div className="phone-safe-area min-h-screen flex items-center justify-center px-3 py-1 sm:py-3 sm:px-4">
-      <div className="w-full max-w-5xl">
-        <header className="text-center mb-6 relative">
-          <h1 className="text-3xl sm:text-5xl font-angst tracking-wider bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+    <div
+      className={`${isPhone ? "training-safe-area h-[100dvh] overflow-hidden" : "min-h-screen items-center justify-center"} flex flex-col ${isPhone ? "px-2 py-0" : "px-3 py-1"} sm:py-3 sm:px-4`}
+    >
+      <div className="w-full max-w-5xl mx-auto relative">
+        <header ref={headerRef} className="text-center mb-1 sm:mb-6 relative shrink-0">
+          <h1 className="text-lg sm:text-5xl font-angst tracking-wider bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">
             Режим тренировки
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground font-serif">Версия {`v${GAME_VERSION}`}</p>
+          <p className="text-xs sm:text-base text-muted-foreground font-serif">Версия {`v${GAME_VERSION}`}</p>
           <Button
             variant="outline"
             size="sm"
@@ -283,24 +335,71 @@ export default function TrainingMode() {
           </Button>
         </header>
 
-        <Card className="spell-card border-border/20">
+        <Card className="spell-card border-border/20 relative">
+          <div
+            className={`absolute z-20 flex gap-0 flex-nowrap ${isPhone ? "-top-[22px] right-2" : "-top-[30px] right-4 lg:right-8"}`}
+          >
+            <a
+              href="https://vk.ru/drake.fletcher"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative pl-7 pr-3 py-1 text-[9px] sm:text-xs font-sans bg-gradient-to-r from-gray-800 to-gray-700 text-gray-200 hover:text-amber-400 transition-colors flex items-center justify-center whitespace-nowrap min-w-[170px] sm:min-w-[220px] max-w-[52vw] sm:max-w-[320px]"
+              style={{
+                clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0 100%)",
+                filter:
+                  "drop-shadow(1px 0px 0px #4b5563) drop-shadow(-1px 0px 0px #4b5563) drop-shadow(0px 1px 0px #4b5563) drop-shadow(0px -1px 0px #4b5563)",
+              }}
+              title="Тех. поддержка: Дрейк Флетчер"
+            >
+              <span className="truncate">Тех. поддержка: Дрейк Флетчер</span>
+            </a>
+            <a
+              href="https://vk.ru/crouch_jr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative pl-7 pr-3 py-1 text-[9px] sm:text-xs font-sans bg-gradient-to-r from-gray-800 to-gray-700 text-gray-200 hover:text-amber-400 transition-colors ml-[-1px] flex items-center justify-center whitespace-nowrap min-w-[170px] sm:min-w-[220px] max-w-[52vw] sm:max-w-[320px]"
+              style={{
+                clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0 100%)",
+                filter:
+                  "drop-shadow(1px 0px 0px #4b5563) drop-shadow(-1px 0px 0px #4b5563) drop-shadow(0px 1px 0px #4b5563) drop-shadow(0px -1px 0px #4b5563)",
+              }}
+              title="Арбитр: Барти Крауч-мл."
+            >
+              <span className="truncate">Арбитр: Барти Крауч-мл.</span>
+            </a>
+          </div>
           <CardContent className="p-3 sm:p-4 overflow-hidden">
             {/* Три равных блока по горизонтали: левый (контролы + точность), центр (канва), правый (палитра) */}
             <div className="grid grid-cols-[1fr_2fr_1.2fr] sm:grid-cols-[1fr_2fr_0.9fr] gap-y-4 gap-x-2 sm:gap-x-3 items-stretch min-w-0">
               {/* Левый блок: тумблер, кнопки, строка точности сразу под кнопками */}
-              <div className="overflow-hidden min-w-0 h-full">
+              <div
+                className="overflow-hidden min-w-0 h-full min-h-0 self-start"
+                style={canvasSidePx ? { height: `${canvasSidePx}px` } : undefined}
+              >
                 <div className="flex flex-col h-full">
                   <div className="flex flex-col gap-3">
-                    <ToggleGroup
-                      type="single"
-                      value={mode}
-                      onValueChange={(v) => v && setMode(v as any)}
-                      className="justify-start self-start"
-                      size="sm"
-                    >
-                      <ToggleGroupItem value="attack" className="text-[0.67rem] px-2 py-1">Атакующее</ToggleGroupItem>
-                      <ToggleGroupItem value="counter" className="text-[0.67rem] px-2 py-1">Защитное</ToggleGroupItem>
-                    </ToggleGroup>
+                    <div className="flex items-start justify-between gap-2">
+                      <ToggleGroup
+                        type="single"
+                        value={mode}
+                        onValueChange={(v) => v && setMode(v as any)}
+                        className="justify-start self-start"
+                        size="sm"
+                      >
+                        <ToggleGroupItem value="attack" className="text-[0.67rem] px-2 py-1">Атакующее</ToggleGroupItem>
+                        <ToggleGroupItem value="counter" className="text-[0.67rem] px-2 py-1">Защитное</ToggleGroupItem>
+                      </ToggleGroup>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className={isPhone ? "h-9 w-9" : "h-10 w-10"}
+                        onClick={() => setShowSpellBookDialog(true)}
+                        aria-label="Книга заклинаний"
+                        data-testid="button-open-spellbook"
+                      >
+                        <BookOpen className={isPhone ? "h-4 w-4" : "h-5 w-5"} />
+                      </Button>
+                    </div>
                     <div className={isPhone ? "flex gap-2 justify-start w-full mt-2" : "flex items-center gap-2 justify-start w-auto mt-0"}>
                       <Button variant="secondary" size="sm" className="text-[0.67rem] px-2" onClick={() => { canvasRef.current?.clearCanvas(); }}>
                         Стереть
@@ -335,8 +434,16 @@ export default function TrainingMode() {
               </div>
 
               {/* Центральный блок: канва */}
-              <div className="relative aspect-square overflow-hidden flex items-center justify-center">
-                <div className="relative w-full h-full">
+              <div ref={canvasSizerRef} className="relative overflow-hidden flex items-start justify-center min-h-0 self-start">
+                <div
+                  className="relative"
+                  style={{
+                    width: canvasSidePx ? `${canvasSidePx}px` : "100%",
+                    height: canvasSidePx ? `${canvasSidePx}px` : "100%",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                  }}
+                >
                   <GestureCanvas
                     ref={canvasRef}
                     onGestureComplete={handleGestureComplete}
@@ -354,9 +461,12 @@ export default function TrainingMode() {
               </div>
 
               {/* Правый блок: палитра цветов заклинания (новая разметка) */}
-              <div className="overflow-hidden min-w-0 h-full">
-                <div className="h-full flex flex-col justify-start gap-0 min-w-0">
-                  <div className="text-[9px] text-muted-foreground/70 font-medium">Цвет заклинания:</div>
+              <div
+                className="min-w-0 h-full min-h-0 self-start"
+                style={canvasSidePx ? { height: `${canvasSidePx}px` } : undefined}
+              >
+                <div className="h-full min-h-0 flex flex-col justify-start gap-0 min-w-0 overflow-hidden">
+                  <div className={`${paletteTextClass} text-muted-foreground/70 font-medium`}>Цвет заклинания:</div>
                   {[
                     [null, "Красный", "Зелёный"],
                     ["Голубой", "Жёлтый", "Золотой"],
@@ -373,7 +483,7 @@ export default function TrainingMode() {
                               key={`reset-${jdx}`}
                               onClick={() => setSelectedColor(null)}
                               className={
-                                `h-7 w-full min-w-0 rounded-sm border transition-all flex items-center justify-center text-[9px] font-medium px-1 truncate ` +
+                                `${paletteCellHeightClass} w-full min-w-0 rounded-sm border transition-all flex items-center justify-center ${paletteTextClass} font-medium px-1 truncate ` +
                                 (selectedColor === null ? "border-primary ring-1 ring-primary bg-primary/20" : "border-muted-foreground/30 hover:border-primary/50")
                               }
                               title="Все цвета"
@@ -394,7 +504,7 @@ export default function TrainingMode() {
                             key={color.colorName}
                             onClick={() => setSelectedColor(color.colorName)}
                             className={
-                              `h-7 w-full min-w-0 rounded-sm border transition-all flex items-center justify-center gap-0.5 px-1 truncate ` +
+                              `${paletteCellHeightClass} w-full min-w-0 rounded-sm border transition-all flex items-center justify-center gap-0.5 px-1 truncate ` +
                               (selectedColor === color.colorName ? "border-primary ring-1 ring-primary shadow-md" : "border-transparent hover:border-primary/50")
                             }
                             style={{
@@ -405,7 +515,7 @@ export default function TrainingMode() {
                             data-testid={`color-${color.colorName}`}
                           >
                             <span
-                              className="text-[9px] font-bold leading-none truncate"
+                              className={`${paletteTextClass} font-bold leading-none truncate`}
                               style={{
                                 color: ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex) ? "#000" : "#FFF",
                                 textShadow: ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
@@ -421,10 +531,18 @@ export default function TrainingMode() {
 
                       {/* Заполняем недостающие клетки, чтобы сохранить 3 колонки */}
                       {Array.from({ length: Math.max(0, 3 - row.length) }).map((_, k) => (
-                        <div key={`spacer-${k}`} className="h-7 min-w-0" />
+                        <div key={`spacer-${k}`} className={`${paletteCellHeightClass} min-w-0`} />
                       ))}
                     </div>
                   ))}
+                  <div className="mt-3 flex-1 min-h-0 flex items-end justify-center">
+                    <img
+                      src={bannerPath}
+                      alt="Баннер"
+                      className="w-full h-full object-contain object-bottom rounded-lg"
+                      draggable={false}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -455,13 +573,34 @@ export default function TrainingMode() {
                   <button
                     key={spell.id}
                     onClick={() => onSelectSpell(spell)}
-                    className="w-full text-left px-3 py-2 rounded border border-border/30 hover:bg-muted/30"
+                    className="w-full flex items-center justify-between gap-3 text-left px-3 py-2 rounded border border-border/30 hover:bg-muted/30"
+                    title={spell.colorName ? `Цвет: ${spell.colorName}` : undefined}
                   >
-                    {spell.name}
+                    <span className="truncate">{spell.name}</span>
+                    {(() => {
+                      const c = SPELL_COLORS.find((x) => x.colorName === spell.colorName);
+                      return (
+                        <span
+                          className="h-3.5 w-3.5 rounded-full border border-white/20 shrink-0"
+                          style={{
+                            backgroundColor: c?.hex ?? "rgba(255,255,255,0.12)",
+                            boxShadow: c?.hex ? `0 0 10px ${c.hex}` : undefined,
+                          }}
+                        />
+                      );
+                    })()}
                   </button>
                 ));
               })()}
             </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showSpellBookDialog} onOpenChange={setShowSpellBookDialog}>
+          <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto" data-testid="dialog-spellbook">
+            <SpellDatabase
+              attackSpells={attackSpells}
+              counterSpells={counterSpells}
+            />
           </DialogContent>
         </Dialog>
       </div>

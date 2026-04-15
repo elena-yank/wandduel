@@ -354,6 +354,13 @@
   scroll-padding-bottom: max(env(safe-area-inset-bottom, 0px), 96px);
 }
 
+.training-safe-area {
+  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
 @supports not (padding-top: env(safe-area-inset-top)) {
   /* Fallback for browsers without env() support */
   .phone-safe-area {
@@ -363,6 +370,12 @@
     box-sizing: border-box;
     scroll-padding-top: 64px;
     scroll-padding-bottom: 96px;
+  }
+  .training-safe-area {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    min-height: 100dvh;
+    box-sizing: border-box;
   }
 }
 
