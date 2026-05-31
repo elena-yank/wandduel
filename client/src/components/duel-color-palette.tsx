@@ -14,9 +14,9 @@ export default function DuelColorPalette({ selectedColor, onColorSelect, classNa
   const rows: (string | null)[][] = [
     [null, "Красный", "Зелёный", "Голубой"],
     ["Жёлтый", "Золотой", "Оранжевый", "Розовый"],
-    ["Фиолетовый", "Серебряный", "Серый", "Белый"],
-    ["Бело-жёлтый", "Бирюзовый", "Бесцветный", "Пламенный шар"],
-    ["Синий"],
+    ["Фиолетовый", "Фиалковый", "Серебряный", "Серый"],
+    ["Белый", "Бело-жёлтый", "Бирюзовый", "Бесцветный"],
+    ["Пламенный шар", "Синий", "Разноцветный"],
   ];
 
   return (
@@ -61,8 +61,13 @@ export default function DuelColorPalette({ selectedColor, onColorSelect, classNa
                     : "border-transparent hover:border-primary/50"
                 )}
                 style={{
-                  backgroundColor: color.hex,
-                  boxShadow: selectedColor === color.colorName ? `0 0 8px ${color.hex}` : undefined,
+                  ...(color.colorName === "Разноцветный"
+                    ? { background: "conic-gradient(#ef4444, #fbbf24, #22c55e, #3b82f6, #8b00ff, #ec4899, #ef4444)" }
+                    : { backgroundColor: color.hex }),
+                  boxShadow:
+                    selectedColor === color.colorName
+                      ? `0 0 8px ${color.colorName === "Разноцветный" ? "rgba(255,255,255,0.9)" : color.hex}`
+                      : undefined,
                 }}
                 title={color.name}
                 data-testid={`color-${color.colorName}`}
@@ -70,10 +75,10 @@ export default function DuelColorPalette({ selectedColor, onColorSelect, classNa
                 <span
                   className="leading-none font-serif font-bold"
                   style={{
-                    color: ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
+                    color: color.colorName === "Разноцветный" || ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
                       ? "#000"
                       : "#FFF",
-                    textShadow: ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
+                    textShadow: color.colorName === "Разноцветный" || ["#FFFFFF", "#FFFACD", "#E5E5E5", "#C0C0C0"].includes(color.hex)
                       ? "0 0 2px rgba(0,0,0,0.5)"
                       : "0 0 2px rgba(0,0,0,0.8)",
                   }}

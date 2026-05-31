@@ -17,6 +17,8 @@ const SPELL_COLORS = [
   { name: "Оранжевый", hex: "#FFA500", colorName: "Оранжевый" },
   { name: "Розовый", hex: "#EC4899", colorName: "Розовый" },
   { name: "Фиолетовый", hex: "#8B00FF", colorName: "Фиолетовый" },
+  { name: "Фиалковый", hex: "#C084FC", colorName: "Фиалковый" },
+  { name: "Разноцветный", hex: "#FFFFFF", colorName: "Разноцветный" },
   { name: "Серебряный", hex: "#C0C0C0", colorName: "Серебряный" },
   { name: "Серый", hex: "#808080", colorName: "Серый" },
   { name: "Белый", hex: "#FFFFFF", colorName: "Белый" },
@@ -60,8 +62,13 @@ export default function ColorPalette({ selectedColor, onColorSelect, className =
                 : "border-transparent hover:border-primary/50"
             )}
             style={{ 
-              backgroundColor: color.hex,
-              boxShadow: selectedColor === color.colorName ? `0 0 12px ${color.hex}` : undefined
+              ...(color.colorName === "Разноцветный"
+                ? { background: "conic-gradient(#ef4444, #fbbf24, #22c55e, #3b82f6, #8b00ff, #ec4899, #ef4444)" }
+                : { backgroundColor: color.hex }),
+              boxShadow:
+                selectedColor === color.colorName
+                  ? `0 0 12px ${color.colorName === "Разноцветный" ? "rgba(255,255,255,0.9)" : color.hex}`
+                  : undefined
             }}
             title={color.name}
             data-testid={`color-${color.colorName}`}

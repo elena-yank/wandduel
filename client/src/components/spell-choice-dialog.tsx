@@ -38,7 +38,11 @@ export default function SpellChoiceDialog({
               <div className="flex items-center gap-2 w-full">
                 <div 
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: choice.spell.color }}
+                  style={
+                    choice.spell.colorName === "Разноцветный"
+                      ? { background: "conic-gradient(#ef4444, #fbbf24, #22c55e, #3b82f6, #8b00ff, #ec4899, #ef4444)" }
+                      : { backgroundColor: choice.spell.color }
+                  }
                 />
                 <div className="flex-1">
                   <p className="font-serif font-semibold text-sm text-foreground">

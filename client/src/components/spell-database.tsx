@@ -74,7 +74,11 @@ const SpellDatabase = forwardRef<HTMLDivElement, SpellDatabaseProps>(({
             <div className="flex items-center gap-1.5">
               <div 
                 className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: spell.color }}
+                style={
+                  spell.colorName === "Разноцветный"
+                    ? { background: "conic-gradient(#ef4444, #fbbf24, #22c55e, #3b82f6, #8b00ff, #ec4899, #ef4444)" }
+                    : { backgroundColor: spell.color }
+                }
                 data-testid={`color-indicator-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}
               />
               <span className="text-xs text-muted-foreground" data-testid={`text-color-name-${spell.name.toLowerCase().replace(/\s+/g, '-')}`}>
